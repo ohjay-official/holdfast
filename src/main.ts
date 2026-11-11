@@ -66,11 +66,32 @@ let contract: SignTestContract | null = null;
 let category: string | null = localStorage.getItem(`${STORE_KEY}-category`);
 let busy = false;
 let lastRelayStatus = '';
+let activeResult: string | null = null;
+let awaitingWallet = false;
 
 // Switching to the wallet app hides this tab; logging it helps debug phone-only flows.
 document.addEventListener('visibilitychange', () => {
   log(document.hidden ? 'Page hidden (switched away).' : 'Page visible again.');
+  if (!document.hidden && awaitingWallet && activeResult) {
+    setResult(activeResult, "Checking for Paytaca's answer...");
+  }
 });
+
+const QUIET = new Set(['ping', 'pong']);
+
+/** On one phone, a request queued while this tab is hidden goes out stale. Wait until visible. */
+function whenVisible(): Promise<void> {
+  if (!document.hidden) return Promise.resolve();
+  log('Waiting for this page to be open before sending to the wallet.');
+  return new Promise((resolve) => {
+    const on = () => {
+      if (document.hidden) return;
+      document.removeEventListener('visibilitychange', on);
+      resolve();
+    };
+    document.addEventListener('visibilitychange', on);
+  });
+}
 
 // ---------- connection ----------
 function setupManager(resume: boolean) {
@@ -102,7 +123,16 @@ function setupManager(resume: boolean) {
     $('connect-status').textContent = 'Disconnected.';
   });
   mgr.on('reconnecting', () => log('Relay reconnecting...'));
-  mgr.on('messagereceived', (m) => log(`From wallet: ${m.action}`));
+  mgr.on('messagereceived', (m) => {
+    if (!QUIET.has(m.action)) log(`From wallet: ${m.action}`);
+  });
+  mgr.on('messagesent', (m) => {
+    if (QUIET.has(m.action)) return;
+    log(`To wallet: ${m.action}`);
+    if (m.action === 'sign_transaction_request' && awaitingWallet && activeResult) {
+      setResult(activeResult, 'Sent. Open Paytaca, approve, then come back here.');
+    }
+  });
 
   if (stored?.walletPublicKey && mgr.hasPath(RECEIVE)) {
     log('Resumed a saved WizardConnect session.');
@@ -191,10 +221,19 @@ async function signAndSend(
   if (!mgr) throw new Error('Not connected');
   const wc = builder.generateWcTransactionObject({ broadcast: false, userPrompt: prompt });
   const transaction = toRelaySignRequest(wc);
+  await whenVisible();
   log(`Asking the wallet to sign: ${prompt}`);
-  const res = await mgr.signTransaction({ transaction, inputPaths } as never);
+  if (activeResult) setResult(activeResult, 'Sending to Paytaca... stay on this page.');
+  awaitingWallet = true;
+  let res;
+  try {
+    res = await mgr.signTransaction({ transaction, inputPaths } as never);
+  } finally {
+    awaitingWallet = false;
+  }
   if (res.error) throw new Error(`Wallet returned an error: ${res.error}`);
   if (!res.signedTransaction) throw new Error('Wallet returned no signed transaction');
+  if (activeResult) setResult(activeResult, 'Signed. Broadcasting...');
   log('Wallet signed. Broadcasting to chipnet...');
   const txid = await provider.sendRawTransaction(res.signedTransaction);
   log(`Broadcast OK: ${EXPLORER}${txid}`);
@@ -204,7 +243,8 @@ async function signAndSend(
 async function run(resId: string, label: string, fn: () => Promise<string>) {
   if (busy) return;
   busy = true;
-  setResult(resId, 'Waiting for the wallet...');
+  activeResult = resId;
+  setResult(resId, 'Preparing... stay on this page.');
   try {
     const txid = await fn();
     setResult(resId, `Passed (${txid.slice(0, 10)}...)`, true);
@@ -214,6 +254,7 @@ async function run(resId: string, label: string, fn: () => Promise<string>) {
     log(`${label}: FAILED: ${errText(err)}`);
   } finally {
     busy = false;
+    activeResult = null;
     await new Promise((r) => setTimeout(r, 1500));
     refresh();
   }
@@ -235,7 +276,8 @@ async function createVault(): Promise<string> {
   if (!pickGenesisUtxo(utxos)) {
     log('No coin at output index 0 yet. Making one with a self-send first.');
     const prep = buildPrepare({ provider, userAddress, userUtxos: utxos, unlocker: placeholderP2PKHUnlocker(userAddress) });
-    await signAndSend(prep, prep.inputs.map((_, i) => [i, 'receive', 0]), 'Holdfast test: prepare coins');
+    await signAndSend(prep, prep.inputs.map((_, i) => [i, 'receive', 0]), 'Holdfast test: prepare coins (1 of 2)');
+    setResult('res-create', 'Step 1 of 2 done. Preparing step 2... stay on this page.');
     utxos = await waitFor(async () => {
       const u = await walletUtxos();
       return pickGenesisUtxo(u) ? u : undefined;
