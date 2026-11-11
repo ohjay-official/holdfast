@@ -40,18 +40,42 @@ const STORE_KEY = 'holdfast-signtest';
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 
-// ---------- log ----------
-const logLines: string[] = [];
+// ---------- log and results (kept across reloads) ----------
+function loadJson<T>(key: string, fallback: T): T {
+  try {
+    return JSON.parse(localStorage.getItem(key) ?? '') as T;
+  } catch {
+    return fallback;
+  }
+}
+const LOG_KEY = `${STORE_KEY}-log`;
+const RESULTS_KEY = `${STORE_KEY}-results`;
+const logLines: string[] = loadJson<string[]>(LOG_KEY, []).slice(-300);
+if (logLines.length) logLines.push('--- page reloaded ---');
 function log(msg: string) {
   const line = `${new Date().toISOString().slice(11, 19)}  ${msg}`;
   logLines.push(line);
+  if (logLines.length > 300) logLines.splice(0, logLines.length - 300);
+  localStorage.setItem(LOG_KEY, JSON.stringify(logLines));
   $('log').textContent = logLines.join('\n');
   console.log(line);
 }
-function setResult(id: string, text: string, ok?: boolean) {
+type SavedResult = { text: string; ok: boolean };
+const savedResults = loadJson<Record<string, SavedResult>>(RESULTS_KEY, {});
+function paintResult(id: string, text: string, ok?: boolean) {
   const el = $(id);
   el.textContent = text;
   el.className = 'result' + (ok === true ? ' ok' : ok === false ? ' bad' : '');
+}
+function setResult(id: string, text: string, ok?: boolean) {
+  paintResult(id, text, ok);
+  if (ok === undefined) return;
+  savedResults[id] = { text, ok };
+  localStorage.setItem(RESULTS_KEY, JSON.stringify(savedResults));
+}
+function restoreResults() {
+  for (const [id, r] of Object.entries(savedResults)) if ($(id)) paintResult(id, r.text, r.ok);
+  $('log').textContent = logLines.join('\n');
 }
 async function copy(text: string, what: string) {
   try {
@@ -221,13 +245,16 @@ async function refresh() {
     ($('btn-withdraw') as HTMLButtonElement).disabled = !hasVault;
     const coCoin = coContract ? findCoSignUtxo(await coContract.getUtxos()) : undefined;
     ($('btn-cosign') as HTMLButtonElement).disabled = !coCoin && sats < 6_000n;
-    if (!vault && /^Vault exists/.test($('res-create').textContent ?? '')) setResult('res-create', 'Not run');
+    if (!vault && /^Vault exists/.test($('res-create').textContent ?? '')) {
+      const r = savedResults['res-create'];
+      paintResult('res-create', r ? r.text : 'Not run', r?.ok);
+    }
     if (vault) {
       if (!category) {
         category = vault.token!.category;
         localStorage.setItem(`${STORE_KEY}-category`, category);
       }
-      setResult('res-create', `Vault exists, counter ${readCounter(vault.token!.nft!.commitment)}`, true);
+      paintResult('res-create', `Vault exists, counter ${readCounter(vault.token!.nft!.commitment)}`, true);
     }
   } catch (err) {
     log(`Could not read chipnet: ${errText(err)}`);
@@ -273,7 +300,8 @@ async function run(resId: string, label: string, fn: () => Promise<string>) {
   setResult(resId, 'Preparing... stay on this page.');
   try {
     const txid = await fn();
-    setResult(resId, `Passed (${txid.slice(0, 10)}...)`, true);
+    const at = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    setResult(resId, `Passed at ${at} (${txid.slice(0, 10)}...)`, true);
     log(`${label}: PASSED`);
   } catch (err) {
     setResult(resId, `Failed: ${errText(err)}`, false);
@@ -416,5 +444,6 @@ $('btn-disconnect').onclick = async () => {
   location.reload();
 };
 
+restoreResults();
 log('Page loaded. Network: chipnet.');
 if (loadSession()?.walletPublicKey) setupManager(true);
