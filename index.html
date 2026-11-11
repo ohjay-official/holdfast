@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex" />
+    <title>Holdfast signing test</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <main>
+      <header>
+        <p class="eyebrow">Holdfast &middot; pre-kickoff test &middot; chipnet</p>
+        <h1>Wallet signing test</h1>
+        <p class="lede">
+          This page checks that Paytaca can sign Holdfast's kind of contract transaction over
+          WizardConnect. It runs on chipnet, Bitcoin Cash's test network, so it only uses free
+          test coins. It is not the Holdfast app.
+        </p>
+      </header>
+
+      <section id="step-connect" class="step">
+        <h2><span class="num">1</span> Connect your wallet</h2>
+        <p class="hint">Scan the code with Paytaca, or tap the link if the page is open on the same phone.</p>
+        <div id="connect-area">
+          <button id="btn-connect">Connect with WizardConnect</button>
+        </div>
+        <div id="qr-area" hidden>
+          <img id="qr" alt="WizardConnect QR code" width="240" height="240" />
+          <p><a id="wiz-link" href="#">Open in wallet</a></p>
+          <p class="small">
+            <button id="btn-copy-uri" class="secondary">Copy connection link</button>
+          </p>
+        </div>
+        <p id="connect-status" class="status">Not connected.</p>
+      </section>
+
+      <section id="step-fund" class="step" hidden>
+        <h2><span class="num">2</span> Get free test coins</h2>
+        <p class="hint">
+          Copy this chipnet address, paste it into the faucet, then come back and tap Refresh.
+          About 10,000 test sats is plenty.
+        </p>
+        <p class="mono" id="address"></p>
+        <p>
+          <button id="btn-copy-address" class="secondary">Copy address</button>
+          <a class="button secondary" href="https://tbch.googol.cash/" target="_blank" rel="noopener">Open faucet</a>
+          <button id="btn-refresh" class="secondary">Refresh</button>
+        </p>
+        <p id="balance" class="status">Balance: checking...</p>
+      </section>
+
+      <section id="step-tests" class="step" hidden>
+        <h2><span class="num">3</span> Run the tests</h2>
+        <p class="hint">Each button asks Paytaca to approve one transaction. Run them in order.</p>
+        <ol class="tests">
+          <li>
+            <button id="btn-create">A. Create test vault</button>
+            <span class="result" id="res-create">Not run</span>
+            <p class="small">Your wallet creates a small contract holding a state token.</p>
+          </li>
+          <li>
+            <button id="btn-bump" disabled>B. Contract spend</button>
+            <span class="result" id="res-bump">Not run</span>
+            <p class="small">The key test: your wallet signs a spend from the contract.</p>
+          </li>
+          <li>
+            <button id="btn-age" disabled>C. Timelocked spend</button>
+            <span class="result" id="res-age">Not run</span>
+            <p class="small">Needs test B's transaction to be in a block first. Wait about 10 minutes after B.</p>
+          </li>
+          <li>
+            <button id="btn-withdraw" disabled>D. Withdraw</button>
+            <span class="result" id="res-withdraw">Not run</span>
+            <p class="small">Sends the test coins back to your wallet.</p>
+          </li>
+        </ol>
+      </section>
+
+      <section class="step">
+        <h2>Log</h2>
+        <p class="hint">When you're done, tap Copy log and paste it to Claude.</p>
+        <p>
+          <button id="btn-copy-log" class="secondary">Copy log</button>
+          <button id="btn-disconnect" class="secondary" hidden>Disconnect</button>
+        </p>
+        <pre id="log"></pre>
+      </section>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

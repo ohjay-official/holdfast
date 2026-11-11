@@ -1,0 +1,44 @@
+pragma cashscript ^0.14.0;
+
+// Holdfast pre-kickoff risk test. This is NOT the Holdfast vault contract.
+// It checks three things on a real wallet before the hackathon starts:
+//   1. Paytaca can sign a contract input over WizardConnect (placeholder signature).
+//   2. A mutable NFT can carry state through a covenant spend.
+//   3. A relative timelock (this.age) spend works with the wallet's signing.
+contract SignTest(pubkey ownerPk) {
+    // Spend the test vault back into itself and add one to the counter in its NFT.
+    function bump(sig ownerSig) {
+        require(checkSig(ownerSig, ownerPk));
+        require(tx.inputs.length == 1);
+        require(tx.outputs.length == 1);
+
+        // Same contract, same token category and capability.
+        require(tx.outputs[0].lockingBytecode == tx.inputs[0].lockingBytecode);
+        require(tx.outputs[0].tokenCategory == tx.inputs[0].tokenCategory);
+
+        // The counter is 4 bytes, little-endian, and goes up by exactly one.
+        int counter = int(tx.inputs[0].nftCommitment);
+        require(tx.outputs[0].nftCommitment == toPaddedBytes(counter + 1, 4));
+
+        // Fee cap: at most 2,000 sats can leave as fees.
+        require(tx.outputs[0].value >= tx.inputs[0].value - 2000);
+    }
+
+    // Same as bump, but only once the vault has been confirmed for at least one block.
+    function bumpAfterAge(sig ownerSig) {
+        require(this.age >= 1);
+        require(checkSig(ownerSig, ownerPk));
+        require(tx.inputs.length == 1);
+        require(tx.outputs.length == 1);
+        require(tx.outputs[0].lockingBytecode == tx.inputs[0].lockingBytecode);
+        require(tx.outputs[0].tokenCategory == tx.inputs[0].tokenCategory);
+        int counter = int(tx.inputs[0].nftCommitment);
+        require(tx.outputs[0].nftCommitment == toPaddedBytes(counter + 1, 4));
+        require(tx.outputs[0].value >= tx.inputs[0].value - 2000);
+    }
+
+    // End of the test: the owner takes the coins back.
+    function withdraw(sig ownerSig) {
+        require(checkSig(ownerSig, ownerPk));
+    }
+}
