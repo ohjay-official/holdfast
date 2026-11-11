@@ -5,12 +5,13 @@
 import { DappConnectionManager, loadSession } from '@wizardconnect/dapp';
 import { initiateDappRelay, type DappRelayResult } from '@wizardconnect/core';
 import {
+  SignatureTemplate,
   placeholderP2PKHUnlocker,
   placeholderSignature,
   type SpendableUtxo,
   type TransactionBuilder,
 } from 'cashscript';
-import { binToHex, encodeCashAddress, hash160 } from '@bitauth/libauth';
+import { binToHex, encodeCashAddress, hash160, hexToBin, secp256k1 } from '@bitauth/libauth';
 import QRCode from 'qrcode';
 import {
   buildBump,
@@ -23,6 +24,13 @@ import {
   readCounter,
   type SignTestContract,
 } from './signtest';
+import {
+  buildCoSpend,
+  buildFund,
+  findCoSignUtxo,
+  makeCoSignContract,
+  type CoSignContract,
+} from './cosigntest';
 import { FallbackNetworkProvider } from './provider';
 import { toRelaySignRequest } from './relay';
 
@@ -64,8 +72,21 @@ let ownerPk: Uint8Array | null = null;
 let userAddress = '';
 let contract: SignTestContract | null = null;
 let category: string | null = localStorage.getItem(`${STORE_KEY}-category`);
+let coContract: CoSignContract | null = null;
 let busy = false;
 let lastRelayStatus = '';
+
+// Test E: a key this page holds, standing in for Holdfast's home code.
+function loadHomeKey(): Uint8Array {
+  const saved = localStorage.getItem(`${STORE_KEY}-homekey`);
+  if (saved && secp256k1.validatePrivateKey(hexToBin(saved))) return hexToBin(saved);
+  let key: Uint8Array;
+  do key = crypto.getRandomValues(new Uint8Array(32));
+  while (!secp256k1.validatePrivateKey(key));
+  localStorage.setItem(`${STORE_KEY}-homekey`, binToHex(key));
+  return key;
+}
+const homeKey = loadHomeKey();
 let activeResult: string | null = null;
 let awaitingWallet = false;
 
@@ -161,6 +182,7 @@ function onWalletReady() {
   ownerPk = pk;
   userAddress = encodeCashAddress({ prefix: 'bchtest', type: 'p2pkh', payload: hash160(pk) }).address;
   contract = makeContract(pk, provider);
+  coContract = makeCoSignContract(pk, new SignatureTemplate(homeKey).publicKey, provider);
   $('qr-area').hidden = true;
   $('connect-area').hidden = true;
   $('connect-status').textContent = `Connected: ${mgr.walletName ?? 'wallet'}`;
@@ -171,6 +193,7 @@ function onWalletReady() {
   log(`Owner key (receive/0): ${binToHex(pk)}`);
   log(`Chipnet address: ${userAddress}`);
   log(`Test contract: ${contract.tokenAddress}`);
+  log(`Two-key test contract: ${coContract.address}`);
   refresh();
 }
 
@@ -196,6 +219,9 @@ async function refresh() {
     ($('btn-bump') as HTMLButtonElement).disabled = !hasVault;
     ($('btn-age') as HTMLButtonElement).disabled = !hasVault;
     ($('btn-withdraw') as HTMLButtonElement).disabled = !hasVault;
+    const coCoin = coContract ? findCoSignUtxo(await coContract.getUtxos()) : undefined;
+    ($('btn-cosign') as HTMLButtonElement).disabled = !coCoin && sats < 6_000n;
+    if (!vault && /^Vault exists/.test($('res-create').textContent ?? '')) setResult('res-create', 'Not run');
     if (vault) {
       if (!category) {
         category = vault.token!.category;
@@ -256,7 +282,8 @@ async function run(resId: string, label: string, fn: () => Promise<string>) {
     busy = false;
     activeResult = null;
     await new Promise((r) => setTimeout(r, 1500));
-    refresh();
+    await refresh();
+    setTimeout(refresh, 5000);
   }
 }
 
@@ -341,6 +368,28 @@ async function withdraw(): Promise<string> {
   return txid;
 }
 
+// E. two-key spend: the page signs with its key, the wallet adds the second signature
+async function coSign(): Promise<string> {
+  if (!coContract) throw new Error('Not connected');
+  const c = coContract;
+  let coin = findCoSignUtxo(await c.getUtxos());
+  if (!coin) {
+    const fund = buildFund({
+      provider,
+      contract: c,
+      userAddress,
+      userUtxos: await walletUtxos(),
+      unlocker: placeholderP2PKHUnlocker(userAddress),
+    });
+    await signAndSend(fund, fund.inputs.map((_, i) => [i, 'receive', 0]), 'Holdfast test: fund two-key test (1 of 2)');
+    setResult('res-cosign', 'Step 1 of 2 done. Preparing step 2... stay on this page.');
+    coin = await waitFor(async () => findCoSignUtxo(await c.getUtxos()), 'the two-key test coin');
+  }
+  const builder = buildCoSpend({ provider, contract: c, utxo: coin, homeKey, userAddress });
+  log('Page signed with its own key. Asking the wallet for the second signature.');
+  return signAndSend(builder, [[0, 'receive', 0]], 'Holdfast test: two-key spend (2 of 2)');
+}
+
 // ---------- wiring ----------
 $('btn-connect').onclick = () => setupManager(false);
 $('btn-copy-uri').onclick = () => relay && copy(relay.uri, 'connection link');
@@ -350,6 +399,7 @@ $('btn-create').onclick = () => run('res-create', 'A. Create test vault', create
 $('btn-bump').onclick = () => run('res-bump', 'B. Contract spend', () => bump(false));
 $('btn-age').onclick = () => run('res-age', 'C. Timelocked spend', () => bump(true));
 $('btn-withdraw').onclick = () => run('res-withdraw', 'D. Withdraw', withdraw);
+$('btn-cosign').onclick = () => run('res-cosign', 'E. Two-key spend', coSign);
 $('btn-copy-log').onclick = () =>
   copy(
     [`Holdfast signing test`, `UA: ${navigator.userAgent}`, ...logLines].join('\n'),

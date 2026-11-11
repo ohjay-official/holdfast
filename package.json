@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "vite",
     "build": "npm run compile && tsc && vite build",
-    "compile": "cashc contracts/SignTest.cash --output src/SignTest.artifact.ts --format ts",
+    "compile": "cashc contracts/SignTest.cash --output src/SignTest.artifact.ts --format ts && cashc contracts/CoSignTest.cash --output src/CoSignTest.artifact.ts --format ts",
     "test": "vitest run",
     "typecheck": "tsc"
   },

@@ -1,0 +1,12 @@
+pragma cashscript ^0.14.0;
+
+// Pre-kickoff risk test, not the Holdfast vault.
+// One spend that needs two keys: the page signs with homePk before sending
+// the request, and the wallet adds ownerSig over WizardConnect. Holdfast's
+// home code and guardian keys co-sign with the wallet this way.
+contract CoSignTest(pubkey ownerPk, pubkey homePk) {
+    function cosign(sig homeSig, sig ownerSig) {
+        require(checkSig(homeSig, homePk));
+        require(checkSig(ownerSig, ownerPk));
+    }
+}
