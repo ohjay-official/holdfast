@@ -5,7 +5,6 @@
 import { DappConnectionManager, loadSession } from '@wizardconnect/dapp';
 import { initiateDappRelay, type DappRelayResult } from '@wizardconnect/core';
 import {
-  ElectrumNetworkProvider,
   placeholderP2PKHUnlocker,
   placeholderSignature,
   type SpendableUtxo,
@@ -24,6 +23,7 @@ import {
   readCounter,
   type SignTestContract,
 } from './signtest';
+import { FallbackNetworkProvider } from './provider';
 
 const EXPLORER = 'https://chipnet.imaginary.cash/tx/';
 const RECEIVE = 0;
@@ -54,7 +54,9 @@ async function copy(text: string, what: string) {
 }
 
 // ---------- state ----------
-const provider = new ElectrumNetworkProvider('chipnet');
+// Several chipnet servers, so one being down doesn't stop the test.
+const provider = new FallbackNetworkProvider('chipnet', ['chipnet.bch.ninja', 'chipnet.imaginary.cash']);
+provider.onSwitch = (host) => log(`Switched chipnet server to ${host}.`);
 let mgr: DappConnectionManager | null = null;
 let relay: DappRelayResult | null = null;
 let ownerPk: Uint8Array | null = null;
@@ -62,6 +64,12 @@ let userAddress = '';
 let contract: SignTestContract | null = null;
 let category: string | null = localStorage.getItem(`${STORE_KEY}-category`);
 let busy = false;
+let lastRelayStatus = '';
+
+// Switching to the wallet app hides this tab; logging it helps debug phone-only flows.
+document.addEventListener('visibilitychange', () => {
+  log(document.hidden ? 'Page hidden (switched away).' : 'Page visible again.');
+});
 
 // ---------- connection ----------
 function setupManager(resume: boolean) {
@@ -70,6 +78,10 @@ function setupManager(resume: boolean) {
   relay = initiateDappRelay(
     (payload) => {
       mgr!.updateConnection(payload.client, payload.status);
+      if (payload.status.status !== lastRelayStatus) {
+        lastRelayStatus = payload.status.status;
+        log(`Relay: ${lastRelayStatus}`);
+      }
       if (!mgr!.isWalletDiscovered()) {
         const s = payload.status.status;
         $('connect-status').textContent =
@@ -89,6 +101,7 @@ function setupManager(resume: boolean) {
     $('connect-status').textContent = 'Disconnected.';
   });
   mgr.on('reconnecting', () => log('Relay reconnecting...'));
+  mgr.on('messagereceived', (m) => log(`From wallet: ${m.action}`));
 
   if (stored?.walletPublicKey && mgr.hasPath(RECEIVE)) {
     log('Resumed a saved WizardConnect session.');
