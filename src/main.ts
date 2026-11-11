@@ -10,7 +10,7 @@ import {
   type SpendableUtxo,
   type TransactionBuilder,
 } from 'cashscript';
-import { binToHex, encodeCashAddress, hash160, stringify } from '@bitauth/libauth';
+import { binToHex, encodeCashAddress, hash160 } from '@bitauth/libauth';
 import QRCode from 'qrcode';
 import {
   buildBump,
@@ -24,6 +24,7 @@ import {
   type SignTestContract,
 } from './signtest';
 import { FallbackNetworkProvider } from './provider';
+import { toRelaySignRequest } from './relay';
 
 const EXPLORER = 'https://chipnet.imaginary.cash/tx/';
 const RECEIVE = 0;
@@ -189,7 +190,7 @@ async function signAndSend(
 ): Promise<string> {
   if (!mgr) throw new Error('Not connected');
   const wc = builder.generateWcTransactionObject({ broadcast: false, userPrompt: prompt });
-  const transaction = JSON.parse(stringify(wc));
+  const transaction = toRelaySignRequest(wc);
   log(`Asking the wallet to sign: ${prompt}`);
   const res = await mgr.signTransaction({ transaction, inputPaths } as never);
   if (res.error) throw new Error(`Wallet returned an error: ${res.error}`);

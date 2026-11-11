@@ -7,7 +7,9 @@ import {
   placeholderSignature,
   randomUtxo,
 } from 'cashscript';
-import { encodeCashAddress, hash160, stringify } from '@bitauth/libauth';
+import { decodeTransaction, encodeCashAddress, hash160, hexToBin } from '@bitauth/libauth';
+import { toRelaySignRequest } from '../src/relay.js';
+import { verifySigned, walletSign } from './wallet-sim.js';
 import {
   VAULT_FEE,
   VAULT_SATS,
@@ -179,33 +181,101 @@ describe('withdraw', () => {
   });
 });
 
-describe('WizardConnect request objects', () => {
-  it('genesis builds with a placeholder P2PKH unlocker and survives JSON transport', async () => {
+describe('WizardConnect sign requests', () => {
+  const walletPaths = (n: number) => Array.from({ length: n }, (_, i) => [i, 'receive', 0] as [number, string, number]);
+
+  async function genesisRequest() {
     const { provider, contract } = setup();
     provider.addUtxo(ownerAddress, randomUtxo({ satoshis: 100_000n, vout: 0 }));
     const userUtxos = await provider.getUtxos(ownerAddress);
-    const { builder } = buildGenesis({
+    const { builder, category } = buildGenesis({
       provider,
       contract,
       userAddress: ownerAddress,
       userUtxos,
       unlocker: placeholderP2PKHUnlocker(ownerAddress),
     });
-    const wc = builder.generateWcTransactionObject({ broadcast: false, userPrompt: 'test' });
-    const wire = JSON.parse(stringify(wc));
-    expect(wire.sourceOutputs).toHaveLength(1);
-    expect(JSON.stringify(wire)).not.toMatch(/\d+n"/);
+    const request = toRelaySignRequest(builder.generateWcTransactionObject({ broadcast: false, userPrompt: 'test' }));
+    return { provider, contract, builder, category, request };
+  }
+
+  it('sends the unsigned transaction as hex, which is what wallets decode', async () => {
+    const { builder, request } = await genesisRequest();
+    expect(typeof request.transaction).toBe('string');
+    expect(request.transaction).toMatch(/^[0-9a-f]+$/);
+    expect(request.transaction).toBe(builder.build());
+    const decoded = decodeTransaction(hexToBin(request.transaction));
+    expect(typeof decoded).not.toBe('string');
   });
 
-  it('bump builds with a placeholder signature and carries contract info for the wallet', async () => {
+  it('serializes source outputs as hex and bigint strings that survive JSON transport', async () => {
+    const { request } = await genesisRequest();
+    const wire = JSON.parse(JSON.stringify(request));
+    expect(wire).toEqual(request);
+    const so = wire.sourceOutputs[0];
+    expect(so.valueSatoshis).toBe('<bigint: 100000n>');
+    expect(so.unlockingBytecode).toBe('');
+    expect(so.lockingBytecode).toMatch(/^76a914[0-9a-f]{40}88ac$/);
+  });
+
+  it('a wallet can sign the genesis request and the result passes the BCH VM', async () => {
+    const { provider, contract, category, request } = await genesisRequest();
+    const { signedTransaction, sourceOutputs } = walletSign(request, walletPaths(request.sourceOutputs.length), ownerKey);
+    expect(verifySigned(signedTransaction, sourceOutputs)).toBe(true);
+    await provider.sendRawTransaction(signedTransaction);
+    expect(findVaultUtxo(await contract.getUtxos(), category)?.token?.nft?.commitment).toBe(counterHex(0));
+  });
+
+  it('a wallet can fill the contract signature for bump, bumpAfterAge and withdraw', async () => {
+    const { provider, contract, category, vault } = await createVault();
+    const paths: [number, string, number][] = [[0, 'receive', 0]];
+
+    const bump = toRelaySignRequest(
+      buildBump({ provider, contract, vaultUtxo: vault, unlocker: contract.unlock.bump(placeholderSignature()) })
+        .generateWcTransactionObject({ broadcast: false, userPrompt: 'bump' }),
+    );
+    expect(bump.sourceOutputs[0].contract?.redeemScript).toMatch(/^[0-9a-f]+$/);
+    let signed = walletSign(bump, paths, ownerKey);
+    expect(verifySigned(signed.signedTransaction, signed.sourceOutputs)).toBe(true);
+    await provider.sendRawTransaction(signed.signedTransaction);
+    const v1 = findVaultUtxo(await contract.getUtxos(), category)!;
+    expect(v1.token?.nft?.commitment).toBe(counterHex(1));
+
+    const aged = toRelaySignRequest(
+      buildBump({
+        provider,
+        contract,
+        vaultUtxo: v1,
+        unlocker: contract.unlock.bumpAfterAge(placeholderSignature()),
+        afterAge: true,
+      }).generateWcTransactionObject({ broadcast: false, userPrompt: 'aged' }),
+    );
+    expect(aged.sourceOutputs[0].sequenceNumber).toBe(1);
+    signed = walletSign(aged, paths, ownerKey);
+    expect(verifySigned(signed.signedTransaction, signed.sourceOutputs)).toBe(true);
+    await provider.sendRawTransaction(signed.signedTransaction);
+    const v2 = findVaultUtxo(await contract.getUtxos(), category)!;
+    expect(v2.token?.nft?.commitment).toBe(counterHex(2));
+
+    const withdraw = toRelaySignRequest(
+      buildWithdraw({
+        provider,
+        vaultUtxo: v2,
+        userAddress: ownerAddress,
+        unlocker: contract.unlock.withdraw(placeholderSignature()),
+      }).generateWcTransactionObject({ broadcast: false, userPrompt: 'withdraw' }),
+    );
+    signed = walletSign(withdraw, paths, ownerKey);
+    expect(verifySigned(signed.signedTransaction, signed.sourceOutputs)).toBe(true);
+  });
+
+  it('a signature from the wrong key fails the VM', async () => {
     const { provider, contract, vault } = await createVault();
-    const wc = buildBump({
-      provider,
-      contract,
-      vaultUtxo: vault,
-      unlocker: contract.unlock.bump(placeholderSignature()),
-    }).generateWcTransactionObject({ broadcast: false, userPrompt: 'test' });
-    expect(wc.sourceOutputs[0].contract?.abiFunction.name).toBe('bump');
-    expect(wc.sourceOutputs[0].token?.nft?.capability).toBe('mutable');
+    const req = toRelaySignRequest(
+      buildBump({ provider, contract, vaultUtxo: vault, unlocker: contract.unlock.bump(placeholderSignature()) })
+        .generateWcTransactionObject({ broadcast: false, userPrompt: 'bump' }),
+    );
+    const signed = walletSign(req, [[0, 'receive', 0]], strangerKey);
+    expect(verifySigned(signed.signedTransaction, signed.sourceOutputs)).not.toBe(true);
   });
 });
