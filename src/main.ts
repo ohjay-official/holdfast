@@ -162,6 +162,15 @@ function setupManager(resume: boolean) {
   mgr.on('walletready', (msg) => {
     log(`Wallet ready: ${msg.wallet_name ?? 'unknown wallet'}`);
     onWalletReady();
+    // A wallet that was closed and reopened drops requests sent before it started.
+    // The library re-sends pending requests on wallet_ready; tell the user to go back.
+    if (awaitingWallet) {
+      setTimeout(() => {
+        if (!awaitingWallet || !activeResult) return;
+        log('Wallet reconnected without answering. The request was sent again.');
+        setResult(activeResult, 'Paytaca had restarted and missed it. Sent again: open Paytaca and approve.');
+      }, 2500);
+    }
   });
   mgr.on('disconnect', (reason, message) => {
     log(`Wallet disconnected: ${reason}${message ? ` (${message})` : ''}`);
@@ -175,7 +184,7 @@ function setupManager(resume: boolean) {
     if (QUIET.has(m.action)) return;
     log(`To wallet: ${m.action}`);
     if (m.action === 'sign_transaction_request' && awaitingWallet && activeResult) {
-      setResult(activeResult, 'Sent. Open Paytaca, approve, then come back here.');
+      setResult(activeResult, 'Sent. Open Paytaca and approve, then come back here. No pop-up within 10 seconds? Come back here anyway.');
     }
   });
 
@@ -244,7 +253,8 @@ async function refresh() {
     ($('btn-age') as HTMLButtonElement).disabled = !hasVault;
     ($('btn-withdraw') as HTMLButtonElement).disabled = !hasVault;
     const coCoin = coContract ? findCoSignUtxo(await coContract.getUtxos()) : undefined;
-    ($('btn-cosign') as HTMLButtonElement).disabled = !coCoin && sats < 6_000n;
+    ($('btn-cosign') as HTMLButtonElement).disabled =
+      savedResults['res-cosign']?.ok === true || (!coCoin && sats < 6_000n);
     if (!vault && /^Vault exists/.test($('res-create').textContent ?? '')) {
       const r = savedResults['res-create'];
       paintResult('res-create', r ? r.text : 'Not run', r?.ok);
