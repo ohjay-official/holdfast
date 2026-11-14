@@ -3,96 +3,122 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="robots" content="noindex" />
-    <title>Holdfast signing test</title>
+    <title>Holdfast: a Bitcoin Cash vault a robber can't empty</title>
+    <meta name="description" content="Anyone holding your phone can spend a small daily allowance. Anything more waits days, and you can cancel it from home." />
+    <meta property="og:title" content="Holdfast: a Bitcoin Cash vault a robber can't empty" />
+    <meta property="og:description" content="Anyone holding your phone can spend a small daily allowance. Anything more waits days, and you can cancel it from home." />
+    <meta property="og:url" content="https://holdfast-bch.vercel.app/" />
+    <meta name="theme-color" content="#f2f3ef" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="/src/style.css" />
+    <link rel="stylesheet" href="/src/site.css" />
   </head>
   <body>
-    <main>
-      <header>
-        <p class="eyebrow">Holdfast &middot; pre-kickoff test &middot; chipnet</p>
-        <h1>Wallet signing test</h1>
-        <p class="lede">
-          This page checks that Paytaca can sign Holdfast's kind of contract transaction over
-          WizardConnect. It runs on chipnet, Bitcoin Cash's test network, so it only uses free
-          test coins. It is not the Holdfast app.
-        </p>
-      </header>
+    <!-- @banner -->
+    <!-- @header -->
+    <main id="main">
+      <section class="hero">
+        <div class="wrap hero-grid">
+          <div>
+            <h1>Hand over your phone. Keep your savings.</h1>
+            <p class="lede">Holdfast is a Bitcoin Cash vault. Whoever holds your phone can spend a small daily allowance. Anything more waits days in the open, and you can cancel it from home.</p>
+            <div class="actions">
+              <a class="btn btn-dark" href="/how-it-works/">See how it works</a>
+              <a class="btn btn-line" href="/demo/">Try the demo</a>
+            </div>
+          </div>
 
-      <section id="step-connect" class="step">
-        <h2><span class="num">1</span> Connect your wallet</h2>
-        <p class="hint">Scan the code with Paytaca, or tap the link if the page is open on the same phone.</p>
-        <div id="connect-area">
-          <button id="btn-connect">Connect with WizardConnect</button>
+          <figure class="ordeal" aria-labelledby="ordeal-title">
+            <div class="ordeal-head">
+              <h2 id="ordeal-title">A robbery, with Holdfast</h2>
+              <p>Example vault: 1 BCH</p>
+            </div>
+            <ol>
+              <li class="moment">
+                <span class="when">Before</span>
+                <div>
+                  <p class="what">Your savings sit in the vault. Your phone holds one of its keys.</p>
+                  <div class="bar" role="img" aria-label="Whole vault safe"><span class="seg-safe" style="width:100%"></span></div>
+                </div>
+                <p class="bar-note"><span>In the vault</span><b>1.00 BCH</b></p>
+              </li>
+              <li class="moment">
+                <span class="when">Minute 1</span>
+                <div>
+                  <p class="what">Someone forces you to unlock and send everything. They get the allowance you chose, and nothing more.</p>
+                  <div class="bar" role="img" aria-label="Five percent taken, the rest still in the vault"><span class="seg-taken" style="width:5%"></span><span class="seg-safe" style="width:95%"></span></div>
+                </div>
+                <p class="bar-note"><span>Taken</span><b>0.05 BCH</b></p>
+              </li>
+              <li class="moment">
+                <span class="when">Next 3 days</span>
+                <div>
+                  <p class="what">The rest becomes a pending withdrawal. The contract won't release it before the wait ends.</p>
+                  <div class="bar" role="img" aria-label="Five percent taken, the rest held and waiting"><span class="seg-taken" style="width:5%"></span><span class="seg-held" style="width:95%"></span></div>
+                </div>
+                <p class="bar-note"><span>Held, can be cancelled</span><b>0.95 BCH</b></p>
+              </li>
+              <li class="moment">
+                <span class="when">From home</span>
+                <div>
+                  <p class="what">You cancel it with your home code, or a guardian does. The vault freezes until you recover it.</p>
+                  <div class="bar" role="img" aria-label="Five percent taken, the rest back in the vault"><span class="seg-taken" style="width:5%"></span><span class="seg-safe" style="width:95%"></span></div>
+                </div>
+                <p class="bar-note"><span>Back in the vault</span><b>0.95 BCH</b></p>
+              </li>
+            </ol>
+            <ul class="legend" aria-hidden="true">
+              <li><i style="background:var(--safe)"></i>Yours</li>
+              <li><i style="background:var(--taken)"></i>Taken</li>
+              <li><i style="background:var(--held)"></i>Waiting, cancellable</li>
+            </ul>
+          </figure>
         </div>
-        <div id="qr-area" hidden>
-          <img id="qr" alt="WizardConnect QR code" width="240" height="240" />
-          <p><a id="wiz-link" href="#">Open in wallet</a></p>
-          <p class="small">
-            <button id="btn-copy-uri" class="secondary">Copy connection link</button>
-          </p>
+      </section>
+
+      <section class="section">
+        <div class="wrap">
+          <h2>Three things decide who can move your money</h2>
+          <p class="lede muted" style="margin-bottom:2rem">The rules live in a Bitcoin Cash contract. No company, server or app update can bend them, including ours.</p>
+          <ul class="facts three">
+            <li>
+              <h3>Your phone</h3>
+              <p>Spends the daily allowance straight away. Can start a bigger withdrawal, which then waits 1 to 7 days. You pick the wait; 3 days is the default.</p>
+            </li>
+            <li>
+              <h3>Your home code</h3>
+              <p>A second key you keep off your phone, written down at home. It cancels withdrawals, freezes the vault and, with a guardian, recovers it.</p>
+            </li>
+            <li>
+              <h3>A guardian</h3>
+              <p>Someone you trust. They can cancel and freeze, and approve a fast withdrawal with you in about an hour. They can never take your money.</p>
+            </li>
+          </ul>
+          <div class="actions"><a class="btn btn-line" href="/how-it-works/">Read every rule</a></div>
         </div>
-        <p id="connect-status" class="status">Not connected.</p>
       </section>
 
-      <section id="step-fund" class="step" hidden>
-        <h2><span class="num">2</span> Get free test coins</h2>
-        <p class="hint">
-          Copy this chipnet address, paste it into the faucet, then come back and tap Refresh.
-          About 10,000 test sats is plenty.
-        </p>
-        <p class="mono" id="address"></p>
-        <p>
-          <button id="btn-copy-address" class="secondary">Copy address</button>
-          <a class="button secondary" href="https://tbch.googol.cash/" target="_blank" rel="noopener">Open faucet</a>
-          <button id="btn-refresh" class="secondary">Refresh</button>
-        </p>
-        <p id="balance" class="status">Balance: checking...</p>
+      <section class="section">
+        <div class="wrap split">
+          <h2>If they make you open the app</h2>
+          <div class="prose">
+            <p>Set a duress PIN alongside your real one. Typed under pressure, it opens a vault that looks normal and shows only the allowance. In the background it freezes everything else.</p>
+            <p>Nothing on screen tells the robber that happened. They see a small balance, take it and leave.</p>
+            <p><a href="/security/">What Holdfast protects against, and what it doesn't</a></p>
+          </div>
+        </div>
       </section>
 
-      <section id="step-tests" class="step" hidden>
-        <h2><span class="num">3</span> Run the tests</h2>
-        <p class="hint">Each button asks Paytaca to approve a transaction. Run A to D in order; E runs on its own. Results stay after a reload, so a test that passed doesn't need running again. On one phone, tap a button and wait until it says <strong>Sent</strong> before switching to Paytaca.</p>
-        <ol class="tests">
-          <li>
-            <button id="btn-create">A. Create test vault</button>
-            <span class="result" id="res-create">Not run</span>
-            <p class="small">Your wallet creates a small contract holding a state token. This can take two approvals: one to tidy your coins, then the vault.</p>
-          </li>
-          <li>
-            <button id="btn-bump" disabled>B. Contract spend</button>
-            <span class="result" id="res-bump">Not run</span>
-            <p class="small">The key test: your wallet signs a spend from the contract.</p>
-          </li>
-          <li>
-            <button id="btn-age" disabled>C. Timelocked spend</button>
-            <span class="result" id="res-age">Not run</span>
-            <p class="small">Needs test B's transaction to be in a block first. Wait about 10 minutes after B.</p>
-          </li>
-          <li>
-            <button id="btn-withdraw" disabled>D. Withdraw</button>
-            <span class="result" id="res-withdraw">Not run</span>
-            <p class="small">Sends the test coins back to your wallet.</p>
-          </li>
-          <li>
-            <button id="btn-cosign" disabled>E. Two-key spend</button>
-            <span class="result" id="res-cosign">Not run</span>
-            <p class="small">This page signs with a key it holds, then your wallet adds its signature to the same spend. Holdfast's home code and guardian work this way. Two approvals: one to fund it, then the spend.</p>
-          </li>
-        </ol>
-      </section>
-
-      <section class="step">
-        <h2>Log</h2>
-        <p class="hint">When you're done, tap Copy log and paste it to Claude.</p>
-        <p>
-          <button id="btn-copy-log" class="secondary">Copy log</button>
-          <button id="btn-disconnect" class="secondary" hidden>Disconnect</button>
-        </p>
-        <pre id="log"></pre>
+      <section class="section">
+        <div class="wrap split">
+          <h2>Where things stand</h2>
+          <div class="prose">
+            <p>Holdfast is being built for BCH BLAZE 2026, from Nov 14 to 22. Before kickoff we only proved the risky part: that Paytaca on a phone can sign this kind of contract. All five tests passed on chipnet, the Bitcoin Cash test network.</p>
+            <p>The vault contract and app are being built now. Nothing here runs on mainnet yet, so only use test coins.</p>
+            <div class="actions"><a class="btn btn-line" href="/security/#proof">See the test transactions</a></div>
+          </div>
+        </div>
       </section>
     </main>
-    <script type="module" src="/src/main.ts"></script>
+    <!-- @footer -->
   </body>
 </html>

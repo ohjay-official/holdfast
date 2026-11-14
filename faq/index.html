@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Holdfast FAQ</title>
+    <meta name="description" content="Answers about Holdfast: wallets, lost phones, lost home codes, fees, keys and mainnet." />
+    <meta property="og:title" content="Holdfast FAQ" />
+    <meta property="og:description" content="Answers about Holdfast: wallets, lost phones, lost home codes, fees, keys and mainnet." />
+    <meta property="og:url" content="https://holdfast-bch.vercel.app/faq/" />
+    <meta name="theme-color" content="#f2f3ef" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/src/site.css" />
+  </head>
+  <body>
+    <!-- @header -->
+    <main id="main">
+      <header class="page-head">
+        <div class="wrap">
+          <h1>Questions</h1>
+        </div>
+      </header>
+      <section class="section" style="border-top:0;padding-top:0">
+        <div class="wrap faq">
+          <details><summary>Is Holdfast a wallet?</summary><div><p>No. It's a vault that works with the wallet you already use. Your wallet keeps your keys and signs; Holdfast builds the transactions and shows you what the vault is doing.</p></div></details>
+          <details><summary>Which wallets work?</summary><div><p>Paytaca, connected over WizardConnect, is the one we've tested on phones. Other wallets that support WizardConnect, such as Cashonize, should work but haven't been tested yet.</p></div></details>
+          <details><summary>What if the robber has heard of Holdfast?</summary><div><p>It doesn't change what they can take. The wait is enforced by the contract, so no threat makes it shorter. Knowing about it mostly tells them that holding you longer gains them nothing.</p></div></details>
+          <details><summary>What if I lose my phone?</summary><div><p>Your savings don't move without the wait, and you can freeze the vault from home. Then use your home code and guardian to recover everything to a new wallet.</p></div></details>
+          <details><summary>What if I lose my home code?</summary><div><p>Nothing is lost. Your phone can still withdraw with the normal wait. Move your BCH to a new vault with a new home code.</p></div></details>
+          <details><summary>Who holds my keys?</summary><div><p>You do. The phone key is in your wallet, the home code is on paper at home, and your guardian's key is in their wallet. Holdfast has none of them.</p></div></details>
+          <details><summary>What does it cost?</summary><div><p>Holdfast charges nothing. Each vault action is a normal Bitcoin Cash transaction, and you pay its network fee, which is usually well under a cent.</p></div></details>
+          <details><summary>Is it on mainnet?</summary><div><p>Not yet. It's being built for BCH BLAZE 2026 and runs on chipnet, the test network. Don't put real savings in it until the contract has been reviewed.</p></div></details>
+          <details><summary>Why Bitcoin Cash?</summary><div><p>Its contracts can check who signed and how long coins have waited, and can carry their own state between transactions. That's everything a vault needs, with fees low enough for small, everyday amounts.</p></div></details>
+          <details><summary>I found a bug. Where do I report it?</summary><div><p>Open an issue on <a href="https://github.com/ohjay-official/holdfast/issues" rel="noopener">GitHub</a>.</p></div></details>
+        </div>
+      </section>
+    </main>
+    <!-- @footer -->
+  </body>
+</html>

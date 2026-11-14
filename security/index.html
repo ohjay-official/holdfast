@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Security: what Holdfast protects against</title>
+    <meta name="description" content="The threats Holdfast is built for, what happens in each, what it can't stop, and the test transactions so far." />
+    <meta property="og:title" content="Security: what Holdfast protects against" />
+    <meta property="og:description" content="The threats Holdfast is built for, what happens in each, what it can't stop, and the test transactions so far." />
+    <meta property="og:url" content="https://holdfast-bch.vercel.app/security/" />
+    <meta name="theme-color" content="#f2f3ef" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/src/site.css" />
+  </head>
+  <body>
+    <!-- @header -->
+    <main id="main">
+      <header class="page-head">
+        <div class="wrap">
+          <h1>What Holdfast protects against</h1>
+          <p class="lede">Most crypto security assumes the thief never meets you. Holdfast assumes they might: that they have your phone, your PIN and you, standing right there.</p>
+        </div>
+      </header>
+
+      <section class="section">
+        <div class="wrap">
+          <h2>What happens when things go wrong</h2>
+          <div class="table-wrap" style="margin-top:1.25rem">
+            <table>
+              <thead><tr><th scope="col">If this happens</th><th scope="col">What they can take</th><th scope="col">What you do</th></tr></thead>
+              <tbody>
+                <tr><td data-label="If this happens">You're robbed and forced to send</td><td data-label="What they can take">The allowance</td><td data-label="What you do">Cancel the withdrawal from home, or have your guardian cancel it. Then freeze.</td></tr>
+                <tr><td data-label="If this happens">They make you open the app</td><td data-label="What they can take">The allowance</td><td data-label="What you do">Type your duress PIN. The vault freezes quietly while the screen looks normal.</td></tr>
+                <tr><td data-label="If this happens">Your phone is stolen</td><td data-label="What they can take">The allowance, if they get past your lock</td><td data-label="What you do">Freeze with your home code or guardian, then recover to a new phone.</td></tr>
+                <tr><td data-label="If this happens">You lose your phone</td><td data-label="What they can take">Nothing</td><td data-label="What you do">Recover with your home code and guardian.</td></tr>
+                <tr><td data-label="If this happens">You lose your home code</td><td data-label="What they can take">Nothing</td><td data-label="What you do">Your phone can still withdraw with the normal wait. Move everything to a new vault.</td></tr>
+                <tr><td data-label="If this happens">A guardian turns on you</td><td data-label="What they can take">Nothing</td><td data-label="What you do">They can freeze or cancel, but not send. Remove them with phone and home code.</td></tr>
+                <tr><td data-label="If this happens">This website goes away</td><td data-label="What they can take">Nothing</td><td data-label="What you do">The contract is on Bitcoin Cash. Your wallet and keys still work with it.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="wrap split">
+          <h2>What it can't stop</h2>
+          <div class="prose">
+            <p>Holdfast limits what a robber gains. It doesn't make you safe from them, and it can't help if they hold you for longer than your wait or find your home code too.</p>
+            <ul>
+              <li>Keep the home code somewhere a robber wouldn't reach in the same trip.</li>
+              <li>Pick a guardian who won't be with you when it happens.</li>
+              <li>If you're in danger, hand over the allowance. That's what it's for.</li>
+            </ul>
+            <p>Money already sent out of the vault, including the allowance, is gone. Bitcoin Cash payments can't be reversed.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="proof">
+        <div class="wrap">
+          <h2>Proof so far</h2>
+          <p class="muted" style="max-width:var(--measure)">Before kickoff we tested the riskiest assumption: that Paytaca on a phone can sign the kind of contract transactions Holdfast needs. Each of these was signed in Paytaca over WizardConnect on chipnet, the Bitcoin Cash test network.</p>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th scope="col">Test</th><th scope="col">What it proves</th><th scope="col">Transaction</th></tr></thead>
+              <tbody>
+                <tr><td data-label="Test">Create</td><td data-label="What it proves">The wallet can fund a contract that carries its own state</td><td data-label="Transaction"><a class="txid" href="https://chipnet.imaginary.cash/tx/8dbbb25b24e2c2f705bc686fcc25de68125e585f28c8355345d4503f4145a24f" rel="noopener">8dbbb25b</a></td></tr>
+                <tr><td data-label="Test">Contract spend</td><td data-label="What it proves">The wallet can sign a spend that updates that state</td><td data-label="Transaction"><a class="txid" href="https://chipnet.imaginary.cash/tx/04108f1818f275ecd911e057af01c043a225f5124b75f0c487d985d533b0e2e0" rel="noopener">04108f18</a></td></tr>
+                <tr><td data-label="Test">Wait</td><td data-label="What it proves">The same spend works when gated by a time lock</td><td data-label="Transaction"><a class="txid" href="https://chipnet.imaginary.cash/tx/ecfaaecb9d0f8d00a5fe67b9e9ab75b74a0ef573cf825e9a148c66be81aff8ba" rel="noopener">ecfaaecb</a></td></tr>
+                <tr><td data-label="Test">Withdraw</td><td data-label="What it proves">Money can come back out of the contract to the wallet</td><td data-label="Transaction"><a class="txid" href="https://chipnet.imaginary.cash/tx/682c878ecf95d0ef7a5cfd3307233d131d0731911ee20795326dd8b3b3c64937" rel="noopener">682c878e</a></td></tr>
+                <tr><td data-label="Test">Two keys</td><td data-label="What it proves">One spend can need two signers, the base of guardian approval</td><td data-label="Transaction"><a class="txid" href="https://chipnet.imaginary.cash/tx/bcc703ae85c60cc17f631fc8384928714b8e03eb6036dee951c8a3964b3e2935" rel="noopener">bcc703ae</a></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="small muted" style="margin-top:1rem">You can run the same tests yourself on the <a href="/signing-test/">signing test page</a>.</p>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="wrap split">
+          <h2>Still to do</h2>
+          <div class="prose">
+            <p>The vault contract is being written and tested during BCH BLAZE. It hasn't had an outside audit. Until it has, treat Holdfast as an experiment and keep only small amounts in it.</p>
+            <p>The code is open: <a href="https://github.com/ohjay-official/holdfast" rel="noopener">github.com/ohjay-official/holdfast</a>. Found a problem? Open an issue there.</p>
+          </div>
+        </div>
+      </section>
+    </main>
+    <!-- @footer -->
+  </body>
+</html>

@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>How Holdfast works</title>
+    <meta name="description" content="Every rule of the Holdfast vault: the allowance, the wait, the home code, guardians, freezing and recovery." />
+    <meta property="og:title" content="How Holdfast works" />
+    <meta property="og:description" content="Every rule of the Holdfast vault: the allowance, the wait, the home code, guardians, freezing and recovery." />
+    <meta property="og:url" content="https://holdfast-bch.vercel.app/how-it-works/" />
+    <meta name="theme-color" content="#f2f3ef" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/src/site.css" />
+  </head>
+  <body>
+    <!-- @header -->
+    <main id="main">
+      <header class="page-head">
+        <div class="wrap">
+          <h1>How the vault works</h1>
+          <p class="lede">One vault, two kinds of money. A small allowance you can spend now, and savings that only leave slowly, in the open, where you can stop them.</p>
+        </div>
+      </header>
+
+      <section class="section">
+        <div class="wrap split">
+          <h2>Setting up</h2>
+          <ol class="steps">
+            <li><h3>Connect your wallet</h3><p>Open Holdfast and connect Paytaca with WizardConnect. Your wallet keeps its keys; Holdfast only asks it to sign.</p></li>
+            <li><h3>Choose an allowance</h3><p>The most anyone can spend from your phone in a day. Pick what you'd hand over without a fight.</p></li>
+            <li><h3>Choose the wait</h3><p>How long bigger withdrawals take: 1 to 7 days, 3 by default. Longer is safer, shorter is handier.</p></li>
+            <li><h3>Write down your home code</h3><p>A second key, shown once as words to write on paper. Keep it at home, never on the phone.</p></li>
+            <li><h3>Invite a guardian</h3><p>Optional but recommended. Send them a link; they connect their own wallet.</p></li>
+            <li><h3>Set a duress PIN, then fund the vault</h3><p>Review the rules in plain words, then send BCH in. From here the contract enforces everything.</p></li>
+          </ol>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="wrap">
+          <h2>Every rule, in one table</h2>
+          <p class="muted" style="max-width:var(--measure)">The contract checks who signed and how much time has passed. Times are approximate because Bitcoin Cash counts time in blocks, about 10 minutes each.</p>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th scope="col">Action</th><th scope="col">Who can do it</th><th scope="col">How long it takes</th></tr></thead>
+              <tbody>
+                <tr><td data-label="Action">Spend the allowance</td><td data-label="Who can do it">Your phone</td><td data-label="How long it takes"><span class="tag tag-safe">Right away</span> Refills after about 24 hours of no spending</td></tr>
+                <tr><td data-label="Action">Withdraw more</td><td data-label="Who can do it">Your phone</td><td data-label="How long it takes"><span class="tag tag-held">Waits 1 to 7 days</span> Your choice, 3 by default</td></tr>
+                <tr><td data-label="Action">Cancel a withdrawal</td><td data-label="Who can do it">Phone, home code or guardian</td><td data-label="How long it takes"><span class="tag tag-safe">Right away</span></td></tr>
+                <tr><td data-label="Action">Fast withdrawal</td><td data-label="Who can do it">Your phone and a guardian together</td><td data-label="How long it takes"><span class="tag tag-held">About 1 hour</span></td></tr>
+                <tr><td data-label="Action">Freeze the vault</td><td data-label="Who can do it">Home code, guardian or your panic key</td><td data-label="How long it takes"><span class="tag tag-safe">Right away</span></td></tr>
+                <tr><td data-label="Action">Unfreeze or recover</td><td data-label="Who can do it">Home code and a guardian together</td><td data-label="How long it takes"><span class="tag tag-safe">Right away</span> Can move everything to a new phone</td></tr>
+                <tr><td data-label="Action">Remove a guardian</td><td data-label="Who can do it">Your phone and home code together</td><td data-label="How long it takes"><span class="tag tag-held">About 7 days</span> So a stolen phone can't remove them quietly</td></tr>
+                <tr><td data-label="Action">Add more BCH</td><td data-label="Who can do it">Anyone</td><td data-label="How long it takes"><span class="tag tag-plain">Merged in later</span> Deposits join the vault on its next action</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="wrap split">
+          <h2>The keys, and why there are several</h2>
+          <div class="prose">
+            <h3 style="margin-top:0">Phone key</h3>
+            <p>Lives in your wallet. It's the key a robber gets, so the rules give it the least power: the allowance now, everything else only after the wait.</p>
+            <h3>Home code</h3>
+            <p>A key that never touches the phone. It can stop anything the phone starts. Holdfast asks you to check it every 30 days, so you find out it's lost before you need it.</p>
+            <h3>Guardian</h3>
+            <p>A person with a key that can stop and approve, but never send money anywhere on their own. <a href="/guardians/">More on guardians</a>.</p>
+            <h3>Panic key and duress PIN</h3>
+            <p>The duress PIN opens a normal-looking vault and freezes the real one in the background. The panic key is the freeze it uses: it can freeze and nothing else.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="wrap split">
+          <h2>What Holdfast never does</h2>
+          <div class="prose">
+            <p>It never holds your keys, never runs a server that can move your money, and has no admin switch. If this website disappeared, the contract would still follow its rules, and your home code and guardian could still recover your BCH.</p>
+            <p><a href="/security/">Read the security page</a></p>
+          </div>
+        </div>
+      </section>
+    </main>
+    <!-- @footer -->
+  </body>
+</html>

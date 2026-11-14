@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Holdfast demo</title>
+    <meta name="description" content="Try Holdfast on chipnet with test coins, or walk through a robbery in demo mode without a wallet." />
+    <meta property="og:title" content="Holdfast demo" />
+    <meta property="og:description" content="Try Holdfast on chipnet with test coins, or walk through a robbery in demo mode without a wallet." />
+    <meta property="og:url" content="https://holdfast-bch.vercel.app/demo/" />
+    <meta name="theme-color" content="#f2f3ef" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/src/site.css" />
+  </head>
+  <body>
+    <!-- @header -->
+    <main id="main">
+      <header class="page-head">
+        <div class="wrap">
+          <h1>Try it</h1>
+          <p class="lede">The full demo opens before judging on Nov 22. It will let you play both sides of a robbery without a wallet. Today you can run the signing tests that came before it.</p>
+        </div>
+      </header>
+
+      <section class="section">
+        <div class="wrap split">
+          <h2>What the demo will show</h2>
+          <ol class="steps">
+            <li><h3>Make a vault</h3><p>Pick an allowance and a wait. Demo mode uses a pretend wallet, so you don't need one.</p></li>
+            <li><h3>Get robbed</h3><p>Play the robber: send everything. Watch the allowance leave and the rest start waiting.</p></li>
+            <li><h3>Stop it from home</h3><p>Switch to your home code and cancel. The vault freezes.</p></li>
+            <li><h3>Recover</h3><p>Unfreeze with your home code and guardian, and move to a new phone.</p></li>
+          </ol>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="wrap split">
+          <h2>Available now</h2>
+          <div class="prose">
+            <p>The signing test page connects Paytaca over WizardConnect and runs five real transactions on chipnet: create, contract spend, wait, withdraw and two-key spend. You'll need Paytaca with chipnet turned on and some free test coins.</p>
+            <div class="actions" style="margin-top:1rem">
+              <a class="btn btn-dark" href="/signing-test/">Open the signing test</a>
+            </div>
+            <p class="small muted" style="margin-top:1.25rem">In Paytaca, turn on chipnet under Apps, then Settings, then Use Chipnet Network.</p>
+          </div>
+        </div>
+      </section>
+    </main>
+    <!-- @footer -->
+  </body>
+</html>
