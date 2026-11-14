@@ -2,7 +2,7 @@ import { defineConfig, type Plugin } from 'vite';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, relative, dirname, join } from 'node:path';
 
-const root = __dirname;
+const root = import.meta.dirname;
 
 // Every page is an index.html in its own folder (plus 404.html at the root).
 function findPages(dir: string, out: Record<string, string> = {}): Record<string, string> {

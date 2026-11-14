@@ -18,29 +18,31 @@
       <header class="page-head">
         <div class="wrap">
           <h1>Try it</h1>
-          <p class="lede">The full demo opens before judging on Nov 22. It will let you play both sides of a robbery without a wallet. Today you can run the signing tests that came before it.</p>
+          <p class="lede">Play every side of a robbery in about two minutes, with pretend BCH and no wallet. You set up a vault, rob yourself, then stop it from home.</p>
+          <div class="actions"><a class="btn btn-dark" href="/app/#/new">Start the demo</a></div>
         </div>
       </header>
 
       <section class="section">
         <div class="wrap split">
-          <h2>What the demo will show</h2>
+          <h2>What you'll do</h2>
           <ol class="steps">
-            <li><h3>Make a vault</h3><p>Pick an allowance and a wait. Demo mode uses a pretend wallet, so you don't need one.</p></li>
+            <li><h3>Make a vault</h3><p>Pick an allowance and a wait, write down a home code and name a guardian. It all stays in your browser.</p></li>
             <li><h3>Get robbed</h3><p>Play the robber: send everything. Watch the allowance leave and the rest start waiting.</p></li>
             <li><h3>Stop it from home</h3><p>Switch to your home code and cancel. The vault freezes.</p></li>
-            <li><h3>Recover</h3><p>Unfreeze with your home code and guardian, and move to a new phone.</p></li>
+            <li><h3>Unfreeze</h3><p>Approve as your home code, then as your guardian.</p></li>
+            <li><h3>Use the duress PIN</h3><p>Lock the phone and open it with the duress PIN. The robber sees only the allowance; the rest freezes quietly.</p></li>
           </ol>
         </div>
       </section>
 
       <section class="section">
         <div class="wrap split">
-          <h2>Available now</h2>
+          <h2>Real wallet signing</h2>
           <div class="prose">
-            <p>The signing test page connects Paytaca over WizardConnect and runs five real transactions on chipnet: create, contract spend, wait, withdraw and two-key spend. You'll need Paytaca with chipnet turned on and some free test coins.</p>
+            <p>Demo mode follows the vault rules but doesn't touch the blockchain. The signing test page does: it connects Paytaca over WizardConnect and runs five real transactions on chipnet: create, contract spend, wait, withdraw and two-key spend. You'll need Paytaca with chipnet turned on and some free test coins.</p>
             <div class="actions" style="margin-top:1rem">
-              <a class="btn btn-dark" href="/signing-test/">Open the signing test</a>
+              <a class="btn btn-line" href="/signing-test/">Open the signing test</a>
             </div>
             <p class="small muted" style="margin-top:1.25rem">In Paytaca, turn on chipnet under Apps, then Settings, then Use Chipnet Network.</p>
           </div>

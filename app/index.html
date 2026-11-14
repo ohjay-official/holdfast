@@ -2,33 +2,16 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Holdfast app</title>
-    <meta name="description" content="The Holdfast app is being built during BCH BLAZE 2026." />
-    <meta property="og:title" content="Holdfast app" />
-    <meta property="og:description" content="The Holdfast app is being built during BCH BLAZE 2026." />
-    <meta property="og:url" content="https://holdfast-bch.vercel.app/app/" />
+    <meta name="description" content="Set up a Holdfast vault, or try the demo: play the robber, your home code and your guardian." />
     <meta name="theme-color" content="#f2f3ef" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="/src/site.css" />
+    <link rel="stylesheet" href="/src/app/app.css" />
   </head>
-  <body>
-    <!-- @header -->
-    <main id="main">
-      <header class="page-head"><div class="wrap"><h1>The app opens soon</h1></div></header>
-      <section class="section" style="border-top:0;padding-top:0">
-        <div class="wrap">
-          <div class="status">
-            <h2>Being built now, Nov 14 to 22</h2>
-            <p>This is where you'll create a vault, connect Paytaca, invite a guardian and watch pending withdrawals. Until it's ready, you can test wallet signing on chipnet.</p>
-            <div class="actions" style="margin-top:1rem">
-              <a class="btn btn-dark" href="/signing-test/">Open the signing test</a>
-              <a class="btn btn-line" href="/how-it-works/">Read how it works</a>
-            </div>
-          </div>
-        </div>
-      </section>
-    </main>
-    <!-- @footer -->
+  <body class="app-body">
+    <div id="app" class="app"><noscript><p style="padding:2rem">The Holdfast app needs JavaScript.</p></noscript></div>
+    <script type="module" src="/src/app/main.ts"></script>
   </body>
 </html>
