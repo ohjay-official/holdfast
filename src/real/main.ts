@@ -64,8 +64,43 @@ const sats = (text: string) => {
 };
 const go = (h: string) => (location.hash === '#' + h ? render() : (location.hash = h));
 
+const LOG_KEY = 'holdfast-real-log';
+let logLines: string[] = (() => {
+  try {
+    return JSON.parse(localStorage.getItem(LOG_KEY) || '[]');
+  } catch {
+    return [];
+  }
+})();
+function log(line: string) {
+  logLines.push(`${new Date().toISOString().slice(5, 19)} [${net}] ${line}`);
+  if (logLines.length > 300) logLines = logLines.slice(-300);
+  try {
+    localStorage.setItem(LOG_KEY, JSON.stringify(logLines));
+  } catch {
+    /* full */
+  }
+}
+let netCheck: { ok: boolean; text: string } | null = null;
+async function checkNetwork() {
+  netCheck = null;
+  render();
+  try {
+    const h = await Promise.race([
+      provider.getBlockHeight(),
+      new Promise<never>((_, rej) => setTimeout(() => rej(new Error('no answer after 15 seconds')), 15_000)),
+    ]);
+    netCheck = { ok: true, text: `Connected to ${net}, block ${h}.` };
+  } catch (e) {
+    netCheck = { ok: false, text: `Can't reach ${net} right now: ${(e as Error).message}` };
+  }
+  log(netCheck.text);
+  render();
+}
+
 function setStatus(kind: 'ok' | 'err' | 'info', text: string, tx?: string) {
   status = { kind, text, tx };
+  log(`${kind}: ${text}${tx ? ` tx ${tx}` : ''}`);
   const el = document.getElementById('status');
   if (el) el.outerHTML = statusBox();
   else render();
@@ -95,6 +130,7 @@ async function act(label: string, fn: () => Promise<string | void>) {
     setStatus('ok', `${label}: done.`, txid || undefined);
     await refreshSoon();
   } catch (e) {
+    log(`raw error: ${e instanceof Error ? e.stack || e.message : String(e)}`);
     setStatus('err', errText(e));
   } finally {
     busy = false;
@@ -196,12 +232,14 @@ function screenStart(): string {
       <label><input type="radio" name="net" value="mainnet" ${net === 'mainnet' ? 'checked' : ''} data-act="net"><span>Mainnet</span></label>
       <label><input type="radio" name="net" value="chipnet" ${net === 'chipnet' ? 'checked' : ''} data-act="net"><span>Chipnet (test)</span></label>
     </fieldset>
+    <p class="small ${netCheck?.ok === false ? 'flash flash-err' : 'muted'}">${netCheck ? esc(netCheck.text) : 'Checking the network...'}</p>
     <p class="small muted">${net === 'mainnet' ? 'Real BCH. Start with a small amount: this contract hasn\'t had an outside audit.' : 'Test coins only. In Paytaca: Apps, Settings, turn on Use Chipnet Network.'}</p>
     <div class="stack stack-end">
       <button class="btn btn-dark" data-act="connect">${saved ? 'Open my vault' : 'Connect Paytaca'}</button>
       <a class="btn btn-line" href="#/guardian">I'm someone's guardian</a>
       <a class="btn btn-line" href="/app/#/quick">Try the demo instead</a>
     </div>
+    <p class="small" style="margin-top:1.5rem"><button class="linkish" data-act="copy-log">Copy log for support</button></p>
   </main>`;
 }
 
@@ -377,7 +415,7 @@ function screenSettings(): string {
     <p class="addr-box"><code id="vault-code">${code}</code></p>
     <button class="btn btn-line" data-copy="#vault-code">Copy vault code</button>
     <h2 class="h-sm">This phone</h2>
-    <div class="stack"><button class="btn btn-line" data-act="disconnect">Disconnect Paytaca</button></div>
+    <div class="stack"><button class="btn btn-line" data-act="copy-log">Copy log for support</button><button class="btn btn-line" data-act="disconnect">Disconnect Paytaca</button></div>
   </main>`;
 }
 
@@ -449,6 +487,7 @@ function startWallet(next: string) {
   };
   wallet.onStatus = (t) => setStatus('info', t);
   wallet.onReady = () => {
+    log(`wallet ready: ${wallet.name}, owner ${binToHex(wallet.ownerPk()).slice(0, 12)}`);
     qr = null;
     status = null;
     if (next === '/guardian') return go('/guardian');
@@ -495,9 +534,21 @@ app.addEventListener('click', async (e) => {
       saved = load();
       view = null;
       unlocked = false;
-      return render();
+      checkNetwork();
+      return;
+    }
+    case 'copy-log': {
+      const text = [`Holdfast real vault log`, `UA: ${navigator.userAgent}`, `Vault: ${saved ? contractFor(saved.config).address : 'none'}`, ...logLines].join('\n');
+      try {
+        await navigator.clipboard.writeText(text);
+        el.textContent = 'Log copied. Paste it to the developer.';
+      } catch {
+        el.textContent = 'Copy blocked by the browser.';
+      }
+      return;
     }
     case 'connect':
+      log('connect tapped');
       return startWallet('/vault');
     case 'connect-guardian':
       return startWallet('/guardian');
@@ -758,6 +809,7 @@ async function createVault(amount: bigint) {
     const unlocker = wallet.unlockerFor(net);
     let coins = await wallet.coins(provider, net);
     let plan = C.planCreate(coins, amount);
+    log(`wallet coins: ${coins.length}, total ${plan.total}, paths ${coins.map((u) => u.path.join('/') + ':' + u.vout).join(' ')}`);
     if (!plan.enough) throw new Error(`Not enough BCH in Paytaca. You have ${bch(plan.total)}; this needs about ${bch(amount + C.CREATE_FEE + 3_000n)}.`);
     if (plan.needsPrepare) {
       setStatus('info', 'Step 1 of 2: gathering your coins. Approve in Paytaca.');
@@ -815,5 +867,7 @@ setInterval(() => {
   if (!busy && document.visibilityState === 'visible' && (unlocked || guardianConfig)) refresh();
 }, 60_000);
 
+log('page loaded');
 if (saved && Wallet.hasSavedSession()) startWallet('/vault');
 render();
+checkNetwork();
