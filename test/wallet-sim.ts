@@ -6,7 +6,7 @@
 import {
   SigningSerializationFlag,
   binToHex,
-  createVirtualMachineBch,
+  createVirtualMachineBch2025,
   decodeTransaction,
   encodeTransaction,
   generateSigningSerializationBCH,
@@ -120,5 +120,5 @@ export function walletSign(
 export function verifySigned(signedTransaction: string, sourceOutputs: Output[]): true | string {
   const transaction = decodeTransaction(hexToBin(signedTransaction));
   if (typeof transaction === 'string') return transaction;
-  return createVirtualMachineBch().verify({ sourceOutputs, transaction });
+  return createVirtualMachineBch2025().verify({ sourceOutputs, transaction });
 }

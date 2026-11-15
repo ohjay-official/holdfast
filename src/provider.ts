@@ -64,4 +64,14 @@ export class FallbackNetworkProvider implements NetworkProvider {
   sendRawTransaction(txHex: string): Promise<string> {
     return this.attempt((p) => p.sendRawTransaction(txHex));
   }
+
+  /** Confirmation height of each unspent coin at an address ("txid:vout" to height, 0 if unconfirmed). */
+  async heights(address: string): Promise<Map<string, number>> {
+    const rows = (await this.attempt((p) =>
+      p.performRequest('blockchain.address.listunspent', address, 'include_tokens'),
+    )) as { tx_hash: string; tx_pos: number; height: number }[];
+    const m = new Map<string, number>();
+    for (const r of rows ?? []) m.set(`${r.tx_hash}:${r.tx_pos}`, r.height > 0 ? r.height : 0);
+    return m;
+  }
 }

@@ -196,10 +196,9 @@ function screenEntry(): string {
         <a class="btn btn-line" href="#/new">Set up a vault step by step</a></div>
       </section>`}
     <section class="panel panel-quiet">
-      <h2>Use Paytaca on chipnet</h2>
-      <p>Real vaults on the Bitcoin Cash test network open once the vault contract is deployed during BCH BLAZE.</p>
-      <button class="btn btn-line" disabled>Not available yet</button>
-      <p class="small"><a href="/signing-test/">Run the wallet signing test instead</a></p>
+      <h2>Make a real vault</h2>
+      <p>Connect Paytaca and lock real BCH in a Holdfast vault, on mainnet or the chipnet test network.</p>
+      <a class="btn btn-line" href="/real/">Open the real vault app</a>
     </section>
   </main>`;
 }

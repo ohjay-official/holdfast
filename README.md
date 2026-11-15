@@ -6,6 +6,7 @@ Whoever holds your phone can only spend a small daily allowance. Anything more w
 
 - Site: https://holdfast-bch.vercel.app
 - Demo, no wallet needed: https://holdfast-bch.vercel.app/app/#/quick
+- Real vault with Paytaca: https://holdfast-bch.vercel.app/real/
 - How the contract works: https://holdfast-bch.vercel.app/under-the-hood/
 
 Built for [BCH BLAZE 2026](https://dorahacks.io/hackathon/bchblaze2026) by [@jayejone](https://t.me/jayejone).
@@ -55,19 +56,22 @@ Transaction builders for every function are in [`src/vault.ts`](src/vault.ts).
 
 ```bash
 npm install
-npm test        # 62 tests
+npm test        # 71 tests
 npm run build   # compiles the contracts, typechecks, builds the site
 ```
 
 - [`test/vault.test.ts`](test/vault.test.ts): 18 contract tests on CashScript's mock network, run through the BCH VM. They cover every function, the wrong keys, amounts and timing, and three attacks: minting a fake vault coin, keeping a released withdrawal's NFT alive, and skipping the guardian-replacement wait.
 - [`test/model.test.ts`](test/model.test.ts): the same rules as plain state changes, used by the demo.
+- [`test/real.test.ts`](test/real.test.ts): the real app's flows end to end: creation with the fee, the robbery, duress, refill, release, owner and guardian actions from a wallet.
 - `test/signtest.test.ts`, `test/cosigntest.test.ts`: the pre-kickoff WizardConnect signing tests.
 
 ## Status
 
 - [x] Vault contract and tests
 - [x] Demo mode (no wallet), covering the whole robbery story
-- [ ] Real vaults over WizardConnect with Paytaca, on chipnet and then mainnet
+- [x] Real vault app at [/real/](https://holdfast-bch.vercel.app/real/): Paytaca over WizardConnect, mainnet or chipnet. Create (with a 0.0001 BCH fee), send, withdraw, release, cancel, add deposits; home code screen (cancel, freeze, approve, move everything); guardian screen on the guardian's own phone; duress PIN that freezes with a panic key and cancels everything waiting.
+- [x] End-to-end tests of those flows on the mock network, with Paytaca's signing simulated and every signed transaction checked by the BCH 2025 VM ([`test/real.test.ts`](test/real.test.ts))
+- [ ] First live run on chipnet and mainnet
 - [ ] Outside audit
 
 Until the last two are done, use test coins or small amounts only.
