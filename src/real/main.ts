@@ -37,6 +37,7 @@ const load = (): Saved | null => {
   }
 };
 let saved = load();
+const pendingKey = () => `holdfast-real-pending-${net}`;
 const save = () => (saved ? localStorage.setItem(savedKey(), JSON.stringify(saved)) : localStorage.removeItem(savedKey()));
 
 let provider = new FallbackNetworkProvider(net, HOSTS[net]);
@@ -846,10 +847,16 @@ async function createVault(amount: bigint) {
     const contract = contractFor(config);
     const { builder, inputs } = C.buildCreateWithFee({ provider, contract, coins, amount, net, changeAddress: change, unlocker });
     setStatus('info', `${plan.needsPrepare ? 'Step 2 of 2: ' : ''}creating the vault. Approve in Paytaca.`);
-    const txid = await wallet.signAndSend(provider, builder, inputs.map((u, i) => [i, u.path[0], u.path[1]]), `Holdfast: create your vault with ${bch(amount)}`);
+    // Keep everything needed to use this vault BEFORE asking the wallet to sign,
+    // so a reload or a closed tab can never lose a vault that got created.
     const salt = binToHex(crypto.getRandomValues(new Uint8Array(8)));
-    saved = { config, panicKey: binToHex(panicKey), salt, pin: await C.pinHash(d.pin, salt), duress: await C.pinHash(d.duress, salt) };
+    const record: Saved = { config, panicKey: binToHex(panicKey), salt, pin: await C.pinHash(d.pin, salt), duress: await C.pinHash(d.duress, salt) };
+    localStorage.setItem(pendingKey(), JSON.stringify(record));
+    log(`creating vault ${contract.address} code ${C.encodeVaultCode(config)}`);
+    const txid = await wallet.signAndSend(provider, builder, inputs.map((u, i) => [i, u.path[0], u.path[1]]), `Holdfast: create your vault with ${bch(amount)}`);
+    saved = record;
     save();
+    localStorage.removeItem(pendingKey());
     unlocked = true;
     d.words = C.newHomeWords();
     d.pin = d.duress = '';
@@ -867,7 +874,33 @@ setInterval(() => {
   if (!busy && document.visibilityState === 'visible' && (unlocked || guardianConfig)) refresh();
 }, 60_000);
 
+/** A creation that was signed but whose page was reloaded before it finished: adopt it if the vault exists on chain. */
+async function adoptPending() {
+  if (saved) return;
+  let rec: Saved | null = null;
+  try {
+    rec = JSON.parse(localStorage.getItem(pendingKey()) || 'null');
+  } catch {
+    rec = null;
+  }
+  if (!rec) return;
+  try {
+    const v = await readConfig(rec.config);
+    if (v.main) {
+      saved = rec;
+      save();
+      localStorage.removeItem(pendingKey());
+      log('adopted vault created before a reload');
+      setStatus('ok', 'Found the vault you created before the page reloaded. Enter your PIN to open it.');
+      if (Wallet.hasSavedSession()) startWallet('/vault');
+    }
+  } catch (e) {
+    log(`adopt check failed: ${(e as Error).message}`);
+  }
+}
+
 log('page loaded');
 if (saved && Wallet.hasSavedSession()) startWallet('/vault');
+else adoptPending();
 render();
 checkNetwork();
