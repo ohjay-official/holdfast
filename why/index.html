@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Why Holdfast: robbery-proof savings in Bitcoin Cash</title>
+    <meta name="description" content="Robbers force people to unlock their phones and send money. Banks are adding panic PINs. Holdfast puts the limit in the money itself." />
+    <meta property="og:title" content="Why Holdfast: robbery-proof savings in Bitcoin Cash" />
+    <meta property="og:description" content="Robbers force people to unlock their phones and send money. Banks are adding panic PINs. Holdfast puts the limit in the money itself." />
+    <meta property="og:url" content="https://holdfast-bch.vercel.app/why/" />
+    <meta name="theme-color" content="#f2f3ef" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/src/site.css" />
+  </head>
+  <body>
+    <!-- @banner -->
+    <!-- @header -->
+    <main id="main">
+      <header class="page-head">
+        <div class="wrap">
+          <h1>Your phone is the weak point</h1>
+          <p class="lede">More and more money lives in a phone app, and a phone can be taken by force. Holdfast makes sure whoever holds it can't take much.</p>
+        </div>
+      </header>
+
+      <section class="section">
+        <div class="wrap split">
+          <h2>The problem</h2>
+          <div class="prose">
+            <p>In Lagos, robbers who take a phone often make the owner unlock it and transfer their balance on the spot. In September 2025 one victim lost ₦2.6 million from his bank app after a robbery at gunpoint, and his post asking for help was viewed millions of times (<a href="https://weetracker.com/2025/10/07/panic-mode-banking-nigeria-duress-features" rel="noopener">WeeTracker</a>). Lagos commuters also face "one chance" gangs, who rob passengers in vehicles that pose as public transport (<a href="https://theafricanmirror.africa/?p=84218" rel="noopener">The African Mirror</a>).</p>
+            <p>Crypto holders face the same thing worldwide. The security firm CertiK counted 72 verified "wrench attacks", where people are forced to hand over crypto, in 2025. That was up 75% on 2024, and many more go unreported (<a href="https://decrypt.co/356604/41m-in-losses-as-crypto-wrench-attacks-hit-record-high-in-2025" rel="noopener">Decrypt</a>).</p>
+            <p>A crypto payment can't be reversed, and with self-custody there's no bank to call afterwards.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="wrap">
+          <h2>What exists today</h2>
+          <div class="table-wrap" style="margin-top:1.25rem">
+            <table>
+              <thead><tr><th scope="col">Approach</th><th scope="col">Example</th><th scope="col">Where it falls short</th></tr></thead>
+              <tbody>
+                <tr><td data-label="Approach">Fake balance</td><td data-label="Example">Kuda's Panic Balance shows a lower balance when you shake the phone (<a href="https://help.kuda.com/en/articles/8943120-use-private-mode" rel="noopener">Kuda</a>)</td><td data-label="Where it falls short">Only changes what's on screen. Money still moves if they make you send it.</td></tr>
+                <tr><td data-label="Approach">Bank panic code</td><td data-label="Example">Discovery Bank in South Africa: a panic PIN that alerts its fraud team (<a href="https://techcentral.co.za/discovery-bank-panic-code-app-kidnappings/261422/" rel="noopener">TechCentral</a>)</td><td data-label="Where it falls short">Needs a bank in the middle. Self-custody has none.</td></tr>
+                <tr><td data-label="Approach">Decoy wallet</td><td data-label="Example">Deus Wallet's duress mode opens a decoy account (<a href="https://decrypt.co/297742/deus-wallet-introduces-duress-mode-the-revolutionary-solution-for-cryptocurrency-security" rel="noopener">Decrypt</a>)</td><td data-label="Where it falls short">An app trick. If they get the real PIN or seed, everything goes.</td></tr>
+                <tr><td data-label="Approach">Holdfast</td><td data-label="Example">A Bitcoin Cash contract with an allowance, a wait and people who can stop it</td><td data-label="Where it falls short">Even with your real PIN, a robber gets the allowance. The rest waits days, and you can cancel it.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="wrap split">
+          <h2>Who it's for first</h2>
+          <div class="prose">
+            <p>People who keep savings in Bitcoin Cash on their phone and live or travel where street robbery is common. Paytaca, the wallet Holdfast works with, is built for everyday payments, so its users carry their wallet everywhere.</p>
+            <p>The same need applies to anyone with savings in a phone app, crypto or not. Bitcoin Cash makes it possible without a bank: the contract enforces the rules, and fees are fractions of a cent.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="wrap split">
+          <h2>How it pays for itself</h2>
+          <div class="prose">
+            <p>A small one-time fee when you create a vault on mainnet, paid in BCH in the same transaction. No subscription, and Holdfast never holds your money.</p>
+            <p>Later: alerts on Telegram when a withdrawal starts, and a guardian service for people who don't have someone to ask.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="wrap split">
+          <h2>Getting it to people</h2>
+          <div class="prose">
+            <ul>
+              <li>Listed as an app inside Paytaca, where it already connects over WizardConnect.</li>
+              <li>Shown to Nigerian crypto communities on X and Telegram, where these robbery stories spread.</li>
+              <li>The demo works with no wallet, so anyone can try the robbery in two minutes.</li>
+            </ul>
+            <div class="actions"><a class="btn btn-dark" href="/app/#/quick">Try the demo</a></div>
+          </div>
+        </div>
+      </section>
+    </main>
+    <!-- @footer -->
+  </body>
+</html>

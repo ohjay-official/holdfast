@@ -1,44 +1,90 @@
 # Holdfast
 
-A Bitcoin Cash vault a robber can't empty. You spend a daily allowance instantly. Anything bigger waits, and your guardian or your home code can cancel it. If someone takes your phone and forces your PIN, they leave with today's allowance and nothing more.
+**A Bitcoin Cash vault a robber can't empty.**
 
-Built for [BCH BLAZE 2026](https://dorahacks.io/hackathon/bchblaze2026).
+Whoever holds your phone can only spend a small daily allowance. Anything more waits days in the open, and your home code or a guardian can cancel it and freeze the vault. A duress PIN opens a view that shows only the allowance while the rest freezes quietly. The rules live in a CashScript contract, so they hold even if someone has your real PIN.
 
-## Status
+- Site: https://holdfast-bch.vercel.app
+- Demo, no wallet needed: https://holdfast-bch.vercel.app/app/#/quick
+- How the contract works: https://holdfast-bch.vercel.app/under-the-hood/
 
-**Pre-kickoff.** The hackathon build runs Nov 14 to 22, 2026. What is in this repo now is a risk test, not the product:
+Built for [BCH BLAZE 2026](https://dorahacks.io/hackathon/bchblaze2026) by [@jayejone](https://t.me/jayejone).
 
-- `contracts/SignTest.cash`: a small test contract (not the Holdfast vault).
-- A signing test page that checks Paytaca can sign this kind of contract transaction over WizardConnect on chipnet.
-- Contract tests on CashScript's mock network, plus tests that sign each WizardConnect request the way a wallet does and check the result in the BCH VM.
+## Before and after kickoff
 
-### Risk test result (Nov 11, 2026)
+Judging covers only work from kickoff (Nov 14, 2026, 14:13 UTC) onwards.
 
-All four passed on chipnet, signed by Paytaca over WizardConnect on one iPhone:
-
-| Test | What it proves | Transaction |
+| | Code | Demo |
 | --- | --- | --- |
-| A. Create test vault | Wallet funds a contract with a mutable state NFT | [8dbbb25b](https://chipnet.imaginary.cash/tx/8dbbb25b24e2c2f705bc686fcc25de68125e585f28c8355345d4503f4145a24f) |
-| B. Contract spend | Wallet signs a covenant spend that updates the NFT | [04108f18](https://chipnet.imaginary.cash/tx/04108f1818f275ecd911e057af01c043a225f5124b75f0c487d985d533b0e2e0) |
-| C. Timelocked spend | Same, gated by a relative timelock (`this.age`) | [ecfaaecb](https://chipnet.imaginary.cash/tx/ecfaaecb9d0f8d00a5fe67b9e9ab75b74a0ef573cf825e9a148c66be81aff8ba) |
-| D. Withdraw | Wallet signs the contract spend back to itself | [682c878e](https://chipnet.imaginary.cash/tx/682c878ecf95d0ef7a5cfd3307233d131d0731911ee20795326dd8b3b3c64937) |
+| At kickoff | [`nov14-start` branch](https://github.com/ohjay-official/holdfast/tree/nov14-start) (commit `03f53db`, Nov 11) | https://holdfast-kickoff.vercel.app |
+| Now | [`main`](https://github.com/ohjay-official/holdfast) | https://holdfast-bch.vercel.app |
 
-At kickoff this state is tagged `nov14-start`. Everything judged is built after that tag.
+At kickoff the repo held only a pre-hackathon risk test: a signing test page and two throwaway contracts (`SignTest.cash`, `CoSignTest.cash`) that checked Paytaca can sign this kind of contract over WizardConnect. Everything else was built after kickoff: the vault contract, its builders and tests, the app and demo mode, and the website. `git log 03f53db..main` shows it.
 
-## Run the tests
+## How it works
+
+| Action | Who | How long |
+| --- | --- | --- |
+| Spend the allowance | Phone | Right away, refills after about 24 hours with no spending |
+| Withdraw more | Phone | Waits the vault's wait, 1 to 7 days |
+| Cancel a withdrawal | Phone, home code, guardian or duress key | Right away |
+| Fast withdrawal | Guardian approves | About 1 hour |
+| Freeze | Home code or guardian (everything); duress PIN (all but the allowance) | Right away |
+| Unfreeze, recover | Home code and guardian, one approval each | Right away |
+| Replace the guardian | Phone and home code | About 7 days |
+
+## The contract
+
+[`contracts/Holdfast.cash`](contracts/Holdfast.cash). One address holds four kinds of coin, told apart by CashToken NFTs of the vault's own category:
+
+- **Vault coin** (minting NFT): commitment `level(1) spent(8) unfreezeHome(1) unfreezeGuardian(1) recoverHome(1) recoverGuardian(1)`.
+- **Waiting withdrawal** (mutable NFT): `0x50 fast(1) recipientLockingBytecode`. Its age is the wait.
+- **Guardian-replacement ticket** (immutable NFT `0x45`). Its age is the week.
+- **Deposit** (no token), merged in by any vault key.
+
+Key points:
+
+- **No admin key.** Only the vault's own keys can do anything.
+- **Approvals are one signer per transaction,** so a guardian never needs to co-sign on the owner's phone.
+- **Waits use relative time locks,** not timestamps the spender could choose.
+- **Every spend fixes its outputs exactly and caps its own fee,** so the wallet only signs.
+
+Transaction builders for every function are in [`src/vault.ts`](src/vault.ts).
+
+## Tests
 
 ```bash
 npm install
-npm test
+npm test        # 62 tests
+npm run build   # compiles the contracts, typechecks, builds the site
 ```
 
-## Run the signing test page
+- [`test/vault.test.ts`](test/vault.test.ts): 18 contract tests on CashScript's mock network, run through the BCH VM. They cover every function, the wrong keys, amounts and timing, and three attacks: minting a fake vault coin, keeping a released withdrawal's NFT alive, and skipping the guardian-replacement wait.
+- [`test/model.test.ts`](test/model.test.ts): the same rules as plain state changes, used by the demo.
+- `test/signtest.test.ts`, `test/cosigntest.test.ts`: the pre-kickoff WizardConnect signing tests.
 
-```bash
-npm run dev
-```
+## Status
 
-Open the page, connect Paytaca with WizardConnect, fund the shown chipnet address from a chipnet faucet, and run tests A to D.
+- [x] Vault contract and tests
+- [x] Demo mode (no wallet), covering the whole robbery story
+- [ ] Real vaults over WizardConnect with Paytaca, on chipnet and then mainnet
+- [ ] Outside audit
+
+Until the last two are done, use test coins or small amounts only.
+
+## Before kickoff: the signing risk test (Nov 11, 2026)
+
+Signed by Paytaca over WizardConnect on chipnet, one iPhone:
+
+| Test | What it proves | Transaction |
+| --- | --- | --- |
+| Create | Wallet funds a contract with a mutable state NFT | [8dbbb25b](https://chipnet.imaginary.cash/tx/8dbbb25b24e2c2f705bc686fcc25de68125e585f28c8355345d4503f4145a24f) |
+| Contract spend | Wallet signs a covenant spend that updates the NFT | [04108f18](https://chipnet.imaginary.cash/tx/04108f1818f275ecd911e057af01c043a225f5124b75f0c487d985d533b0e2e0) |
+| Wait | Same, gated by a relative time lock | [ecfaaecb](https://chipnet.imaginary.cash/tx/ecfaaecb9d0f8d00a5fe67b9e9ab75b74a0ef573cf825e9a148c66be81aff8ba) |
+| Withdraw | Wallet signs the contract spend back to itself | [682c878e](https://chipnet.imaginary.cash/tx/682c878ecf95d0ef7a5cfd3307233d131d0731911ee20795326dd8b3b3c64937) |
+| Two keys | One spend needs two signers | [bcc703ae](https://chipnet.imaginary.cash/tx/bcc703ae85c60cc17f631fc8384928714b8e03eb6036dee951c8a3964b3e2935) |
+
+All five ran on code already in the `nov14-start` branch.
 
 ## License
 

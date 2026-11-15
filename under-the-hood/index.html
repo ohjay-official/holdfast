@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Under the hood: the Holdfast contract</title>
+    <meta name="description" content="How the Holdfast vault is built on the Bitcoin Cash VM: one address, NFT state, relative time locks and the tests that try to break it." />
+    <meta property="og:title" content="Under the hood: the Holdfast contract" />
+    <meta property="og:description" content="How the Holdfast vault is built on the Bitcoin Cash VM: one address, NFT state, relative time locks and the tests that try to break it." />
+    <meta property="og:url" content="https://holdfast-bch.vercel.app/under-the-hood/" />
+    <meta name="theme-color" content="#f2f3ef" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/src/site.css" />
+  </head>
+  <body>
+    <!-- @banner -->
+    <!-- @header -->
+    <main id="main">
+      <header class="page-head">
+        <div class="wrap">
+          <h1>Under the hood</h1>
+          <p class="lede">The rules aren't in this website or the app. They're in one CashScript contract that Bitcoin Cash miners check on every spend. Here's how it's built.</p>
+        </div>
+      </header>
+
+      <section class="section">
+        <div class="wrap split">
+          <h2>One address, four kinds of coin</h2>
+          <div class="prose">
+            <p>Everything a vault owns sits at a single contract address. Coins there are told apart by the CashToken NFT they carry, all of one category that only the vault can mint.</p>
+            <ul>
+              <li><b>The vault coin</b> carries the minting NFT. Its 13-byte commitment holds the freeze level, the allowance spent in the current window, and four approval flags.</li>
+              <li><b>A waiting withdrawal</b> carries a mutable NFT naming its one recipient. Its age is the clock.</li>
+              <li><b>A guardian-replacement ticket</b> carries an immutable NFT. Its age is the 7-day clock.</li>
+              <li><b>A deposit</b> carries no token. It waits until a vault key merges it in.</li>
+            </ul>
+            <p>One address means the app reads the whole vault with a single lookup, and nobody can hide a withdrawal somewhere else.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="wrap">
+          <h2>Every function</h2>
+          <div class="table-wrap" style="margin-top:1.25rem">
+            <table>
+              <thead><tr><th scope="col">Function</th><th scope="col">Who signs</th><th scope="col">What the contract checks</th></tr></thead>
+              <tbody>
+                <tr><td data-label="Function">spend, spendFresh</td><td data-label="Who signs">Phone</td><td data-label="What the contract checks">Not fully frozen; spent plus amount within the allowance. spendFresh needs the vault coin to be 144 blocks old (about a day) and resets the window.</td></tr>
+                <tr><td data-label="Function">startWithdrawal</td><td data-label="Who signs">Phone</td><td data-label="What the contract checks">Vault open. Mints a waiting-withdrawal NFT holding exactly the amount and the recipient's locking bytecode.</td></tr>
+                <tr><td data-label="Function">release</td><td data-label="Who signs">Anyone</td><td data-label="What the contract checks">The withdrawal coin is at least the wait old (CHECKSEQUENCEVERIFY). Pays only the recorded recipient and burns the NFT.</td></tr>
+                <tr><td data-label="Function">approveFast, releaseFast</td><td data-label="Who signs">Guardian, then anyone</td><td data-label="What the contract checks">Marks one withdrawal fast; it can then be released after about an hour (6 blocks).</td></tr>
+                <tr><td data-label="Function">merge</td><td data-label="Who signs">Any vault key</td><td data-label="What the contract checks">Pulls a deposit, waiting withdrawal or ticket back into the vault coin. Cancelling is merging.</td></tr>
+                <tr><td data-label="Function">freeze</td><td data-label="Who signs">Home code or guardian; panic key</td><td data-label="What the contract checks">Level 2 stops everything. The duress key can only set level 1, which still lets the allowance go.</td></tr>
+                <tr><td data-label="Function">approve</td><td data-label="Who signs">Home code, guardian</td><td data-label="What the contract checks">Sets one approval flag per transaction. When both unfreeze flags are set, the same spend opens the vault.</td></tr>
+                <tr><td data-label="Function">recover</td><td data-label="Who signs">Home code</td><td data-label="What the contract checks">Only after both recovery flags are set. Moves everything, normally to a new vault for a new phone.</td></tr>
+                <tr><td data-label="Function">startEvict, evict</td><td data-label="Who signs">Phone and home code</td><td data-label="What the contract checks">Mints a ticket; a week later the ticket lets them move everything, even while frozen. A guardian who freezes and vanishes can't lock you out.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="wrap split">
+          <h2>Design choices</h2>
+          <div class="prose">
+            <h3 style="margin-top:0">Approvals one signer at a time</h3>
+            <p>Unfreezing needs two people, but they never have to sign the same transaction. Each approval is its own spend that flips one flag. Your guardian approves from their own phone, whenever they're free.</p>
+            <h3>Time from coin age, not the clock</h3>
+            <p>Waits use relative time locks on each withdrawal coin. Nothing depends on a timestamp the spender could choose.</p>
+            <h3>No admin key</h3>
+            <p>No function lets Holdfast, or anyone outside your keys, move or freeze your coins. If this site disappears, the contract still works with your wallet.</p>
+            <h3>Fees come from the vault</h3>
+            <p>Every spend caps its own fee (2,500 sats, or 4,000 for a two-coin merge), so your wallet only ever signs. It never has to add coins to pay.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="wrap split">
+          <h2>Tests that try to break it</h2>
+          <div class="prose">
+            <p>18 contract tests run every function through the Bitcoin Cash VM on CashScript's mock network, including the wrong keys, the wrong amounts and the wrong timing. Three are attacks found while reviewing the design:</p>
+            <ul>
+              <li>Minting a second, fake vault coin during an allowance spend. Blocked: every spend fixes its outputs exactly.</li>
+              <li>Keeping a released withdrawal's NFT alive to fake a fast withdrawal. Blocked: release burns it.</li>
+              <li>Skipping the 7-day ticket check by spending the ticket as a merge. Blocked: a merge can only go back into the vault.</li>
+            </ul>
+            <p>Not yet done: an outside audit.</p>
+            <p><a href="https://github.com/ohjay-official/holdfast/blob/main/contracts/Holdfast.cash" rel="noopener">Read the contract</a>, <a href="https://github.com/ohjay-official/holdfast/blob/main/test/vault.test.ts" rel="noopener">read the tests</a>.</p>
+          </div>
+        </div>
+      </section>
+    </main>
+    <!-- @footer -->
+  </body>
+</html>
