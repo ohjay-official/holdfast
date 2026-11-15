@@ -68,7 +68,10 @@ code { font-family: var(--mono); font-size: 0.86em; }
 .judge-bar a { color: #9fdcc4; }
 .judge-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 1.5rem; padding-top: 0.7rem; padding-bottom: 0.7rem; }
 .judge-title { margin: 0; font-weight: 600; color: #fff; }
-.judge-links { display: flex; flex-wrap: wrap; gap: 0.3rem 1.1rem; list-style: none; margin: 0; padding: 0; }
+.judge-grid { display: flex; flex-wrap: wrap; gap: 0.3rem 1.6rem; margin: 0; }
+.judge-grid div { display: flex; gap: 0.5rem; align-items: baseline; }
+.judge-grid dt { color: #aab4ae; }
+.judge-grid dd { margin: 0; display: flex; gap: 0.75rem; }
 .judge-vote { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin: 0; flex-basis: 100%; }
 .judge-vote span { color: #aab4ae; }
 .judge-vote code { color: #fff; word-break: break-all; font-size: 0.82rem; }
@@ -127,7 +130,7 @@ main { display: block; }
 .hero { padding: 3.5rem 0 3.5rem; }
 .hero-grid { display: grid; gap: 2.75rem; align-items: start; }
 @media (min-width: 980px) { .hero-grid { grid-template-columns: 1fr 1.05fr; gap: 4rem; } .hero { padding-top: 5rem; } }
-.hero h1 { max-width: 11ch; }
+.hero h1 { max-width: 14ch; }
 .hero .lede { margin-top: 1.4rem; }
 
 /* The robbery, told as one vault bar at four moments */

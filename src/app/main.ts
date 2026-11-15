@@ -191,8 +191,9 @@ function screenEntry(): string {
       </section>` : `
       <section class="panel">
         <h2>Try the demo</h2>
-        <p>A pretend vault with pretend BCH, no wallet needed. Set it up, then play the robber, your home code and your guardian.</p>
-        <a class="btn btn-dark" href="#/new">Start the demo</a>
+        <p>A ready-made vault with 1 pretend BCH, no wallet needed. Play the robber, then stop yourself from home.</p>
+        <div class="stack"><a class="btn btn-dark" href="#/quick">Start the demo</a>
+        <a class="btn btn-line" href="#/new">Set up a vault step by step</a></div>
       </section>`}
     <section class="panel panel-quiet">
       <h2>Use Paytaca on chipnet</h2>
@@ -510,6 +511,18 @@ function screenMissing(): string {
   <main class="screen" id="main"><h1 class="big">Nothing here</h1><p>That screen doesn't exist or the item is gone.</p><a class="btn btn-dark" href="#/">Go to the start</a></main>`;
 }
 
+// A ready-made vault, so the first tap lands on the point.
+function quickStart() {
+  const words = S.demoWords();
+  const vault = M.createVault({ allowanceSats: M.SATS / 20, waitDays: 3, guardian: 'Ada', depositSats: M.SATS }, Date.now());
+  store = { vault, clockOffset: 0, pin: '1234', duressPin: '9999', homeWords: words, recoverBy: [] };
+  commit();
+  role = 'phone'; unlocked = true; decoy = false;
+  flash = { kind: 'ok', text: 'Demo vault ready: 1 BCH, 0.05 BCH a day, 3-day wait, Ada as guardian.' };
+  history.replaceState(null, '', '#/vault');
+  render();
+}
+
 // ---------------- router ----------------
 
 function render() {
@@ -519,6 +532,10 @@ function render() {
     draft.step = Math.max(1, draft.step - 1);
     history.replaceState(null, '', '#/new');
     return render();
+  }
+  if (h === '/quick') {
+    quickStart();
+    return;
   }
   if (h === '/new') html = screenNew();
   else if (!store || h === '/') html = screenEntry();
