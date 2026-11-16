@@ -300,7 +300,7 @@ function screenSetup(): string {
 }
 
 function screenLock(): string {
-  const dots = Array.from({ length: Math.max(4, pinEntry.length) }, (_, i) => `<i class="${i < pinEntry.length ? 'on' : ''}"></i>`).join('');
+  const dots = Array.from({ length: 6 }, (_, i) => `<i class="${i < pinEntry.length ? 'on' : ''}"></i>`).join('');
   return `${topbar()}
   <main class="screen screen-lock" id="main">
     <h1 class="big center">Enter your PIN</h1>${statusBox()}
