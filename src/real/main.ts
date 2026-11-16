@@ -307,7 +307,20 @@ function screenLock(): string {
     <div class="dots">${dots}</div>
     <div class="pad">${[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => `<button data-act="pin" data-d="${n}">${n}</button>`).join('')}
       <button data-act="pin-del">Delete</button><button data-act="pin" data-d="0">0</button><button data-act="pin-ok" class="pad-ok">Open</button></div>
+    <p class="small center" style="margin-top:1.5rem"><a href="#/forgot">Forgot your PIN? Use your home code</a></p>
   </main>`;
+}
+
+function screenForgot(): string {
+  return `${topbar('Reset PINs', '/vault')}
+  <main class="screen" id="main">${statusBox()}
+    <form data-form="forgot" novalidate>
+      <p>Your home code proves the vault is yours. Type the 12 words, then choose new PINs.</p>
+      <label class="field"><span>Home code</span><textarea name="words" rows="3" autocomplete="off" autocapitalize="none" spellcheck="false"></textarea></label>
+      <label class="field"><span>New PIN</span><input name="pin" type="password" inputmode="numeric" autocomplete="off"></label>
+      <label class="field"><span>New duress PIN</span><input name="duress" type="password" inputmode="numeric" autocomplete="off"></label>
+      <div class="stack stack-end"><button class="btn btn-dark" type="submit">Reset PINs and open</button></div>
+    </form></main>`;
 }
 
 function screenVault(): string {
@@ -469,6 +482,7 @@ function render() {
   else if (h === '/connect') html = screenConnect();
   else if (!saved && h === '/setup' && wallet.ready) html = screenSetup();
   else if (!saved || !wallet.ready) html = screenStart();
+  else if (!unlocked && h === '/forgot') html = screenForgot();
   else if (!unlocked) html = screenLock();
   else if (h === '/send') html = screenSend();
   else if (h === '/withdraw' && !decoy) html = screenWithdraw();
@@ -735,6 +749,27 @@ app.addEventListener('submit', async (e) => {
         go('/vault');
         return txid;
       });
+    }
+    case 'forgot': {
+      try {
+        const key = C.homeKeyFromWords(val('words'));
+        if (binToHex(C.publicKeyOf(key)) !== c!.homePk) return err('Those words are a valid home code, but not this vault\'s.');
+        const p = val('pin'), q = val('duress');
+        if (!/^\d{4,6}$/.test(p) || !/^\d{4,6}$/.test(q)) return err('Each PIN needs 4 to 6 digits.');
+        if (p === q) return err('Your duress PIN must be different from your PIN.');
+        saved!.pin = await C.pinHash(p, saved!.salt);
+        saved!.duress = await C.pinHash(q, saved!.salt);
+        save();
+        homeKey = key;
+        unlocked = true;
+        decoy = false;
+        log('PINs reset with the home code');
+        setStatus('ok', 'PINs reset. Your vault is open.');
+        refresh();
+        return go('/vault');
+      } catch (ex) {
+        return err((ex as Error).message);
+      }
     }
     case 'homewords':
       try {
