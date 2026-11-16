@@ -103,6 +103,20 @@ export class Wallet {
     return out;
   }
 
+  /** Every address of the wallet we scan, to recognise "your Paytaca" as a recipient. */
+  ownAddresses(net: Net): Set<string> {
+    const out = new Set<string>();
+    if (!this.mgr) return out;
+    for (const name of ['receive', 'change'] as const) {
+      if (!this.mgr.hasPath(CHILD[name])) continue;
+      for (let i = 0; i < SCAN[name]; i++) {
+        const pk = this.mgr.getPubkey(CHILD[name], BigInt(i));
+        if (pk) out.add(p2pkhAddress(pk, net));
+      }
+    }
+    return out;
+  }
+
   unlockerFor(net: Net) {
     return (c: WalletCoin) => {
       const pk = this.mgr!.getPubkey(CHILD[c.path[0] as 'receive' | 'change'], BigInt(c.path[1]))!;

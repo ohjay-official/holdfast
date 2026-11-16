@@ -54,8 +54,28 @@ let qr: { uri: string; img: string } | null = null;
 let homeKey: Uint8Array | null = null;
 let guardianConfig: C.VaultConfig | null = null;
 let guardianView: C.VaultView | null = null;
+let walletSats: bigint | null = null;
+let own = new Set<string>();
 
-const draft = { step: 1, allowance: '0.01', waitDays: 3, words: C.newHomeWords(), check: 4, guardianPk: '', pin: '', duress: '', amount: '0.02' };
+interface ActivityItem { at: number; text: string; tx?: string }
+const actKey = () => `holdfast-real-activity-${net}`;
+function activity(): ActivityItem[] {
+  try {
+    return JSON.parse(localStorage.getItem(actKey()) || '[]');
+  } catch {
+    return [];
+  }
+}
+function addActivity(text: string, tx?: string) {
+  const list = [{ at: Date.now(), text, tx }, ...activity()].slice(0, 50);
+  try {
+    localStorage.setItem(actKey(), JSON.stringify(list));
+  } catch {
+    /* full */
+  }
+}
+
+const draft = { step: 1, allowance: '0.001', waitDays: 3, words: C.newHomeWords(), check: 4, guardianPk: '', pin: '', duress: '', amount: '' };
 
 const app = document.getElementById('app')!;
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
@@ -123,13 +143,28 @@ function errText(e: unknown): string {
   return m;
 }
 
-async function act(label: string, fn: () => Promise<string | void>) {
+const DONE: Record<string, string> = {
+  Releasing: 'Released to the recipient.',
+  Cancelling: 'Withdrawal cancelled. The BCH is back in the vault.',
+  'Adding deposits': 'Deposits added to the vault.',
+  Freezing: 'Vault frozen. Nothing can leave until it is unfrozen.',
+  Approving: 'Approved.',
+  'Approving fast lane': 'Fast lane approved. It can leave about an hour from now.',
+  'Moving everything': 'Everything moved out of the vault.',
+  'Creating your vault': 'Vault created.',
+};
+let nextDone: string | null = null;
+
+async function act(label: string, fn: () => Promise<string | void>, done?: string) {
   if (busy) return;
   busy = true;
   setStatus('info', `${label}...`);
   try {
     const txid = await fn();
-    setStatus('ok', `${label}: done.`, txid || undefined);
+    const text = done ?? nextDone ?? DONE[label] ?? `${label}: done.`;
+    nextDone = null;
+    setStatus('ok', text, txid || undefined);
+    if (txid) addActivity(text, txid);
     await refreshSoon();
   } catch (e) {
     log(`raw error: ${e instanceof Error ? e.stack || e.message : String(e)}`);
@@ -152,8 +187,22 @@ async function readConfig(c: C.VaultConfig): Promise<C.VaultView> {
   return C.readVault(c, utxos, heights, tip);
 }
 
+let lastWalletScan = 0;
+async function refreshWallet(force = false) {
+  if (!wallet.ready || (!force && Date.now() - lastWalletScan < 50_000)) return;
+  lastWalletScan = Date.now();
+  try {
+    own = wallet.ownAddresses(net);
+    const coins = await wallet.coins(provider, net);
+    walletSats = coins.reduce((a, u) => a + u.satoshis, 0n);
+  } catch (e) {
+    log(`wallet scan failed: ${(e as Error).message}`);
+  }
+}
+
 async function refresh() {
   try {
+    refreshWallet().then(render);
     if (saved) view = await readConfig(saved.config);
     if (guardianConfig) guardianView = await readConfig(guardianConfig);
   } catch (e) {
@@ -163,6 +212,7 @@ async function refresh() {
 }
 
 async function refreshSoon() {
+  lastWalletScan = 0;
   await new Promise((r) => setTimeout(r, 1500));
   await refresh();
   setTimeout(refresh, 6000);
@@ -209,17 +259,46 @@ function frozenBox(v: C.VaultView, c: C.VaultConfig): string {
     <p class="small">To unfreeze: ${needs}. Home code ${s.unfreezeHome ? '<b>approved</b>' : 'not yet'}${c.hasGuardian ? `, guardian ${s.unfreezeGuardian ? '<b>approved</b>' : 'not yet'}` : ''}.</p></div>`;
 }
 
+function shortAddr(a: string): string {
+  if (own.has(a)) return 'your Paytaca';
+  const t = a.replace(/^(bitcoincash|bchtest):/, '');
+  return `${t.slice(0, 8)}…${t.slice(-4)}`;
+}
+
+function clockIn(blocks: number): string {
+  return new Date(Date.now() + blocks * 600_000).toLocaleString(undefined, { weekday: 'short', hour: '2-digit', minute: '2-digit' });
+}
+
 function pendingList(v: C.VaultView, actions: (p: C.PendingView, i: number) => string): string {
   if (!v.pending.length) return '<p class="muted">Nothing is waiting.</p>';
   return `<ul class="pends">${v.pending
-    .map(
-      (p, i) => `<li class="pend">
+    .map((p, i) => {
+      const state = p.ready
+        ? 'Ready to release'
+        : p.blocksLeft === null
+          ? 'Confirming'
+          : `${C.blocksToText(p.blocksLeft)} left`;
+      const when = p.ready
+        ? 'The wait is over. Anyone can release it to the recipient now.'
+        : p.blocksLeft === null
+          ? 'Waiting for the next block, usually about 10 minutes. The wait starts then.'
+          : `Can be released around ${clockIn(p.blocksLeft)} (${p.blocksLeft} blocks to go).`;
+      return `<li class="pend">
       <div class="pend-top"><span class="pend-amt">${bch(p.sats)}</span>
-      <span class="tag ${p.ready ? 'tag-taken' : 'tag-held'}">${p.ready ? 'Wait over' : p.blocksLeft === null ? 'Confirming' : `${C.blocksToText(p.blocksLeft)} left`}</span></div>
-      <p class="pend-meta">To ${esc(p.to.replace(/^(bitcoincash|bchtest):/, '').slice(0, 10))}…${p.fast ? ' Fast lane approved.' : ''}${p.blocksLeft !== null && !p.ready ? ` ${p.blocksLeft} blocks to go.` : ''}</p>
-      <div class="row-actions">${actions(p, i)}</div></li>`,
-    )
+      <span class="tag ${p.ready ? 'tag-taken' : 'tag-held'}">${state}</span></div>
+      <p class="pend-meta">To ${esc(shortAddr(p.to))}.${p.fast ? ' Fast lane approved.' : ''} ${when}</p>
+      <div class="row-actions">${actions(p, i)}</div></li>`;
+    })
     .join('')}</ul>`;
+}
+
+function activityList(): string {
+  const items = activity().slice(0, 6);
+  if (!items.length) return '';
+  const when = (t: number) => new Date(t).toLocaleString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+  return `<section class="block"><h2>Recent activity</h2><ul class="acts">${items
+    .map((a) => `<li><div>${esc(a.text)}<br><span class="small muted">${when(a.at)}</span></div>${a.tx ? `<a class="small" href="${EXPLORER[net]}${a.tx}" target="_blank" rel="noopener">View</a>` : ''}</li>`)
+    .join('')}</ul></section>`;
 }
 
 // ---------------- screens ----------------
@@ -286,7 +365,8 @@ function screenSetup(): string {
       <p class="small muted">4 to 6 digits, the same length for both, and different from each other.</p>`;
   } else {
     body = `${head('Fund the vault', 'Paytaca will ask you to approve. If your coins are spread out, it asks twice: once to gather them, once to create the vault.')}
-      <label class="field"><span>BCH to put in</span><input name="amount" inputmode="decimal" value="${esc(d.amount)}"></label>
+      <label class="field"><span>BCH to put in</span><input name="amount" inputmode="decimal" placeholder="0.001" value="${esc(d.amount)}"></label>
+      <p class="small">${walletSats === null ? 'Checking your Paytaca balance...' : `In Paytaca: <b>${bch(walletSats)}</b>. ${walletSats > C.CREATE_FEE + 20_000n ? `<button type="button" class="linkish" data-act="use-all">Use all I can</button>` : 'That is not enough yet: you need a little more than 0.0002 BCH.'}`}</p>
       <ul class="review">
         <li>Allowance <b>${esc(d.allowance)} BCH</b> a day, wait <b>${d.waitDays} ${d.waitDays === 1 ? 'day' : 'days'}</b>.</li>
         <li>${d.guardianPk ? 'Guardian key added.' : 'No guardian.'}</li>
@@ -342,11 +422,13 @@ function screenVault(): string {
   return `${topbar()}
   <main class="screen" id="main">${statusBox()}${frozenBox(v, c)}
     <section class="balance"><p class="bal-label">In your vault</p><p class="bal">${bch(v.total)}</p>${bar(v)}
+      ${walletSats !== null ? `<p class="small muted">In Paytaca, outside the vault: ${bch(walletSats)}</p>` : ''}
       ${v.refillIn && v.refillIn > 0 ? `<p class="small muted">Allowance full again in ${C.blocksToText(v.refillIn)}.</p>` : ''}</section>
     <div class="actions2"><a class="btn btn-dark" href="#/send" ${s.level === 2 ? 'aria-disabled="true"' : ''}>Send</a><a class="btn btn-line" href="#/receive">Receive</a></div>
     ${s.level === 0 ? `<p class="small"><a href="#/withdraw">Withdraw more than the allowance</a></p>` : ''}
     ${v.deposits.length ? `<div class="notice"><h2>${bch(v.depositSats)} deposited</h2><p>Deposits join the vault when you add them.</p><button class="btn btn-sm btn-dark" data-act="absorb">Add to vault</button></div>` : ''}
-    <section class="block"><h2>Waiting to leave</h2>${pendingList(v, (p, i) => `${p.ready && s.level === 0 ? `<button class="btn btn-sm btn-dark" data-act="release" data-i="${i}">Release</button>` : ''}<button class="btn btn-sm btn-line" data-act="cancel-owner" data-i="${i}">Cancel</button>`)}</section>
+    <section class="block"><h2>Waiting to leave</h2>${pendingList(v, (p, i) => `${p.ready && s.level === 0 ? `<button class="btn btn-sm btn-dark" data-act="release" data-i="${i}">Release ${bch(p.sats)}</button>` : ''}<button class="btn btn-sm btn-line" data-act="cancel-owner" data-i="${i}">Cancel</button>`)}</section>
+    ${activityList()}
     <nav class="links"><a href="#/home">Home code</a><a href="#/settings">Settings</a><button class="linkish" data-act="refresh">Refresh</button><button class="linkish" data-act="lock">Lock</button></nav>
   </main>`;
 }
@@ -402,7 +484,7 @@ function screenHome(c: C.VaultConfig, v: C.VaultView | null, back: string): stri
   return `${topbar('Home code', back)}
   <main class="screen" id="main"><p class="who">Home code entered. Nothing here asks Paytaca: this page signs with your home code.</p>${statusBox()}${frozenBox(v, c)}
     <section class="balance"><p class="bal-label">In the vault</p><p class="bal">${bch(v.total)}</p>${bar(v)}</section>
-    <section class="block"><h2>Waiting to leave</h2>${pendingList(v, (_p, i) => `<button class="btn btn-sm btn-dark" data-act="cancel-home" data-i="${i}">Cancel withdrawal</button>`)}</section>
+    <section class="block"><h2>Waiting to leave</h2>${pendingList(v, (_p, i) => `<button class="btn btn-sm btn-dark" data-act="cancel-home" data-i="${i}">Cancel this ${bch(_p.sats)}</button>`)}</section>
     <section class="block"><h2>Vault</h2><div class="stack">
       ${s.level < 2 ? `<button class="btn btn-dark" data-act="freeze-home">${s.level === 1 ? 'Freeze fully, allowance too' : 'Freeze vault'}</button>` : ''}
       ${s.level > 0 && !s.unfreezeHome ? `<button class="btn btn-line" data-act="approve-home" data-what="unfreeze">Approve unfreeze</button>` : ''}
@@ -552,6 +634,11 @@ app.addEventListener('click', async (e) => {
       unlocked = false;
       checkNetwork();
       return;
+    }
+    case 'use-all': {
+      const max = walletSats! - C.CREATE_FEE - 6_000n;
+      draft.amount = fmtBch(Number(max));
+      return render();
     }
     case 'copy-log': {
       const text = [`Holdfast real vault log`, `UA: ${navigator.userAgent}`, `Vault: ${saved ? contractFor(saved.config).address : 'none'}`, ...logLines].join('\n');
@@ -730,6 +817,7 @@ app.addEventListener('submit', async (e) => {
       if (!C.isAddressFor(to, net)) return err(`Enter a ${net === 'mainnet' ? 'bitcoincash:' : 'bchtest:'} address.`);
       if (amount === 0n) return err('Enter an amount in BCH, like 0.001');
       if (amount > view!.allowanceLeft) return err(`You can send up to ${bch(view!.allowanceLeft)} right away.${decoy ? '' : ' For more, start a withdrawal.'}`);
+      nextDone = `Sent ${bch(amount)}.`;
       return act('Sending', async () => {
         const tb = V.buildSpend({ contract: contractFor(c!), main: view!.main!, state: view!.state!, amount, to, owner: 'wallet', fresh: view!.fresh, refillBlocks: c!.refillBlocks });
         const txid = await wallet.signAndSend(provider, tb, [[0, 'receive', 0]], `Holdfast: send ${bch(amount)}`);
@@ -744,6 +832,7 @@ app.addEventListener('submit', async (e) => {
       if (!C.isAddressFor(to, net)) return err(`Enter a ${net === 'mainnet' ? 'bitcoincash:' : 'bchtest:'} address.`);
       if (amount < V.MIN_WITHDRAWAL) return err('The smallest withdrawal is 0.00001 BCH.');
       if (amount > free) return err(`At most ${bch(free)} can be withdrawn right now.`);
+      nextDone = `Withdrawal of ${bch(amount)} started. It waits ${C.blocksToText(c!.waitBlocks)}.`;
       return act('Starting withdrawal', async () => {
         const tb = V.buildStartWithdrawal({ contract: contractFor(c!), main: view!.main!, state: view!.state!, amount, to, owner: 'wallet' });
         const txid = await wallet.signAndSend(provider, tb, [[0, 'receive', 0]], `Holdfast: start a ${bch(amount)} withdrawal`);
@@ -838,6 +927,7 @@ async function setupStep(f: HTMLFormElement, val: (n: string) => string) {
     return createVault(amount);
   }
   d.step += 1;
+  if (d.step === 5) refreshWallet(true).then(render);
   render();
 }
 
