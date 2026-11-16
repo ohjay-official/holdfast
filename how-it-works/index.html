@@ -16,10 +16,14 @@
     <!-- @banner -->
     <!-- @header -->
     <main id="main">
-      <header class="page-head">
-        <div class="wrap">
-          <h1>How the vault works</h1>
-          <p class="lede">One vault, two kinds of money. A small allowance you can spend now, and savings that only leave slowly, in the open, where you can stop them.</p>
+      <header class="atrium">
+        <div class="wrap atrium-grid">
+          <div class="atrium-copy">
+            <h1 class="atrium-h">How the vault works</h1>
+            <p class="lede">One vault, two kinds of money. A small allowance you can spend now, and savings that only leave slowly, in the open, where you can stop them.</p>
+            <div class="actions"><a class="btn btn-dark" href="/app/#/quick">Try the demo</a><a class="btn btn-line" href="#rules">Jump to the rules</a></div>
+          </div>
+          <div class="mosaic" role="group" aria-label="Screens from the Holdfast app"><div class="mosaic-col"><div class="mosaic-track"><figure class="tile shot"><img src="/shots/setup.webp" width="300" height="600" alt="Setup, step one: connect your wallet" loading="lazy" /></figure><figure class="tile t-safe"><p class="tile-k">Allowance</p><p class="tile-t">Spend a little, straight away.</p></figure><figure class="tile shot"><img src="/shots/vault.webp" width="300" height="600" alt="The vault screen: spendable now, saved and waiting" loading="lazy" /></figure><figure class="tile shot"><img src="/shots/send.webp" width="300" height="600" alt="Sending from the allowance" loading="lazy" /></figure></div><div class="mosaic-track" aria-hidden="true"><figure class="tile shot"><img src="/shots/setup.webp" width="300" height="600" alt="" data-alt="Setup, step one: connect your wallet" loading="lazy" /></figure><figure class="tile t-safe"><p class="tile-k">Allowance</p><p class="tile-t">Spend a little, straight away.</p></figure><figure class="tile shot"><img src="/shots/vault.webp" width="300" height="600" alt="" data-alt="The vault screen: spendable now, saved and waiting" loading="lazy" /></figure><figure class="tile shot"><img src="/shots/send.webp" width="300" height="600" alt="" data-alt="Sending from the allowance" loading="lazy" /></figure></div></div><div class="mosaic-col"><div class="mosaic-track"><figure class="tile t-held"><p class="tile-k">Wait</p><p class="tile-t">1 to 7 days before savings leave.</p></figure><figure class="tile shot"><img src="/shots/home-code.webp" width="300" height="600" alt="Home code screen with cancel and freeze" loading="lazy" /></figure><figure class="tile shot"><img src="/shots/frozen.webp" width="300" height="600" alt="Vault frozen from home" loading="lazy" /></figure><figure class="tile t-ink"><p class="tile-k">Home code</p><p class="tile-t">Cancels and freezes from home.</p></figure></div><div class="mosaic-track" aria-hidden="true"><figure class="tile t-held"><p class="tile-k">Wait</p><p class="tile-t">1 to 7 days before savings leave.</p></figure><figure class="tile shot"><img src="/shots/home-code.webp" width="300" height="600" alt="" data-alt="Home code screen with cancel and freeze" loading="lazy" /></figure><figure class="tile shot"><img src="/shots/frozen.webp" width="300" height="600" alt="" data-alt="Vault frozen from home" loading="lazy" /></figure><figure class="tile t-ink"><p class="tile-k">Home code</p><p class="tile-t">Cancels and freezes from home.</p></figure></div></div><div class="mosaic-col"><div class="mosaic-track"><figure class="tile shot"><img src="/shots/lock.webp" width="300" height="600" alt="Lock screen asking for the PIN" loading="lazy" /></figure><figure class="tile shot"><img src="/shots/duress.webp" width="300" height="600" alt="Duress PIN view showing only the allowance" loading="lazy" /></figure><figure class="tile t-paper"><p class="tile-k">Guardian</p><p class="tile-t">Says stop. Never sends.</p></figure><figure class="tile shot"><img src="/shots/guardian.webp" width="300" height="600" alt="Guardian view: can stop things, never send" loading="lazy" /></figure><figure class="tile shot"><img src="/shots/review.webp" width="300" height="600" alt="Setup review of the rules before funding" loading="lazy" /></figure></div><div class="mosaic-track" aria-hidden="true"><figure class="tile shot"><img src="/shots/lock.webp" width="300" height="600" alt="" data-alt="Lock screen asking for the PIN" loading="lazy" /></figure><figure class="tile shot"><img src="/shots/duress.webp" width="300" height="600" alt="" data-alt="Duress PIN view showing only the allowance" loading="lazy" /></figure><figure class="tile t-paper"><p class="tile-k">Guardian</p><p class="tile-t">Says stop. Never sends.</p></figure><figure class="tile shot"><img src="/shots/guardian.webp" width="300" height="600" alt="" data-alt="Guardian view: can stop things, never send" loading="lazy" /></figure><figure class="tile shot"><img src="/shots/review.webp" width="300" height="600" alt="" data-alt="Setup review of the rules before funding" loading="lazy" /></figure></div></div></div>
         </div>
       </header>
 
@@ -37,7 +41,7 @@
         </div>
       </section>
 
-      <section class="section">
+      <section class="section" id="rules">
         <div class="wrap">
           <h2>Every rule, in one table</h2>
           <p class="muted" style="max-width:var(--measure)">The contract checks who signed and how much time has passed. Times are approximate because Bitcoin Cash counts time in blocks, about 10 minutes each.</p>

@@ -16,11 +16,20 @@
     <!-- @banner -->
     <!-- @header -->
     <main id="main">
-      <header class="page-head">
+      <header class="vela" data-tone="held">
         <div class="wrap">
-          <h1>Guardians</h1>
-          <p class="lede">A guardian is someone you trust to say stop. They can halt a withdrawal, freeze your vault and help you recover it. They can't send your money anywhere.</p>
+          <h1 class="vela-h"><span class="vela-lead">A guardian can</span>
+            <ul class="vela-words" aria-live="polite"><li class="vela-word" data-tone="held" data-what="a withdrawal while it waits"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg><span>Cancel</span></li><li class="vela-word" data-tone="ink" data-what="the whole vault in one tap" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v20M3.3 7l17.4 10M20.7 7L3.3 17"/><path d="M9 4l3 2 3-2M9 20l3-2 3 2"/></svg><span>Freeze</span></li><li class="vela-word" data-tone="safe" data-what="a fast withdrawal, with you" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12.5l5 5L20 6.5"/></svg><span>Approve</span></li><li class="vela-word" data-tone="slate" data-what="the vault, with your home code" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4v5h5"/></svg><span>Recover</span></li></ul>
+            <span class="vela-what">a withdrawal while it waits</span>
+          </h1>
+          <p class="vela-sub">Someone you trust to say stop. They can't send your money anywhere, not even to themselves.</p>
+          <div class="actions"><a class="btn btn-light" href="/app/#/quick">See it in the demo</a></div>
         </div>
+        <dl class="vela-strip">
+          <div><dt>0</dt><dd>coins a guardian can move to anyone</dd></div>
+          <div><dt>About 1 hour</dt><dd>for a fast withdrawal they approve with you</dd></div>
+          <div><dt>7 days</dt><dd>to remove a guardian, so a thief can't do it quietly</dd></div>
+        </dl>
       </header>
 
       <section class="section">
@@ -73,7 +82,7 @@
         <div class="wrap split">
           <h2>Status</h2>
           <div class="prose">
-            <p>Guardian invites are part of the app being built for BCH BLAZE 2026. Two-signer spends, which guardian approval relies on, already passed on chipnet. <a href="/security/#proof">See the transaction</a>.</p>
+            <p>Guardians work in the demo and in the real vault app. The vault tested on mainnet so far has no guardian; a mainnet guardian test is next. Two-signer spends, which guardian approval relies on, passed on chipnet before kickoff. <a href="/security/#proof">See the transactions</a>.</p>
           </div>
         </div>
       </section>
