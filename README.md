@@ -65,13 +65,19 @@ npm run build   # compiles the contracts, typechecks, builds the site
 - [`test/real.test.ts`](test/real.test.ts): the real app's flows end to end: creation with the fee, the robbery, duress, refill, release, owner and guardian actions from a wallet.
 - `test/signtest.test.ts`, `test/cosigntest.test.ts`: the pre-kickoff WizardConnect signing tests.
 
+## Live on mainnet
+
+| Step | Transaction |
+| --- | --- |
+| Vault created from Paytaca (0.003 BCH in, 0.0001 fee) | [5d4e7cac](https://blockchair.com/bitcoin-cash/transaction/5d4e7cac3a9beca6235ef74a7bae37f239b78980a4b0d6b4f77f207cf329d519) |
+
 ## Status
 
 - [x] Vault contract and tests
 - [x] Demo mode (no wallet), covering the whole robbery story
 - [x] Real vault app at [/real/](https://holdfast-bch.vercel.app/real/): Paytaca over WizardConnect, mainnet or chipnet. Create (with a 0.0001 BCH fee), send, withdraw, release, cancel, add deposits; home code screen (cancel, freeze, approve, move everything); guardian screen on the guardian's own phone; duress PIN that freezes with a panic key and cancels everything waiting.
 - [x] End-to-end tests of those flows on the mock network, with Paytaca's signing simulated and every signed transaction checked by the BCH 2025 VM ([`test/real.test.ts`](test/real.test.ts))
-- [ ] First live run on chipnet and mainnet
+- [x] First live run on mainnet (Nov 16): vault created from Paytaca over WizardConnect, with the 0.0001 BCH creation fee. [5d4e7cac](https://blockchair.com/bitcoin-cash/transaction/5d4e7cac3a9beca6235ef74a7bae37f239b78980a4b0d6b4f77f207cf329d519)
 - [ ] Outside audit
 
 Until the last two are done, use test coins or small amounts only.
