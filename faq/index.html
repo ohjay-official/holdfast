@@ -3,39 +3,105 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Holdfast FAQ</title>
-    <meta name="description" content="Answers about Holdfast: wallets, lost phones, lost home codes, fees, keys and mainnet." />
-    <meta property="og:title" content="Holdfast FAQ" />
-    <meta property="og:description" content="Answers about Holdfast: wallets, lost phones, lost home codes, fees, keys and mainnet." />
+    <title>Holdfast FAQ: robbery, guardians, fees and recovery</title>
+    <meta name="description" content="Answers about Holdfast: what a robber can take, the duress PIN, guardians, lost phones and home codes, fees, chipnet and mainnet." />
+    <meta property="og:title" content="Holdfast FAQ: robbery, guardians, fees and recovery" />
+    <meta property="og:description" content="Answers about Holdfast: what a robber can take, the duress PIN, guardians, lost phones and home codes, fees, chipnet and mainnet." />
     <meta property="og:url" content="https://holdfast-bch.vercel.app/faq/" />
     <meta name="theme-color" content="#f2f3ef" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="/src/site.css" />
   </head>
-  <body>
+  <body class="page-dark">
     <!-- @banner -->
     <!-- @header -->
-    <main id="main">
-      <header class="page-head">
-        <div class="wrap">
-          <h1>Questions</h1>
-        </div>
+    <main id="main" class="faq-page">
+      <div class="faq-glow" aria-hidden="true"></div>
+      <div class="faq-bars" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+      <header class="faq-hero">
+        <p class="faq-tag">FAQ</p>
+        <h1>Questions, answered</h1>
+        <p class="faq-lede">How the vault behaves in a robbery, what guardians can and can't do, what it costs, and what happens if you lose something.</p>
+        <a class="btn btn-light" href="/app/#/quick">Try the demo</a>
       </header>
-      <section class="section" style="border-top:0;padding-top:0">
-        <div class="wrap faq">
-          <details><summary>Is Holdfast a wallet?</summary><div><p>No. It's a vault that works with the wallet you already use. Your wallet keeps your keys and signs; Holdfast builds the transactions and shows you what the vault is doing.</p></div></details>
-          <details><summary>Which wallets work?</summary><div><p>Paytaca, connected over WizardConnect, is the one we've tested on phones. Other wallets that support WizardConnect, such as Cashonize, should work but haven't been tested yet.</p></div></details>
-          <details><summary>What if the robber has heard of Holdfast?</summary><div><p>It doesn't change what they can take. The wait is enforced by the contract, so no threat makes it shorter. Knowing about it mostly tells them that holding you longer gains them nothing.</p></div></details>
-          <details><summary>What if I lose my phone?</summary><div><p>Your savings don't move without the wait, and you can freeze the vault from home. Then use your home code and guardian to recover everything to a new wallet.</p></div></details>
-          <details><summary>What if I lose my home code?</summary><div><p>Nothing is lost. Your phone can still withdraw with the normal wait. Move your BCH to a new vault with a new home code.</p></div></details>
-          <details><summary>Who holds my keys?</summary><div><p>You do. The phone key is in your wallet, the home code is on paper at home, and your guardian's key is in their wallet. Holdfast has none of them.</p></div></details>
-          <details><summary>What does it cost?</summary><div><p>Holdfast charges nothing. Each vault action is a normal Bitcoin Cash transaction, and you pay its network fee, which is usually well under a cent.</p></div></details>
-          <details><summary>Is it on mainnet?</summary><div><p>Not yet. It's being built for BCH BLAZE 2026 and runs on chipnet, the test network. Don't put real savings in it until the contract has been reviewed.</p></div></details>
-          <details><summary>Why Bitcoin Cash?</summary><div><p>Its contracts can check who signed and how long coins have waited, and can carry their own state between transactions. That's everything a vault needs, with fees low enough for small, everyday amounts.</p></div></details>
-          <details><summary>I found a bug. Where do I report it?</summary><div><p>Open an issue on <a href="https://github.com/ohjay-official/holdfast/issues" rel="noopener">GitHub</a>.</p></div></details>
-        </div>
+      <section class="faq-body" aria-label="Questions">
+        <label class="faq-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4" stroke-linecap="round"/></svg>
+          <span class="sr">Search questions</span><input type="search" id="faq-q" placeholder="Search the questions" autocomplete="off"></label>
+        <div class="faq-cats"><button type="button" class="faq-cat" data-cat="basics" aria-pressed="false">
+          <span class="faq-cat-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3v18M3 12h18" stroke-linecap="round"/><circle cx="12" cy="12" r="9"/></svg></span>
+          <span><span class="faq-cat-title">The basics</span><span class="faq-cat-count">5 questions</span></span>
+        </button><button type="button" class="faq-cat" data-cat="safety" aria-pressed="false">
+          <span class="faq-cat-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3l7 3v5c0 4.6-3 7.8-7 9.5C8 18.8 5 15.6 5 11V6z" stroke-linejoin="round"/><path d="M9 12l2 2 4-4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          <span><span class="faq-cat-title">Robbery and safety</span><span class="faq-cat-count">5 questions</span></span>
+        </button><button type="button" class="faq-cat" data-cat="guardians" aria-pressed="false">
+          <span class="faq-cat-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c.8-3.2 3-5 5.5-5s4.7 1.8 5.5 5" stroke-linecap="round"/><path d="M16 5.5a3 3 0 010 5.6M18 14.6c1.4.8 2.2 2.3 2.5 4.4" stroke-linecap="round"/></svg></span>
+          <span><span class="faq-cat-title">Guardians and recovery</span><span class="faq-cat-count">5 questions</span></span>
+        </button><button type="button" class="faq-cat" data-cat="fees" aria-pressed="false">
+          <span class="faq-cat-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="8.5"/><path d="M14.6 9.2c-.5-.9-1.5-1.4-2.6-1.4-1.6 0-2.7.8-2.7 2s1.1 1.7 2.7 2.1 2.8.9 2.8 2.2-1.2 2.1-2.8 2.1c-1.2 0-2.3-.5-2.8-1.5M12 6v1.8M12 16.6v1.8" stroke-linecap="round"/></svg></span>
+          <span><span class="faq-cat-title">Fees and networks</span><span class="faq-cat-count">4 questions</span></span>
+        </button></div>
+        <p class="faq-empty" hidden>No questions match. Try another word, or <a href="https://github.com/ohjay-official/holdfast/issues" rel="noopener">ask on GitHub</a>.</p>
+        <ul class="faq-list"><li class="faq-item open" data-cat="basics">
+          <h3><button type="button" class="faq-q" aria-expanded="true" aria-controls="a1" id="q1">Is Holdfast a wallet?<span class="faq-chev" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="10.5"/><path d="M8 10.5l4 4 4-4" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button></h3>
+          <div class="faq-a" id="a1" role="region" aria-labelledby="q1"><div><p>No. It&#x27;s a vault that works with the wallet you already use. Your wallet keeps your keys and signs; Holdfast builds the transactions and shows you what the vault is doing.</p></div></div>
+        </li><li class="faq-item" data-cat="basics">
+          <h3><button type="button" class="faq-q" aria-expanded="false" aria-controls="a2" id="q2">Which wallets work?<span class="faq-chev" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="10.5"/><path d="M8 10.5l4 4 4-4" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button></h3>
+          <div class="faq-a" id="a2" role="region" aria-labelledby="q2"><div><p>Paytaca, connected over WizardConnect, is the one we&#x27;ve tested on phones, on mainnet. Other wallets that support WizardConnect, such as Cashonize, should work but haven&#x27;t been tested yet.</p></div></div>
+        </li><li class="faq-item" data-cat="basics">
+          <h3><button type="button" class="faq-q" aria-expanded="false" aria-controls="a3" id="q3">Is it live on mainnet?<span class="faq-chev" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="10.5"/><path d="M8 10.5l4 4 4-4" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button></h3>
+          <div class="faq-a" id="a3" role="region" aria-labelledby="q3"><div><p>Yes. The first vault was created on Bitcoin Cash mainnet on Nov 16, 2026, and the full robbery story ran with real coins. The contract hasn&#x27;t had an outside audit yet, so keep amounts small.</p></div></div>
+        </li><li class="faq-item" data-cat="basics">
+          <h3><button type="button" class="faq-q" aria-expanded="false" aria-controls="a4" id="q4">Why Bitcoin Cash?<span class="faq-chev" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="10.5"/><path d="M8 10.5l4 4 4-4" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button></h3>
+          <div class="faq-a" id="a4" role="region" aria-labelledby="q4"><div><p>Its contracts can check who signed and how long coins have waited, and can carry their own state between transactions. That&#x27;s everything a vault needs, with fees low enough for everyday amounts.</p></div></div>
+        </li><li class="faq-item" data-cat="basics">
+          <h3><button type="button" class="faq-q" aria-expanded="false" aria-controls="a5" id="q5">Can I try it without a wallet?<span class="faq-chev" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="10.5"/><path d="M8 10.5l4 4 4-4" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button></h3>
+          <div class="faq-a" id="a5" role="region" aria-labelledby="q5"><div><p>Yes. The demo gives you a ready-made vault with pretend BCH. Play the robber, then stop yourself from home. It takes about two minutes.</p></div></div>
+        </li><li class="faq-item" data-cat="safety">
+          <h3><button type="button" class="faq-q" aria-expanded="false" aria-controls="a6" id="q6">What if the robber has heard of Holdfast?<span class="faq-chev" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="10.5"/><path d="M8 10.5l4 4 4-4" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button></h3>
+          <div class="faq-a" id="a6" role="region" aria-labelledby="q6"><div><p>It doesn&#x27;t change what they can take. The wait is enforced by the contract, so no threat makes it shorter. Knowing about it mostly tells them that holding you longer gains them nothing.</p></div></div>
+        </li><li class="faq-item" data-cat="safety">
+          <h3><button type="button" class="faq-q" aria-expanded="false" aria-controls="a7" id="q7">What does the duress PIN do?<span class="faq-chev" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="10.5"/><path d="M8 10.5l4 4 4-4" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button></h3>
+          <div class="faq-a" id="a7" role="region" aria-labelledby="q7"><div><p>Typed under pressure, it opens a view that shows only the daily allowance. In the background it freezes the vault and cancels anything waiting, without asking your wallet and without anything changing on screen.</p></div></div>
+        </li><li class="faq-item" data-cat="safety">
+          <h3><button type="button" class="faq-q" aria-expanded="false" aria-controls="a8" id="q8">What can&#x27;t Holdfast stop?<span class="faq-chev" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="10.5"/><path d="M8 10.5l4 4 4-4" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button></h3>
+          <div class="faq-a" id="a8" role="region" aria-labelledby="q8"><div><p>Money already sent, including the allowance, is gone: Bitcoin Cash payments can&#x27;t be reversed. And if a robber gets both your phone and your home code, the vault can&#x27;t tell them apart from you.</p></div></div>
+        </li><li class="faq-item" data-cat="safety">
+          <h3><button type="button" class="faq-q" aria-expanded="false" aria-controls="a9" id="q9">Has the contract been audited?<span class="faq-chev" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="10.5"/><path d="M8 10.5l4 4 4-4" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button></h3>
+          <div class="faq-a" id="a9" role="region" aria-labelledby="q9"><div><p>Not by an outside firm yet. It has tests that run every function through the Bitcoin Cash VM, including attempts to break it. Until there&#x27;s an audit, treat it as an experiment.</p></div></div>
+        </li><li class="faq-item" data-cat="safety">
+          <h3><button type="button" class="faq-q" aria-expanded="false" aria-controls="a10" id="q10">What if this website goes away?<span class="faq-chev" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="10.5"/><path d="M8 10.5l4 4 4-4" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button></h3>
+          <div class="faq-a" id="a10" role="region" aria-labelledby="q10"><div><p>Your BCH stays in the contract on Bitcoin Cash, and its rules keep working. Anyone with the open-source code, your wallet and your home code can still use it.</p></div></div>
+        </li><li class="faq-item" data-cat="guardians">
+          <h3><button type="button" class="faq-q" aria-expanded="false" aria-controls="a11" id="q11">Do I need a guardian?<span class="faq-chev" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="10.5"/><path d="M8 10.5l4 4 4-4" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button></h3>
+          <div class="faq-a" id="a11" role="region" aria-labelledby="q11"><div><p>No. Without one, your home code does their job alone, and fast withdrawals aren&#x27;t available. A guardian adds a second person who can stop things.</p></div></div>
+        </li><li class="faq-item" data-cat="guardians">
+          <h3><button type="button" class="faq-q" aria-expanded="false" aria-controls="a12" id="q12">What can a guardian do?<span class="faq-chev" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="10.5"/><path d="M8 10.5l4 4 4-4" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button></h3>
+          <div class="faq-a" id="a12" role="region" aria-labelledby="q12"><div><p>Cancel a waiting withdrawal, freeze the vault, approve a fast withdrawal, and help unfreeze or recover it with your home code. They can never send your money anywhere.</p></div></div>
+        </li><li class="faq-item" data-cat="guardians">
+          <h3><button type="button" class="faq-q" aria-expanded="false" aria-controls="a13" id="q13">What if I lose my phone?<span class="faq-chev" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="10.5"/><path d="M8 10.5l4 4 4-4" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button></h3>
+          <div class="faq-a" id="a13" role="region" aria-labelledby="q13"><div><p>Your savings don&#x27;t move without the wait, and you can freeze the vault from home. Then use your home code, and your guardian if you have one, to move everything to a new wallet.</p></div></div>
+        </li><li class="faq-item" data-cat="guardians">
+          <h3><button type="button" class="faq-q" aria-expanded="false" aria-controls="a14" id="q14">What if I lose my home code?<span class="faq-chev" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="10.5"/><path d="M8 10.5l4 4 4-4" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button></h3>
+          <div class="faq-a" id="a14" role="region" aria-labelledby="q14"><div><p>Nothing is lost. Your phone can still withdraw with the normal wait. Move your BCH to a new vault with a new home code.</p></div></div>
+        </li><li class="faq-item" data-cat="guardians">
+          <h3><button type="button" class="faq-q" aria-expanded="false" aria-controls="a15" id="q15">What if my guardian turns on me?<span class="faq-chev" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="10.5"/><path d="M8 10.5l4 4 4-4" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button></h3>
+          <div class="faq-a" id="a15" role="region" aria-labelledby="q15"><div><p>They can freeze or cancel, but never send. You can replace them with your phone and home code; it takes a week, so a stolen phone can&#x27;t do it quietly.</p></div></div>
+        </li><li class="faq-item" data-cat="fees">
+          <h3><button type="button" class="faq-q" aria-expanded="false" aria-controls="a16" id="q16">What does it cost?<span class="faq-chev" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="10.5"/><path d="M8 10.5l4 4 4-4" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button></h3>
+          <div class="faq-a" id="a16" role="region" aria-labelledby="q16"><div><p>Creating a vault costs a one-time 0.0001 BCH Holdfast fee. Each vault action after that is a normal Bitcoin Cash transaction, usually a few thousand sats, a fraction of a cent.</p></div></div>
+        </li><li class="faq-item" data-cat="fees">
+          <h3><button type="button" class="faq-q" aria-expanded="false" aria-controls="a17" id="q17">Why are vault fees higher than normal payments?<span class="faq-chev" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="10.5"/><path d="M8 10.5l4 4 4-4" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button></h3>
+          <div class="faq-a" id="a17" role="region" aria-labelledby="q17"><div><p>Every vault transaction carries the contract&#x27;s script, about 1.4 KB, so it&#x27;s bigger than a plain payment. It&#x27;s still well under a cent.</p></div></div>
+        </li><li class="faq-item" data-cat="fees">
+          <h3><button type="button" class="faq-q" aria-expanded="false" aria-controls="a18" id="q18">What is chipnet?<span class="faq-chev" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="10.5"/><path d="M8 10.5l4 4 4-4" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button></h3>
+          <div class="faq-a" id="a18" role="region" aria-labelledby="q18"><div><p>The Bitcoin Cash test network. Coins there have no value, so it&#x27;s the place to practise. The real vault app works on both; pick the network on its first screen.</p></div></div>
+        </li><li class="faq-item" data-cat="fees">
+          <h3><button type="button" class="faq-q" aria-expanded="false" aria-controls="a19" id="q19">I found a bug. Where do I report it?<span class="faq-chev" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="10.5"/><path d="M8 10.5l4 4 4-4" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button></h3>
+          <div class="faq-a" id="a19" role="region" aria-labelledby="q19"><div><p>Open an issue on GitHub at <a href="https://github.com/ohjay-official/holdfast/issues" rel="noopener">github.com/ohjay-official/holdfast/issues</a>.</p></div></div>
+        </li></ul>
       </section>
     </main>
     <!-- @footer -->
+    <script type="module" src="/src/faq.ts"></script>
   </body>
 </html>
