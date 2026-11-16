@@ -19,6 +19,7 @@ const EXPLORER: Record<C.Net, string> = {
 };
 
 interface Saved {
+  pinLen?: number;
   config: C.VaultConfig;
   panicKey: string;
   salt: string;
@@ -282,7 +283,7 @@ function screenSetup(): string {
     body = `${head('PINs for this app', 'Your PIN opens the vault. Your duress PIN opens a view with only the allowance, and quietly freezes the rest.')}
       <label class="field"><span>PIN</span><input name="pin" type="password" inputmode="numeric" autocomplete="off" value="${esc(d.pin)}"></label>
       <label class="field"><span>Duress PIN</span><input name="duress" type="password" inputmode="numeric" autocomplete="off" value="${esc(d.duress)}"></label>
-      <p class="small muted">4 to 6 digits each, and different from each other.</p>`;
+      <p class="small muted">4 to 6 digits, the same length for both, and different from each other.</p>`;
   } else {
     body = `${head('Fund the vault', 'Paytaca will ask you to approve. If your coins are spread out, it asks twice: once to gather them, once to create the vault.')}
       <label class="field"><span>BCH to put in</span><input name="amount" inputmode="decimal" value="${esc(d.amount)}"></label>
@@ -300,7 +301,7 @@ function screenSetup(): string {
 }
 
 function screenLock(): string {
-  const dots = Array.from({ length: 6 }, (_, i) => `<i class="${i < pinEntry.length ? 'on' : ''}"></i>`).join('');
+  const dots = Array.from({ length: Math.max(saved?.pinLen ?? 6, pinEntry.length) }, (_, i) => `<i class="${i < pinEntry.length ? 'on' : ''}"></i>`).join('');
   return `${topbar()}
   <main class="screen screen-lock" id="main">
     <h1 class="big center">Enter your PIN</h1>${statusBox()}
@@ -757,6 +758,8 @@ app.addEventListener('submit', async (e) => {
         const p = val('pin'), q = val('duress');
         if (!/^\d{4,6}$/.test(p) || !/^\d{4,6}$/.test(q)) return err('Each PIN needs 4 to 6 digits.');
         if (p === q) return err('Your duress PIN must be different from your PIN.');
+        if (p.length !== q.length) return err('Make both PINs the same length.');
+        saved!.pinLen = p.length;
         saved!.pin = await C.pinHash(p, saved!.salt);
         saved!.duress = await C.pinHash(q, saved!.salt);
         save();
@@ -825,6 +828,7 @@ async function setupStep(f: HTMLFormElement, val: (n: string) => string) {
     const p = val('pin'), q = val('duress');
     if (!/^\d{4,6}$/.test(p) || !/^\d{4,6}$/.test(q)) return err('Each PIN needs 4 to 6 digits.');
     if (p === q) return err('Your duress PIN must be different from your PIN.');
+    if (p.length !== q.length) return err('Make both PINs the same length, so the lock screen looks the same for either.');
     d.pin = p;
     d.duress = q;
   } else {
@@ -885,7 +889,7 @@ async function createVault(amount: bigint) {
     // Keep everything needed to use this vault BEFORE asking the wallet to sign,
     // so a reload or a closed tab can never lose a vault that got created.
     const salt = binToHex(crypto.getRandomValues(new Uint8Array(8)));
-    const record: Saved = { config, panicKey: binToHex(panicKey), salt, pin: await C.pinHash(d.pin, salt), duress: await C.pinHash(d.duress, salt) };
+    const record: Saved = { pinLen: d.pin.length, config, panicKey: binToHex(panicKey), salt, pin: await C.pinHash(d.pin, salt), duress: await C.pinHash(d.duress, salt) };
     localStorage.setItem(pendingKey(), JSON.stringify(record));
     log(`creating vault ${contract.address} code ${C.encodeVaultCode(config)}`);
     const txid = await wallet.signAndSend(provider, builder, inputs.map((u, i) => [i, u.path[0], u.path[1]]), `Holdfast: create your vault with ${bch(amount)}`);
