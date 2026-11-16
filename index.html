@@ -15,18 +15,65 @@
   <body>
     <!-- @banner -->
     <!-- @header -->
-    <main id="main">
-      <section class="hero">
-        <div class="wrap hero-grid">
-          <div>
-            <h1>A Bitcoin Cash vault a robber can't empty.</h1>
-            <p class="lede">Whoever holds your phone can only spend a small daily allowance. Anything more waits days in the open, and you can cancel it from home.</p>
-            <div class="actions">
-              <a class="btn btn-dark" href="/app/#/quick">Try the demo, no wallet needed</a>
-              <a class="btn btn-line" href="/how-it-works/">See how it works</a>
+    <main id="main" class="home">
+      <div class="door-zone">
+        <div class="door-stage" aria-hidden="true">
+          <canvas id="door"></canvas>
+          <div class="door-loader"><span>Loading the vault</span><i></i></div>
+        </div>
+
+        <section class="dz dz-hero" data-k="0">
+          <div class="wrap dz-grid">
+            <div class="dz-copy">
+              <h1 class="rise">A Bitcoin Cash vault a robber can't empty.</h1>
+              <p class="lede">Whoever holds your phone can only spend a small daily allowance. Anything more waits days in the open, and you can cancel it from home.</p>
+              <div class="actions">
+                <a class="btn btn-dark" href="/app/#/quick">Try the demo, no wallet needed</a>
+                <a class="btn btn-line" href="/real/">Open the real vault</a>
+              </div>
+              <p class="dz-proof">Live on mainnet since Nov 16. <a href="/security/#proof">See the transactions</a></p>
             </div>
           </div>
+        </section>
 
+        <section class="dz" data-k="1" aria-labelledby="s1">
+          <div class="wrap dz-grid dz-right">
+            <div class="dz-copy reveal">
+              <p class="dz-step"><b>01</b> Minute 1</p>
+              <h2 id="s1">They take your phone and make you send it all.</h2>
+              <p>They get the daily allowance you chose. The contract won't let one more coin out at once, whoever is holding the phone.</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="dz" data-k="2" aria-labelledby="s2">
+          <div class="wrap dz-grid">
+            <div class="dz-copy reveal">
+              <p class="dz-step"><b>02</b> The next 1 to 7 days</p>
+              <h2 id="s2">The rest waits where anyone can see it.</h2>
+              <p>A bigger withdrawal becomes a pending one on the chain. It can't be released until the wait you picked runs out, and the app counts it down.</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="dz" data-k="3" aria-labelledby="s3">
+          <div class="wrap dz-grid dz-right">
+            <div class="dz-copy reveal">
+              <p class="dz-step"><b>03</b> From home</p>
+              <h2 id="s3">You cancel it, and the vault locks.</h2>
+              <p>Your home code, written down and kept off your phone, sends the money back and freezes the vault. A guardian you trust can do the same. Neither can take it.</p>
+              <div class="actions"><a class="btn btn-dark" href="/how-it-works/">See every rule</a></div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <section class="section after-zone">
+        <div class="wrap split">
+          <div>
+            <h2>The whole robbery, on one bar</h2>
+            <p class="lede muted" style="margin-top:1rem">Example vault of 1 BCH, a 5% allowance and a 3-day wait.</p>
+          </div>
           <figure class="ordeal" aria-labelledby="ordeal-title">
             <div class="ordeal-head">
               <h2 id="ordeal-title">A robbery, with Holdfast</h2>
@@ -120,5 +167,6 @@
       </section>
     </main>
     <!-- @footer -->
+    <script type="module" src="/src/home.ts"></script>
   </body>
 </html>
