@@ -70,7 +70,7 @@ bash scripts/verify.sh   # tests, build, live pages answer, payout address match
 
 ## Live on mainnet
 
-The robbery story, run on Bitcoin Cash mainnet on Nov 16 with Paytaca on one iPhone:
+The robbery story, run on Bitcoin Cash mainnet on Nov 16 and 17 with Paytaca on one iPhone:
 
 | Step | Transaction |
 | --- | --- |
@@ -78,6 +78,11 @@ The robbery story, run on Bitcoin Cash mainnet on Nov 16 with Paytaca on one iPh
 | Phone spends within the allowance (0.0001), signed in Paytaca | [1243b504](https://blockchair.com/bitcoin-cash/transaction/1243b5043acc0dd0e8fb191c1af48e3fd3bdba25e840b8dc32d9f6c603686105) |
 | Phone starts a bigger withdrawal (0.001): it must wait 1 day | [af31478b](https://blockchair.com/bitcoin-cash/transaction/af31478b5f9e91733e2684687f6d8fc51bb413a9c4d9d371b908aace1004fd2c) |
 | Home code cancels a waiting withdrawal (0.0005) with no wallet involved | [fdec605d](https://blockchair.com/bitcoin-cash/transaction/fdec605dc778aa35902fcd7f60fc7b7e94e4bee79012ab3a742445a9f710741b) |
+| After the wait, the withdrawal is released (0.00098 to the recipient, 2,000 sat fee), no wallet signature needed | [ba9ee1e9](https://blockchair.com/bitcoin-cash/transaction/ba9ee1e9121da03a31e2b8e5b35ddc5c8da00129272893437cd61886a0fe2495) |
+| Home code freezes the vault | [4acd7c88](https://blockchair.com/bitcoin-cash/transaction/4acd7c88e0eb056e54733920a75f2c397fe42ad2a10876379f87ace0c404c15b) |
+| Home code unfreezes the vault | [71d50061](https://blockchair.com/bitcoin-cash/transaction/71d50061870156c349af4fd07ddf09baa53524eb9d9608671e93db41818faadf) |
+| Duress PIN quietly freezes the vault while showing only the allowance | [ad5c27ea](https://blockchair.com/bitcoin-cash/transaction/ad5c27ea0245f9140dfda45ea57a60490d33ce64028a0a728e2e19ef2e6baece) |
+| Home code unfreezes it again | [48f2f9e4](https://blockchair.com/bitcoin-cash/transaction/48f2f9e44e6d4e79ac921f83a5c5769f45fc7fa81c89e05c638b3f6c6d21ffb9) |
 
 ## Status
 
