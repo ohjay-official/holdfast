@@ -138,8 +138,8 @@ function errText(e: unknown): string {
   const m = e instanceof Error ? e.message : String(e);
   if (/insufficient|fee per byte|too low/i.test(m)) return 'Not enough BCH for the network fee.';
   if (/non-BIP68-final|non-final|BIP68/i.test(m)) return 'The wait isn\'t over on the network yet. Try again after the next block.';
-  if (/missing inputs|bad-txns-inputs-missingorspent|txn-mempool-conflict/i.test(m)) return 'Something changed since this screen loaded. Refresh and try again.';
-  if (/connect|websocket|1006|timeout/i.test(m)) return 'Couldn\'t reach the Bitcoin Cash network. Check your connection and try again.';
+  if (/missing inputs|missing or already spent|bad-txns-inputs-missingorspent|txn-mempool-conflict|conflicts with an unconfirmed/i.test(m)) return 'Something changed since this screen loaded. Refresh and try again.';
+  if (/connect|websocket|1006|timeout|timed out/i.test(m)) return 'Couldn\'t reach the Bitcoin Cash network. Check your connection and try again.';
   return m;
 }
 
@@ -414,7 +414,7 @@ function screenVault(): string {
   }
   if (decoy) {
     return `${topbar()}<main class="screen" id="main">${statusBox()}
-      <section class="balance"><p class="bal-label">Balance</p><p class="bal">${bch(v.allowanceLeft)}</p><div class="vbar"><span class="seg-now" style="width:100%"></span></div></section>
+      <section class="balance"><p class="bal-label">Balance</p><p class="bal">${bch(C.duressBalance(v))}</p><div class="vbar"><span class="seg-now" style="width:100%"></span></div></section>
       <div class="actions2"><a class="btn btn-dark" href="#/send">Send</a><a class="btn btn-line" href="#/receive">Receive</a></div>
       <nav class="links"><button class="linkish" data-act="lock">Lock</button></nav></main>`;
   }
@@ -426,11 +426,19 @@ function screenVault(): string {
       ${v.refillIn && v.refillIn > 0 ? `<p class="small muted">Allowance full again in ${C.blocksToText(v.refillIn)}.</p>` : ''}</section>
     <div class="actions2"><a class="btn btn-dark" href="#/send" ${s.level === 2 ? 'aria-disabled="true"' : ''}>Send</a><a class="btn btn-line" href="#/receive">Receive</a></div>
     ${s.level === 0 ? `<p class="small"><a href="#/withdraw">Withdraw more than the allowance</a></p>` : ''}
-    ${v.deposits.length ? `<div class="notice"><h2>${bch(v.depositSats)} deposited</h2><p>Deposits join the vault when you add them.</p><button class="btn btn-sm btn-dark" data-act="absorb">Add to vault</button></div>` : ''}
+    ${depositNotice(v)}
     <section class="block"><h2>Waiting to leave</h2>${pendingList(v, (p, i) => `${p.ready && s.level === 0 ? `<button class="btn btn-sm btn-dark" data-act="release" data-i="${i}">Release ${bch(p.sats)}</button>` : ''}<button class="btn btn-sm btn-line" data-act="cancel-owner" data-i="${i}">Cancel</button>`)}</section>
     ${activityList()}
     <nav class="links"><a href="#/home">Home code</a><a href="#/settings">Settings</a><button class="linkish" data-act="refresh">Refresh</button><button class="linkish" data-act="lock">Lock</button></nav>
   </main>`;
+}
+
+function depositNotice(v: C.VaultView): string {
+  if (!v.deposits.length) return '';
+  const worth = C.mergeableDeposits(v);
+  const small = v.deposits.length - worth.length;
+  const smallText = small ? `<p class="small muted">${small === 1 ? 'One deposit is' : `${small} deposits are`} smaller than the ${bch(V.MERGE_FEE)} network fee to add ${small === 1 ? 'it' : 'them'}, so ${small === 1 ? 'it stays' : 'they stay'} as a deposit.</p>` : '';
+  return `<div class="notice"><h2>${bch(v.depositSats)} deposited</h2><p>Deposits join the vault when you add them.${worth.length > 1 ? ` Paytaca asks once per deposit (${worth.length}).` : ''}</p>${worth.length ? '<button class="btn btn-sm btn-dark" data-act="absorb">Add to vault</button>' : ''}${smallText}</div>`;
 }
 
 function screenSend(): string {
@@ -609,6 +617,22 @@ function pendingAt(v: C.VaultView | null, i: string | undefined) {
   return p;
 }
 
+/** Read the vault again right before building, so a second tap or a slow refresh never builds on a spent coin. */
+async function freshPending(c: C.VaultConfig, shown: C.VaultView | null, i: string | undefined) {
+  const tapped = pendingAt(shown, i);
+  const v = await readConfig(c);
+  if (!v.main || !v.state) throw new Error('Couldn\'t find the vault coin. Refresh.');
+  return { v, p: C.samePending(v, tapped) };
+}
+
+const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+
+/** Record each step of a freeze-and-cancel run in the activity list. */
+function lockStepActivity(s: C.LockStep, who: string) {
+  if (s.what === 'cancel') addActivity(`${who} cancelled a ${bch(s.sats)} withdrawal. The BCH is back in the vault.`, s.txid);
+  else if (who === 'Duress PIN') addActivity('Duress PIN froze the vault. Only the allowance can leave.', s.txid);
+}
+
 app.addEventListener('click', async (e) => {
   const el = (e.target as HTMLElement).closest<HTMLElement>('[data-act],[data-copy]');
   if (!el) return;
@@ -694,44 +718,62 @@ app.addEventListener('click', async (e) => {
       return render();
     case 'release':
       return act('Releasing', async () => {
-        const p = pendingAt(view, el.dataset.i);
+        const { p } = await freshPending(c!, view, el.dataset.i);
+        if (!p.ready) throw new Error('The wait isn\'t over on the network yet. Try again after the next block.');
+        // No wallet prompt: the contract lets anyone send a withdrawal on once its wait is over.
         return sendLocal(V.buildRelease({ contract: contractFor(c!), pending: p.utxo, to: p.to, fast: p.fast, waitBlocks: c!.waitBlocks, fastBlocks: c!.fastBlocks }));
       });
     case 'cancel-owner':
       return act('Cancelling', async () => {
-        const p = pendingAt(view, el.dataset.i);
-        const tb = V.buildMerge({ contract: contractFor(c!), main: view!.main!, state: view!.state!, other: p.utxo, pk: hexToBin(c!.ownerPk), signer: 'wallet' });
+        const { v, p } = await freshPending(c!, view, el.dataset.i);
+        const tb = V.buildMerge({ contract: contractFor(c!), main: v.main!, state: v.state!, other: p.utxo, pk: hexToBin(c!.ownerPk), signer: 'wallet' });
         return wallet.signAndSend(provider, tb, [[0, 'receive', 0]], 'Holdfast: cancel a withdrawal');
       });
     case 'absorb':
       return act('Adding deposits', async () => {
         let txid = '';
-        for (const d of view!.deposits) {
-          const v = await readConfig(c!);
+        let v = await readConfig(c!);
+        const todo = C.mergeableDeposits(v);
+        for (const [n, d] of todo.entries()) {
+          if (!v.deposits.some((x) => x.txid === d.txid && x.vout === d.vout)) continue;
+          const before = v.main;
           const tb = V.buildMerge({ contract: contractFor(c!), main: v.main!, state: v.state!, other: d, pk: hexToBin(c!.ownerPk), signer: 'wallet' });
-          txid = await wallet.signAndSend(provider, tb, [[0, 'receive', 0]], 'Holdfast: add a deposit to the vault');
-          await new Promise((r) => setTimeout(r, 1500));
+          txid = await wallet.signAndSend(provider, tb, [[0, 'receive', 0]], `Holdfast: add a deposit to the vault${todo.length > 1 ? ` (${n + 1} of ${todo.length})` : ''}`);
+          if (n < todo.length - 1) {
+            addActivity(`Added a ${bch(d.satoshis)} deposit to the vault.`, txid);
+            v = await C.waitForNewMain(() => readConfig(c!), before, sleep);
+          }
         }
         return txid;
       });
     case 'cancel-home':
       return act('Cancelling', async () => {
-        const p = pendingAt(view, el.dataset.i);
+        const { v, p } = await freshPending(c!, view, el.dataset.i);
         const home = new SignatureTemplate(homeKey!);
-        return sendLocal(V.buildMerge({ contract: contractFor(c!), main: view!.main!, state: view!.state!, other: p.utxo, pk: home.publicKey, signer: home }));
+        return sendLocal(V.buildMerge({ contract: contractFor(c!), main: v.main!, state: v.state!, other: p.utxo, pk: home.publicKey, signer: home }));
       });
     case 'freeze-home':
       return act('Freezing', async () => {
         const home = new SignatureTemplate(homeKey!);
-        const txid = await sendLocal(V.buildFreeze({ contract: contractFor(c!), main: view!.main!, state: view!.state!, pk: home.publicKey, signer: home, duress: false }));
-        await cancelAllLocal(c!, home);
-        return txid;
+        const steps = await C.lockDown({
+          read: () => readConfig(c!),
+          send: sendLocal,
+          contract: contractFor(c!),
+          key: home,
+          mode: 'home',
+          onStep: (s) => lockStepActivity(s, 'Home code'),
+        });
+        const cancelled = steps.filter((s) => s.what === 'cancel').length;
+        if (cancelled) nextDone = `Vault frozen and ${cancelled === 1 ? 'one withdrawal' : `${cancelled} withdrawals`} cancelled. Nothing can leave until it is unfrozen.`;
+        return steps.find((s) => s.what === 'freeze')?.txid ?? '';
       });
     case 'approve-home':
       return act('Approving', async () => {
         const home = new SignatureTemplate(homeKey!);
-        const asGuardian = !c!.hasGuardian;
-        return sendLocal(V.buildApprove({ contract: contractFor(c!), main: view!.main!, state: view!.state!, pk: home.publicKey, asHome: true, asGuardian, signer: home, what: el.dataset.what as 'unfreeze' | 'recover' }));
+        const what = el.dataset.what as 'unfreeze' | 'recover';
+        const v = await readConfig(c!);
+        if (!c!.hasGuardian) nextDone = what === 'unfreeze' ? 'Vault unfrozen.' : 'Approved. You can now move everything out.';
+        return sendLocal(V.buildApprove({ contract: contractFor(c!), main: v.main!, state: v.state!, pk: home.publicKey, ...C.approveRoles(c!, 'home'), signer: home, what }));
       });
     case 'forget-home':
       homeKey = null;
@@ -743,27 +785,31 @@ app.addEventListener('click', async (e) => {
     case 'cancel-guardian':
       return act('Cancelling', async () => {
         const gc = guardianConfig!;
-        const p = pendingAt(guardianView, el.dataset.i);
-        const tb = V.buildMerge({ contract: contractFor(gc), main: guardianView!.main!, state: guardianView!.state!, other: p.utxo, pk: hexToBin(gc.guardianPk), signer: 'wallet' });
+        const { v, p } = await freshPending(gc, guardianView, el.dataset.i);
+        const tb = V.buildMerge({ contract: contractFor(gc), main: v.main!, state: v.state!, other: p.utxo, pk: hexToBin(gc.guardianPk), signer: 'wallet' });
         return wallet.signAndSend(provider, tb, [[0, 'receive', 0]], 'Holdfast guardian: cancel a withdrawal');
       });
     case 'fast':
       return act('Approving fast lane', async () => {
         const gc = guardianConfig!;
-        const p = pendingAt(guardianView, el.dataset.i);
+        const { p } = await freshPending(gc, guardianView, el.dataset.i);
         const tb = V.buildApproveFast({ contract: contractFor(gc), pending: p.utxo, to: p.to, guardian: 'wallet' });
         return wallet.signAndSend(provider, tb, [[0, 'receive', 0]], 'Holdfast guardian: approve a fast withdrawal');
       });
     case 'freeze-guardian':
       return act('Freezing', async () => {
         const gc = guardianConfig!;
-        const tb = V.buildFreeze({ contract: contractFor(gc), main: guardianView!.main!, state: guardianView!.state!, pk: hexToBin(gc.guardianPk), signer: 'wallet', duress: false });
+        const v = await readConfig(gc);
+        const tb = V.buildFreeze({ contract: contractFor(gc), main: v.main!, state: v.state!, pk: hexToBin(gc.guardianPk), signer: 'wallet', duress: false });
+        // A freeze stops the vault coin, not withdrawals already waiting: those need Cancel.
+        if (v.pending.length) nextDone = `Vault frozen. ${v.pending.length === 1 ? 'One withdrawal is' : `${v.pending.length} withdrawals are`} still waiting: cancel ${v.pending.length === 1 ? 'it' : 'them'} below.`;
         return wallet.signAndSend(provider, tb, [[0, 'receive', 0]], 'Holdfast guardian: freeze the vault');
       });
     case 'approve-guardian':
       return act('Approving', async () => {
         const gc = guardianConfig!;
-        const tb = V.buildApprove({ contract: contractFor(gc), main: guardianView!.main!, state: guardianView!.state!, pk: hexToBin(gc.guardianPk), asHome: false, asGuardian: true, signer: 'wallet', what: el.dataset.what as 'unfreeze' | 'recover' });
+        const v = await readConfig(gc);
+        const tb = V.buildApprove({ contract: contractFor(gc), main: v.main!, state: v.state!, pk: hexToBin(gc.guardianPk), ...C.approveRoles(gc, 'guardian'), signer: 'wallet', what: el.dataset.what as 'unfreeze' | 'recover' });
         return wallet.signAndSend(provider, tb, [[0, 'receive', 0]], 'Holdfast guardian: approve');
       });
     case 'guardian-close':
@@ -773,31 +819,24 @@ app.addEventListener('click', async (e) => {
   }
 });
 
-/** After a freeze, pull every waiting withdrawal back with a key this page holds. */
-async function cancelAllLocal(c: C.VaultConfig, key: SignatureTemplate) {
-  for (let n = 0; n < 10; n++) {
-    await new Promise((r) => setTimeout(r, 1200));
-    const v = await readConfig(c);
-    view = v;
-    if (!v.pending.length || !v.main) return;
-    await sendLocal(V.buildMerge({ contract: contractFor(c), main: v.main, state: v.state!, other: v.pending[0].utxo, pk: key.publicKey, signer: key }));
-  }
-}
-
 /** Duress PIN: freeze with the panic key and cancel everything waiting, without the wallet or any sign on screen. */
 async function duressFreeze() {
   const c = saved!.config;
   const panic = new SignatureTemplate(hexToBin(saved!.panicKey));
   try {
-    const v = await readConfig(c);
-    view = v;
+    view = await readConfig(c);
     render();
-    if (v.main && v.state && v.state.level === 0) {
-      await sendLocal(V.buildFreeze({ contract: contractFor(c), main: v.main, state: v.state, pk: panic.publicKey, signer: panic, duress: true }));
-    }
-    await cancelAllLocal(c, panic);
-  } catch {
-    /* Stay silent on screen: the robber is watching. */
+    await C.lockDown({
+      read: () => readConfig(c),
+      send: sendLocal,
+      contract: contractFor(c),
+      key: panic,
+      mode: 'duress',
+      onStep: (s) => lockStepActivity(s, 'Duress PIN'),
+    });
+  } catch (e) {
+    /* Stay silent on screen: the robber is watching. The owner sees it in the log later. */
+    log(`duress run stopped: ${(e as Error).message}`);
   }
   await refresh();
 }
@@ -816,6 +855,7 @@ app.addEventListener('submit', async (e) => {
       const amount = sats(val('amount'));
       if (!C.isAddressFor(to, net)) return err(`Enter a ${net === 'mainnet' ? 'bitcoincash:' : 'bchtest:'} address.`);
       if (amount === 0n) return err('Enter an amount in BCH, like 0.001');
+      if (amount < C.minPayment(to)) return err(`The smallest payment the network accepts is ${bch(C.minPayment(to))}.`);
       if (amount > view!.allowanceLeft) return err(`You can send up to ${bch(view!.allowanceLeft)} right away.${decoy ? '' : ' For more, start a withdrawal.'}`);
       nextDone = `Sent ${bch(amount)}.`;
       return act('Sending', async () => {
@@ -828,9 +868,10 @@ app.addEventListener('submit', async (e) => {
     case 'withdraw': {
       const to = val('to');
       const amount = sats(val('amount'));
-      const free = view!.main!.satoshis - V.VAULT_FEE;
+      const free = C.maxWithdrawal(view!);
       if (!C.isAddressFor(to, net)) return err(`Enter a ${net === 'mainnet' ? 'bitcoincash:' : 'bchtest:'} address.`);
-      if (amount < V.MIN_WITHDRAWAL) return err('The smallest withdrawal is 0.00001 BCH.');
+      const least = C.minWithdrawal(to);
+      if (amount < least) return err(`The smallest withdrawal is ${bch(least)}: the release pays a ${bch(V.VAULT_FEE)} network fee out of it.`);
       if (amount > free) return err(`At most ${bch(free)} can be withdrawn right now.`);
       nextDone = `Withdrawal of ${bch(amount)} started. It waits ${C.blocksToText(c!.waitBlocks)}.`;
       return act('Starting withdrawal', async () => {
@@ -878,7 +919,7 @@ app.addEventListener('submit', async (e) => {
       if (!C.isAddressFor(to, net)) return err(`Enter a ${net === 'mainnet' ? 'bitcoincash:' : 'bchtest:'} address.`);
       return act('Moving everything', async () => {
         const home = new SignatureTemplate(homeKey!);
-        await cancelAllLocal(c!, home);
+        await C.lockDown({ read: () => readConfig(c!), send: sendLocal, contract: contractFor(c!), key: home, mode: 'cancel', onStep: (s) => lockStepActivity(s, 'Home code') });
         const v = await readConfig(c!);
         return sendLocal(V.buildRecover({ contract: contractFor(c!), main: v.main!, home, to }));
       });
@@ -934,6 +975,20 @@ async function setupStep(f: HTMLFormElement, val: (n: string) => string) {
 async function createVault(amount: bigint) {
   const d = draft;
   await act('Creating your vault', async () => {
+    // A record from an earlier try may belong to a vault that did reach the chain
+    // (for example the network dropped after sending). Its panic key exists only
+    // there, so adopt it instead of overwriting it.
+    const earlier = readPendingRecord();
+    if (earlier && (await C.resolveEarlierCreation(earlier.config, readConfig)) === 'adopt') {
+      saved = earlier;
+      save();
+      localStorage.removeItem(pendingKey());
+      log('adopted vault from an earlier try instead of creating a second one');
+      unlocked = true;
+      go('/vault');
+      nextDone = 'Your vault from the earlier try is on the network. Opened it; nothing new was created.';
+      return '';
+    }
     const ownerPk = wallet.ownerPk();
     const change = C.p2pkhAddress(ownerPk, net);
     const unlocker = wallet.unlockerFor(net);
@@ -1003,15 +1058,18 @@ setInterval(() => {
   if (!busy && document.visibilityState === 'visible' && (unlocked || guardianConfig)) refresh();
 }, 60_000);
 
+function readPendingRecord(): Saved | null {
+  try {
+    return JSON.parse(localStorage.getItem(pendingKey()) || 'null');
+  } catch {
+    return null;
+  }
+}
+
 /** A creation that was signed but whose page was reloaded before it finished: adopt it if the vault exists on chain. */
 async function adoptPending() {
   if (saved) return;
-  let rec: Saved | null = null;
-  try {
-    rec = JSON.parse(localStorage.getItem(pendingKey()) || 'null');
-  } catch {
-    rec = null;
-  }
+  const rec = readPendingRecord();
   if (!rec) return;
   try {
     const v = await readConfig(rec.config);

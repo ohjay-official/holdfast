@@ -1,6 +1,7 @@
 // A NetworkProvider that tries several Electrum servers in turn, so one server
-// being down or unreachable doesn't stop the page from reading the chain.
+// being down, unreachable or silent doesn't stop the page from reading the chain.
 
+import { binToHex, hash256, hexToBin } from '@bitauth/libauth';
 import {
   ElectrumNetworkProvider,
   type Network,
@@ -8,38 +9,69 @@ import {
   type SpendableUtxo,
 } from 'cashscript';
 
+/** The calls we make on one server. ElectrumNetworkProvider in the app; a fake in tests. */
+export type Backend = Pick<
+  ElectrumNetworkProvider,
+  'getUtxos' | 'getUtxosForLockingBytecode' | 'getBlockHeight' | 'getRawTransaction' | 'sendRawTransaction' | 'performRequest'
+>;
+
+/** How long one server gets to answer before the next one is tried. */
+export const SERVER_TIMEOUT_MS = 10_000;
+
+const CONNECTION_PROBLEM = /connect|websocket|timeout|timed out|network|closed|1006/i;
+const ALREADY_SENT = /already been submitted|txn-already-known|txn-already-in-mempool|transaction already in block chain/i;
+
+/** The txid of a raw transaction. */
+export function txidOf(txHex: string): string {
+  return binToHex(hash256(hexToBin(txHex)).reverse());
+}
+
 export class FallbackNetworkProvider implements NetworkProvider {
   readonly network: Network;
-  private providers: { host: string; p: ElectrumNetworkProvider }[];
+  private providers: { host: string; p: Backend }[];
   private current = 0;
+  private timeoutMs: number;
   onSwitch?: (host: string) => void;
 
-  constructor(network: Network, hosts: string[]) {
+  constructor(network: Network, hosts: string[], opts: { timeoutMs?: number; make?: (host: string) => Backend } = {}) {
     if (hosts.length === 0) throw new Error('Need at least one Electrum server');
     this.network = network;
-    this.providers = hosts.map((host) => ({ host, p: new ElectrumNetworkProvider(network, { hostname: host }) }));
+    this.timeoutMs = opts.timeoutMs ?? SERVER_TIMEOUT_MS;
+    const make = opts.make ?? ((host: string) => new ElectrumNetworkProvider(network, { hostname: host }));
+    this.providers = hosts.map((host) => ({ host, p: make(host) }));
   }
 
   get host(): string {
     return this.providers[this.current].host;
   }
 
-  private async attempt<T>(fn: (p: ElectrumNetworkProvider) => Promise<T>): Promise<T> {
+  private async attempt<T>(fn: (p: Backend) => Promise<T>): Promise<T> {
     let lastErr: unknown;
     for (let i = 0; i < this.providers.length; i++) {
       const idx = (this.current + i) % this.providers.length;
+      const { host, p } = this.providers[idx];
+      let timer: ReturnType<typeof setTimeout> | undefined;
       try {
-        const out = await fn(this.providers[idx].p);
+        // A server that connects but never answers would otherwise hang here
+        // forever and the other servers would never be tried.
+        const out = await Promise.race([
+          fn(p),
+          new Promise<never>((_, rej) => {
+            timer = setTimeout(() => rej(new Error(`${host} timed out after ${Math.round(this.timeoutMs / 1000)} seconds`)), this.timeoutMs);
+          }),
+        ]);
         if (idx !== this.current) {
           this.current = idx;
-          this.onSwitch?.(this.providers[idx].host);
+          this.onSwitch?.(host);
         }
         return out;
       } catch (err) {
         lastErr = err;
         // Only fall through to the next server on connection problems, not on
         // real answers such as a rejected transaction.
-        if (!/connect|websocket|timeout|timed out|network|closed|1006/i.test(String((err as Error)?.message ?? err))) throw err;
+        if (!CONNECTION_PROBLEM.test(String((err as Error)?.message ?? err))) throw err;
+      } finally {
+        clearTimeout(timer);
       }
     }
     throw lastErr;
@@ -61,8 +93,17 @@ export class FallbackNetworkProvider implements NetworkProvider {
     return this.attempt((p) => p.getRawTransaction(txid));
   }
 
-  sendRawTransaction(txHex: string): Promise<string> {
-    return this.attempt((p) => p.sendRawTransaction(txHex));
+  /**
+   * Broadcast. Sending the same transaction again (a double tap, or a retry
+   * after a server timed out but did relay it) is reported as sent, not as an error.
+   */
+  async sendRawTransaction(txHex: string): Promise<string> {
+    try {
+      return await this.attempt((p) => p.sendRawTransaction(txHex));
+    } catch (err) {
+      if (ALREADY_SENT.test(String((err as Error)?.message ?? err))) return txidOf(txHex);
+      throw err;
+    }
   }
 
   /** Confirmation height of each unspent coin at an address ("txid:vout" to height, 0 if unconfirmed). */

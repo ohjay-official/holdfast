@@ -8,6 +8,7 @@ import {
   decodeCashAddress,
   encodeBip39Mnemonic,
   encodeCashAddress,
+  getDustThreshold,
   hash160,
   hexToBin,
   lockingBytecodeToCashAddress,
@@ -15,7 +16,7 @@ import {
   sha256,
   utf8ToBin,
 } from '@bitauth/libauth';
-import { TransactionBuilder, type NetworkProvider, type SpendableUtxo, type Unlocker, type Utxo } from 'cashscript';
+import { TransactionBuilder, type NetworkProvider, type SignatureTemplate, type SpendableUtxo, type Unlocker, type Utxo } from 'cashscript';
 import * as V from '../vault.js';
 
 export type Net = 'mainnet' | 'chipnet';
@@ -96,8 +97,25 @@ export function decodeVaultCode(code: string): VaultConfig {
   } catch {
     throw new Error('That vault code is damaged. Copy it again in full.');
   }
-  if (c.v !== 1 || !c.category || !c.ownerPk) throw new Error('That vault code is incomplete.');
+  if (!validConfig(c)) throw new Error('That vault code is incomplete or was changed. Copy it again in full.');
   return c;
+}
+
+const PK = /^0[23][0-9a-f]{64}$/;
+const isBlocks = (n: unknown) => Number.isInteger(n) && (n as number) > 0 && (n as number) <= 0xffff;
+
+/** Every field a vault code must carry, in the shape the app writes. */
+function validConfig(c: VaultConfig): boolean {
+  if (!c || typeof c !== 'object' || c.v !== 1) return false;
+  if (c.net !== 'mainnet' && c.net !== 'chipnet') return false;
+  if (![c.ownerPk, c.homePk, c.guardianPk, c.panicPk].every((k) => typeof k === 'string' && PK.test(k))) return false;
+  if (typeof c.category !== 'string' || !/^[0-9a-f]{64}$/.test(c.category)) return false;
+  if (typeof c.allowance !== 'string' || !/^[1-9][0-9]*$/.test(c.allowance)) return false;
+  if (![c.waitBlocks, c.fastBlocks, c.refillBlocks, c.evictBlocks].every(isBlocks)) return false;
+  if (typeof c.hasGuardian !== 'boolean') return false;
+  // A vault without a guardian uses the home key in the guardian's place.
+  if (!c.hasGuardian && c.guardianPk !== c.homePk) return false;
+  return true;
 }
 
 // ---------------- keys ----------------
@@ -204,7 +222,7 @@ export function readVault(c: VaultConfig, utxos: Utxo[], heights: Map<string, nu
       allowanceLeft = allowance > state.spent ? allowance - state.spent : 0n;
       if (state.spent > 0n) refillIn = c.refillBlocks - mainAge;
     }
-    const spendable = mainCoin.utxo.satoshis - V.VAULT_FEE;
+    const spendable = mainCoin.utxo.satoshis - V.VAULT_FEE - MAIN_MIN;
     if (allowanceLeft > spendable) allowanceLeft = spendable > 0n ? spendable : 0n;
   }
   const waitingSats = pending.reduce((a, p) => a + p.sats, 0n);
@@ -224,6 +242,149 @@ export function readVault(c: VaultConfig, utxos: Utxo[], heights: Map<string, nu
     tickets,
     tip,
   };
+}
+
+// ---------------- limits the app checks before building ----------------
+
+/**
+ * Sats the vault coin always keeps. A CashTokens output below its dust limit
+ * (720 sats for the vault coin) can't be built or relayed, so "send all" or
+ * "withdraw all" must leave at least this much behind.
+ */
+export const MAIN_MIN = 1_000n;
+
+/** The smallest payment the network relays to `address` (its dust limit). */
+export function minPayment(address: string): bigint {
+  return BigInt(getDustThreshold({ lockingBytecode: V.lockingBytecodeOf(address), valueSatoshis: 0n }));
+}
+
+/**
+ * The smallest withdrawal that can ever be released: the release pays the
+ * 2,000-sat fee out of it and the rest must still be a relayable payment.
+ * The contract itself accepts down to 1,000 sats, but those could only be cancelled.
+ */
+export function minWithdrawal(to: string, _net?: Net): bigint {
+  return V.VAULT_FEE + minPayment(to);
+}
+
+/** The most a single withdrawal can take while the vault coin stays usable. */
+export function maxWithdrawal(v: VaultView): bigint {
+  if (!v.main) return 0n;
+  const m = v.main.satoshis - V.VAULT_FEE - MAIN_MIN;
+  return m > 0n ? m : 0n;
+}
+
+/** Deposits worth adding: merging one smaller than the merge fee would shrink the vault. */
+export function mergeableDeposits(v: VaultView): Utxo[] {
+  return v.deposits.filter((u) => u.satoshis > V.MERGE_FEE);
+}
+
+/** With no guardian, the home key stands in for the guardian too, so one approval does both halves. */
+export function approveRoles(c: Pick<VaultConfig, 'hasGuardian'>, who: 'home' | 'guardian'): { asHome: boolean; asGuardian: boolean } {
+  return who === 'home' ? { asHome: true, asGuardian: !c.hasGuardian } : { asHome: false, asGuardian: true };
+}
+
+/** What the duress view shows as the balance: only what the allowance lets out now. */
+export function duressBalance(v: VaultView): bigint {
+  return v.allowanceLeft;
+}
+
+// ---------------- freeze and cancel everything ----------------
+
+export interface LockStep {
+  what: 'freeze' | 'cancel';
+  txid: string;
+  sats: bigint;
+}
+
+const outpoint = (u: Utxo | null) => (u ? `${u.txid}:${u.vout}` : '');
+
+/**
+ * Freeze (home code or duress) and pull every waiting withdrawal back, one
+ * transaction at a time, with a key this page holds. After each step it waits
+ * until the network shows the new vault coin, so it never builds on a coin that
+ * is already spent. `mode: 'cancel'` only cancels (used before moving the vault).
+ */
+export async function lockDown(o: {
+  read: () => Promise<VaultView>;
+  send: (tb: TransactionBuilder) => Promise<string>;
+  contract: V.HoldfastContract;
+  key: SignatureTemplate;
+  mode: 'home' | 'duress' | 'cancel';
+  wait?: (ms: number) => Promise<void>;
+  onStep?: (s: LockStep) => void;
+  tries?: number;
+}): Promise<LockStep[]> {
+  const wait = o.wait ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
+  const tries = o.tries ?? 10;
+  const steps: LockStep[] = [];
+  const pk = o.key.publicKey;
+  let v = await o.read();
+  for (let n = 0; n < 30 && v.main && v.state; n++) {
+    const level = v.state.level;
+    const wantFreeze = o.mode === 'duress' ? level === 0 : o.mode === 'home' ? level < 2 : false;
+    const canFreeze = v.main.satoshis - V.VAULT_FEE >= MAIN_MIN;
+    let tb: TransactionBuilder;
+    let step: Omit<LockStep, 'txid'>;
+    if (wantFreeze && (canFreeze || !v.pending.length)) {
+      if (!canFreeze) throw new Error('The vault holds too little to pay the network fee for a freeze.');
+      tb = V.buildFreeze({ contract: o.contract, main: v.main, state: v.state, pk, signer: o.key, duress: o.mode === 'duress' });
+      step = { what: 'freeze', sats: 0n };
+    } else if (v.pending.length) {
+      // Cancelling first also tops up a vault coin too small to pay for the freeze.
+      const p = v.pending[0];
+      tb = V.buildMerge({ contract: o.contract, main: v.main, state: v.state, other: p.utxo, pk, signer: o.key });
+      step = { what: 'cancel', sats: p.sats };
+    } else break;
+    const before = outpoint(v.main);
+    const txid = await o.send(tb);
+    const done = { ...step, txid };
+    steps.push(done);
+    o.onStep?.(done);
+    v = await waitForNewMain(o.read, before, wait, tries);
+  }
+  return steps;
+}
+
+/**
+ * Every vault action spends the vault coin, so the next one must be built on
+ * the new coin. Read until the network shows it.
+ */
+export async function waitForNewMain(
+  read: () => Promise<VaultView>,
+  before: Utxo | string | null,
+  wait: (ms: number) => Promise<void> = (ms) => new Promise<void>((r) => setTimeout(r, ms)),
+  tries = 10,
+): Promise<VaultView> {
+  const old = typeof before === 'string' ? before : outpoint(before);
+  for (let t = 0; t < tries; t++) {
+    await wait(1200);
+    const r = await read();
+    if (outpoint(r.main) !== old) return r;
+  }
+  throw new Error('The network hasn\'t shown the last step yet. Refresh in a minute and tap again.');
+}
+
+/** The same waiting withdrawal in a fresher read, or an error if it already left or was cancelled. */
+export function samePending(v: VaultView, p: { utxo: Utxo }): PendingView {
+  const q = v.pending.find((x) => x.utxo.txid === p.utxo.txid && x.utxo.vout === p.utxo.vout);
+  if (!q) throw new Error('That withdrawal already left or was cancelled. Refresh.');
+  return q;
+}
+
+/**
+ * Before starting a new creation, deal with the record a previous try left
+ * behind. If that vault reached the chain it must be adopted: its panic key
+ * exists nowhere else. Throws if the chain can't be read, so nothing is overwritten blind.
+ */
+export async function resolveEarlierCreation(earlier: VaultConfig, read: (c: VaultConfig) => Promise<VaultView>): Promise<'adopt' | 'replace'> {
+  let v: VaultView;
+  try {
+    v = await read(earlier);
+  } catch {
+    throw new Error('Couldn\'t check your earlier try at creating a vault. Check your connection and tap Create vault again.');
+  }
+  return v.main ? 'adopt' : 'replace';
 }
 
 // ---------------- creating a vault ----------------
