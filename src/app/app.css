@@ -132,7 +132,7 @@ body[data-role='guardian'] .topbar { box-shadow: inset 0 3px 0 var(--ink); }
 .dots i { width: 0.85rem; height: 0.85rem; border-radius: 50%; border: 1.5px solid var(--ink); }
 .dots i.on { background: var(--ink); }
 .pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.55rem; max-width: 18rem; margin-left: auto; margin-right: auto; width: 100%; }
-.pad button { font: 600 1.4rem var(--sans); padding: 0.85rem 0; border: 1px solid var(--rule); border-radius: var(--r); background: #fff; color: var(--ink); cursor: pointer; }
+.pad button { touch-action: manipulation; -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; font: 600 1.4rem var(--sans); padding: 0.85rem 0; border: 1px solid var(--rule); border-radius: var(--r); background: #fff; color: var(--ink); cursor: pointer; }
 .pad button:active { background: var(--ground-2); }
 .pad button[data-act='pin-del'], .pad .pad-ok { font-size: 0.95rem; }
 .pad .pad-ok { background: var(--ink); color: var(--paper); border-color: var(--ink); }
@@ -155,3 +155,6 @@ body[data-role='guardian'] .topbar { box-shadow: inset 0 3px 0 var(--ink); }
 textarea { font: 400 1.05rem/1.4 var(--sans); padding: 0.75rem 0.8rem; border: 1.5px solid var(--rule); border-radius: 4px; background: #fff; color: var(--ink); width: 100%; resize: vertical; }
 textarea:focus { border-color: var(--ink); outline: none; box-shadow: 0 0 0 3px var(--held-soft); }
 .btn[aria-disabled='true'] { opacity: 0.45; pointer-events: none; }
+
+/* iOS Safari turns two quick taps on the same spot into a double-tap zoom and fires one click: a repeated PIN digit was being dropped. */
+button, [data-act] { touch-action: manipulation; }
