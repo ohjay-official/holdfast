@@ -522,7 +522,7 @@ function screenSettings(): string {
       <div><dt>Vault address</dt><dd class="addr">${contractFor(c).address}</dd></div>
     </dl>
     <h2 class="h-sm">Vault code</h2>
-    <p class="small">Your guardian needs this to act on your vault, and you need it to open the vault on another phone. It contains no keys.</p>
+    <p class="small">Your guardian needs this to act on your vault. With your home code, it also lets you cancel, freeze and move the vault from another phone if you lose this one. It contains no keys. Keep a copy with your home code.</p>
     <p class="addr-box"><code id="vault-code">${code}</code></p>
     <button class="btn btn-line" data-copy="#vault-code">Copy vault code</button>
     <h2 class="h-sm">This phone</h2>
