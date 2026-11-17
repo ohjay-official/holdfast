@@ -1,5 +1,5 @@
 import QRCode from 'qrcode';
-import { SignatureTemplate } from 'cashscript';
+import { SignatureTemplate, type TransactionBuilder, type Utxo } from 'cashscript';
 import { binToHex, hexToBin } from '@bitauth/libauth';
 import * as V from '../vault.js';
 import * as C from './core.js';
@@ -169,6 +169,8 @@ async function act(label: string, fn: () => Promise<string | void>, done?: strin
     nextDone = null;
     setStatus('ok', text, txid || undefined);
     if (txid) addActivity(text, txid);
+    showBroadcasts();
+    render();
     await refreshSoon();
   } catch (e) {
     log(`raw error: ${e instanceof Error ? e.stack || e.message : String(e)}`);
@@ -185,10 +187,51 @@ function contractFor(c: C.VaultConfig) {
   return V.makeVault(C.paramsOf(c), provider);
 }
 
+/**
+ * Coins this page spent or made in its own broadcasts. A server can keep listing a
+ * spent coin, or not list a new one yet, for a while after a broadcast.
+ */
+const overlay = C.newOverlay();
+/** The last raw answer from the network per vault, so the screen can be redrawn right after a broadcast. */
+const lastRead = new Map<string, { utxos: Utxo[]; heights: Map<string, number>; tip: number }>();
+
+function viewFrom(c: C.VaultConfig, raw: { utxos: Utxo[]; heights: Map<string, number>; tip: number }): C.VaultView {
+  const o = C.applyOverlay(overlay, raw.utxos, C.lockOf(c));
+  return C.readVault(c, o.utxos, raw.heights, raw.tip, o.settling);
+}
+
 async function readConfig(c: C.VaultConfig): Promise<C.VaultView> {
   const contract = contractFor(c);
   const [utxos, heights, tip] = await Promise.all([contract.getUtxos(), provider.heights(contract.address), provider.getBlockHeight()]);
-  return C.readVault(c, utxos, heights, tip);
+  const raw = { utxos, heights, tip };
+  lastRead.set(contract.address, raw);
+  return viewFrom(c, raw);
+}
+
+/** Redraw every open vault from its last network read plus what we just broadcast. */
+function showBroadcasts() {
+  const again = (c: C.VaultConfig | null | undefined) => {
+    const raw = c && lastRead.get(contractFor(c).address);
+    return raw ? viewFrom(c!, raw) : null;
+  };
+  if (saved) view = again(saved.config) ?? view;
+  if (guardianConfig) guardianView = again(guardianConfig) ?? guardianView;
+  if (homeOnly) homeOnlyView = again(homeOnly) ?? homeOnlyView;
+}
+
+function note(tb: TransactionBuilder, txid: string, what: C.BroadcastKind) {
+  try {
+    C.noteBroadcast(overlay, tb, txid, what);
+  } catch (e) {
+    log(`could not note broadcast: ${(e as Error).message}`);
+  }
+}
+
+/** Sign with Paytaca and broadcast, then remember what it spent and made. */
+async function walletSend(tb: TransactionBuilder, paths: [number, string, number][], prompt: string, what: C.BroadcastKind = 'other'): Promise<string> {
+  const txid = await wallet.signAndSend(provider, tb, paths, prompt);
+  note(tb, txid, what);
+  return txid;
 }
 
 let lastWalletScan = 0;
@@ -224,8 +267,10 @@ async function refreshSoon() {
 }
 
 /** Broadcast a transaction signed in this page (home code, panic key, release). */
-async function sendLocal(tb: { send(): Promise<{ txid: string }> }): Promise<string> {
-  return (await tb.send()).txid;
+async function sendLocal(tb: TransactionBuilder, what: C.BroadcastKind = 'other'): Promise<string> {
+  const txid = (await tb.send()).txid;
+  note(tb, txid, what);
+  return txid;
 }
 
 // ---------------- pieces ----------------
@@ -256,12 +301,9 @@ function bar(v: C.VaultView): string {
 }
 
 function frozenBox(v: C.VaultView, c: C.VaultConfig): string {
-  const s = v.state;
-  if (!s || s.level === 0) return '';
-  const needs = c.hasGuardian ? 'your home code and your guardian' : 'your home code';
-  return `<div class="notice notice-frozen"><h2>Vault frozen</h2>
-    <p>${s.level === 1 ? 'Frozen by the duress PIN. Only the daily allowance can leave.' : 'Nothing can leave until it\'s unfrozen.'}</p>
-    <p class="small">To unfreeze: ${needs}. Home code ${s.unfreezeHome ? '<b>approved</b>' : 'not yet'}${c.hasGuardian ? `, guardian ${s.unfreezeGuardian ? '<b>approved</b>' : 'not yet'}` : ''}.</p></div>`;
+  const t = v.state && C.frozenText(v.state, c.hasGuardian);
+  if (!t) return '';
+  return `<div class="notice notice-frozen"><h2>${esc(t.title)}</h2><p>${esc(t.body)}</p><p class="small">${esc(t.next)}</p></div>`;
 }
 
 function shortAddr(a: string): string {
@@ -275,8 +317,13 @@ function clockIn(blocks: number): string {
 }
 
 function pendingList(v: C.VaultView, actions: (p: C.PendingView, i: number) => string): string {
-  if (!v.pending.length) return '<p class="muted">Nothing is waiting.</p>';
-  return `<ul class="pends">${v.pending
+  const settling = v.settling
+    .map((x) => `<li class="pend">
+      <div class="pend-top"><span class="pend-amt">${bch(x.sats)}</span><span class="tag tag-taken">Released</span></div>
+      <p class="pend-meta">To ${esc(shortAddr(x.to))}. Released, waiting for confirmation. It no longer counts in the vault.</p></li>`)
+    .join('');
+  if (!v.pending.length && !settling) return '<p class="muted">Nothing is waiting.</p>';
+  return `<ul class="pends">${settling}${v.pending
     .map((p, i) => {
       const state = p.ready
         ? 'Ready to release'
@@ -500,11 +547,17 @@ function screenHome(c: C.VaultConfig, v: C.VaultView | null, back: string): stri
     <section class="balance"><p class="bal-label">In the vault</p><p class="bal">${bch(v.total)}</p>${bar(v)}</section>
     <section class="block"><h2>Waiting to leave</h2>${pendingList(v, (_p, i) => `<button class="btn btn-sm btn-dark" data-act="cancel-home" data-i="${i}">Cancel this ${bch(_p.sats)}</button>`)}</section>
     <section class="block"><h2>Vault</h2><div class="stack">
-      ${s.level < 2 ? `<button class="btn btn-dark" data-act="freeze-home">${s.level === 1 ? 'Freeze fully, allowance too' : 'Freeze vault'}</button>` : ''}
-      ${s.level > 0 && !s.unfreezeHome ? `<button class="btn btn-line" data-act="approve-home" data-what="unfreeze">Approve unfreeze</button>` : ''}
-      ${!s.recoverHome ? `<button class="btn btn-line" data-act="approve-home" data-what="recover">Approve moving the vault</button>` : ''}
+      ${C.homeActions(s, c.hasGuardian)
+        .map((a) => {
+          const cls = a.primary ? 'btn btn-dark' : 'btn btn-line';
+          if (a.act === 'freeze') return `<button class="${cls}" data-act="freeze-home">${esc(a.label)}</button>`;
+          const what = a.act === 'approve-unfreeze' ? 'unfreeze' : 'recover';
+          const hint = what === 'recover' ? '<p class="small muted">This does not unfreeze. It lets you send everything to a new address, for when this phone is lost.</p>' : '';
+          return `<button class="${cls}" data-act="approve-home" data-what="${what}">${esc(a.label)}</button>${hint}`;
+        })
+        .join('')}
       ${s.recoverHome && (s.recoverGuardian || !c.hasGuardian) ? `<form data-form="recover" class="stack"><label class="field"><span>Move everything to</span><input name="to" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="${C.PREFIX[net]}:..."></label><button class="btn btn-dark" type="submit">Move everything</button></form>` : ''}
-      ${s.recoverHome && c.hasGuardian && !s.recoverGuardian ? '<p class="muted">You approved moving the vault. Your guardian needs to approve too.</p>' : ''}
+      ${s.recoverHome && c.hasGuardian && !s.recoverGuardian ? '<p class="muted">You allowed moving everything out. Your guardian needs to allow it too.</p>' : ''}
     </div></section>
     <button class="btn btn-line" data-act="forget-home">Forget the home code on this page</button>
   </main>`;
@@ -571,7 +624,7 @@ function screenGuardian(): string {
     <section class="block"><h2>Vault</h2><div class="stack">
       ${s.level < 2 ? `<button class="btn btn-dark" data-act="freeze-guardian">Freeze vault</button>` : ''}
       ${s.level > 0 && !s.unfreezeGuardian ? `<button class="btn btn-line" data-act="approve-guardian" data-what="unfreeze">Approve unfreeze</button>` : ''}
-      ${!s.recoverGuardian ? `<button class="btn btn-line" data-act="approve-guardian" data-what="recover">Approve moving the vault</button>` : ''}
+      ${!s.recoverGuardian ? `<button class="btn btn-line" data-act="approve-guardian" data-what="recover">Allow moving everything out (only if the owner lost their phone)</button>` : ''}
     </div></section>
     <nav class="links"><button class="linkish" data-act="refresh">Refresh</button><button class="linkish" data-act="guardian-close">Close this vault</button></nav>
   </main>`;
@@ -742,13 +795,13 @@ app.addEventListener('click', async (e) => {
         const { p } = await freshPending(c!, view, el.dataset.i);
         if (!p.ready) throw new Error('The wait isn\'t over on the network yet. Try again after the next block.');
         // No wallet prompt: the contract lets anyone send a withdrawal on once its wait is over.
-        return sendLocal(V.buildRelease({ contract: contractFor(c!), pending: p.utxo, to: p.to, fast: p.fast, waitBlocks: c!.waitBlocks, fastBlocks: c!.fastBlocks }));
+        return sendLocal(V.buildRelease({ contract: contractFor(c!), pending: p.utxo, to: p.to, fast: p.fast, waitBlocks: c!.waitBlocks, fastBlocks: c!.fastBlocks }), 'release');
       });
     case 'cancel-owner':
       return act('Cancelling', async () => {
         const { v, p } = await freshPending(c!, view, el.dataset.i);
         const tb = V.buildMerge({ contract: contractFor(c!), main: v.main!, state: v.state!, other: p.utxo, pk: hexToBin(c!.ownerPk), signer: 'wallet' });
-        return wallet.signAndSend(provider, tb, [[0, 'receive', 0]], 'Holdfast: cancel a withdrawal');
+        return walletSend(tb, [[0, 'receive', 0]], 'Holdfast: cancel a withdrawal');
       });
     case 'absorb':
       return act('Adding deposits', async () => {
@@ -759,7 +812,7 @@ app.addEventListener('click', async (e) => {
           if (!v.deposits.some((x) => x.txid === d.txid && x.vout === d.vout)) continue;
           const before = v.main;
           const tb = V.buildMerge({ contract: contractFor(c!), main: v.main!, state: v.state!, other: d, pk: hexToBin(c!.ownerPk), signer: 'wallet' });
-          txid = await wallet.signAndSend(provider, tb, [[0, 'receive', 0]], `Holdfast: add a deposit to the vault${todo.length > 1 ? ` (${n + 1} of ${todo.length})` : ''}`);
+          txid = await walletSend(tb, [[0, 'receive', 0]], `Holdfast: add a deposit to the vault${todo.length > 1 ? ` (${n + 1} of ${todo.length})` : ''}`);
           if (n < todo.length - 1) {
             addActivity(`Added a ${bch(d.satoshis)} deposit to the vault.`, txid);
             v = await C.waitForNewMain(() => readConfig(c!), before, sleep);
@@ -813,14 +866,14 @@ app.addEventListener('click', async (e) => {
         const gc = guardianConfig!;
         const { v, p } = await freshPending(gc, guardianView, el.dataset.i);
         const tb = V.buildMerge({ contract: contractFor(gc), main: v.main!, state: v.state!, other: p.utxo, pk: hexToBin(gc.guardianPk), signer: 'wallet' });
-        return wallet.signAndSend(provider, tb, [[0, 'receive', 0]], 'Holdfast guardian: cancel a withdrawal');
+        return walletSend(tb, [[0, 'receive', 0]], 'Holdfast guardian: cancel a withdrawal');
       });
     case 'fast':
       return act('Approving fast lane', async () => {
         const gc = guardianConfig!;
         const { p } = await freshPending(gc, guardianView, el.dataset.i);
         const tb = V.buildApproveFast({ contract: contractFor(gc), pending: p.utxo, to: p.to, guardian: 'wallet' });
-        return wallet.signAndSend(provider, tb, [[0, 'receive', 0]], 'Holdfast guardian: approve a fast withdrawal');
+        return walletSend(tb, [[0, 'receive', 0]], 'Holdfast guardian: approve a fast withdrawal');
       });
     case 'freeze-guardian':
       return act('Freezing', async () => {
@@ -829,14 +882,14 @@ app.addEventListener('click', async (e) => {
         const tb = V.buildFreeze({ contract: contractFor(gc), main: v.main!, state: v.state!, pk: hexToBin(gc.guardianPk), signer: 'wallet', duress: false });
         // A freeze stops the vault coin, not withdrawals already waiting: those need Cancel.
         if (v.pending.length) nextDone = `Vault frozen. ${v.pending.length === 1 ? 'One withdrawal is' : `${v.pending.length} withdrawals are`} still waiting: cancel ${v.pending.length === 1 ? 'it' : 'them'} below.`;
-        return wallet.signAndSend(provider, tb, [[0, 'receive', 0]], 'Holdfast guardian: freeze the vault');
+        return walletSend(tb, [[0, 'receive', 0]], 'Holdfast guardian: freeze the vault');
       });
     case 'approve-guardian':
       return act('Approving', async () => {
         const gc = guardianConfig!;
         const v = await readConfig(gc);
         const tb = V.buildApprove({ contract: contractFor(gc), main: v.main!, state: v.state!, pk: hexToBin(gc.guardianPk), ...C.approveRoles(gc, 'guardian'), signer: 'wallet', what: el.dataset.what as 'unfreeze' | 'recover' });
-        return wallet.signAndSend(provider, tb, [[0, 'receive', 0]], 'Holdfast guardian: approve');
+        return walletSend(tb, [[0, 'receive', 0]], 'Holdfast guardian: approve');
       });
     case 'guardian-close':
       guardianConfig = null;
@@ -886,7 +939,7 @@ app.addEventListener('submit', async (e) => {
       nextDone = `Sent ${bch(amount)}.`;
       return act('Sending', async () => {
         const tb = V.buildSpend({ contract: contractFor(c!), main: view!.main!, state: view!.state!, amount, to, owner: 'wallet', fresh: view!.fresh, refillBlocks: c!.refillBlocks });
-        const txid = await wallet.signAndSend(provider, tb, [[0, 'receive', 0]], `Holdfast: send ${bch(amount)}`);
+        const txid = await walletSend(tb, [[0, 'receive', 0]], `Holdfast: send ${bch(amount)}`);
         go('/vault');
         return txid;
       });
@@ -902,7 +955,7 @@ app.addEventListener('submit', async (e) => {
       nextDone = `Withdrawal of ${bch(amount)} started. It waits ${C.blocksToText(c!.waitBlocks)}.`;
       return act('Starting withdrawal', async () => {
         const tb = V.buildStartWithdrawal({ contract: contractFor(c!), main: view!.main!, state: view!.state!, amount, to, owner: 'wallet' });
-        const txid = await wallet.signAndSend(provider, tb, [[0, 'receive', 0]], `Holdfast: start a ${bch(amount)} withdrawal`);
+        const txid = await walletSend(tb, [[0, 'receive', 0]], `Holdfast: start a ${bch(amount)} withdrawal`);
         go('/vault');
         return txid;
       });
@@ -1043,7 +1096,7 @@ async function createVault(amount: bigint) {
       setStatus('info', 'Step 1 of 2: gathering your coins. Approve in Paytaca.');
       const prep = C.buildPrepare({ provider, coins, changeAddress: change, unlocker });
       const plain = coins.filter((u) => !u.token);
-      await wallet.signAndSend(provider, prep, plain.map((u, i) => [i, u.path[0], u.path[1]]), 'Holdfast: gather coins to create your vault (1 of 2)');
+      await walletSend(prep, plain.map((u, i) => [i, u.path[0], u.path[1]]), 'Holdfast: gather coins to create your vault (1 of 2)');
       for (let n = 0; n < 15; n++) {
         await new Promise((r) => setTimeout(r, 1500));
         coins = await wallet.coins(provider, net);
@@ -1080,7 +1133,7 @@ async function createVault(amount: bigint) {
     const record: Saved = { pinLen: d.pin.length, config, panicKey: binToHex(panicKey), salt, pin: await C.pinHash(d.pin, salt), duress: await C.pinHash(d.duress, salt) };
     localStorage.setItem(pendingKey(), JSON.stringify(record));
     log(`creating vault ${contract.address} code ${C.encodeVaultCode(config)}`);
-    const txid = await wallet.signAndSend(provider, builder, inputs.map((u, i) => [i, u.path[0], u.path[1]]), `Holdfast: create your vault with ${bch(amount)}`);
+    const txid = await walletSend(builder, inputs.map((u, i) => [i, u.path[0], u.path[1]]), `Holdfast: create your vault with ${bch(amount)}`);
     saved = record;
     save();
     localStorage.removeItem(pendingKey());

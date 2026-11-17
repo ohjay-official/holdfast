@@ -532,3 +532,113 @@ describe('lost phone: home code and vault code on another device, no wallet', ()
     vmCheck(V.buildRecover({ contract: k2, main: v.main!, home, to: fresh }));
   });
 });
+
+describe('screen right after a broadcast (live bug, A1 and A2 on Nov 17)', () => {
+  /** What the app keeps from its last network read: the raw coin list. */
+  const rawRead = async (contract: V.HoldfastContract) => contract.getUtxos();
+  const view = (config: C.VaultConfig, utxos: Awaited<ReturnType<typeof rawRead>>, ov: C.Overlay, now: number, tip = 2000) => {
+    const o = C.applyOverlay(ov, utxos, C.lockOf(config), now);
+    return C.readVault(config, o.utxos, new Map(o.utxos.map((u) => [`${u.txid}:${u.vout}`, o.added.has(`${u.txid}:${u.vout}`) ? 0 : 1500])), tip, o.settling);
+  };
+
+  it('after a release broadcast, a server still listing the spent withdrawal does not show it as releasable', async () => {
+    const { provider, contract, read, config } = await created(false);
+    let v = await read();
+    await viaWallet(provider, V.buildStartWithdrawal({ contract, main: v.main!, state: v.state!, amount: 100_000n, to: someone, owner: 'wallet' }), [0]);
+    const stale = await rawRead(contract); // the lagging server's answer, before and after the release
+    v = view(config, stale, C.newOverlay(), 0);
+    expect(v.pending).toHaveLength(1);
+    const totalBefore = v.total;
+    const tb = V.buildRelease({ contract, pending: v.pending[0].utxo, to: v.pending[0].to, fast: false, waitBlocks: 432, fastBlocks: 6 });
+    const txid = (await tb.send()).txid;
+    const ov = C.newOverlay();
+    C.noteBroadcast(ov, tb, txid, 'release', 1_000);
+    v = view(config, stale, ov, 2_000);
+    expect(v.pending).toHaveLength(0);
+    expect(v.waitingSats).toBe(0n);
+    expect(v.total).toBe(totalBefore - 100_000n);
+    expect(v.settling).toEqual([{ what: 'release', sats: 100_000n, to: someone, txid }]);
+    // Once the network stops listing it, nothing is settling any more.
+    v = view(config, await rawRead(contract), ov, 3_000);
+    expect(v.pending).toHaveLength(0);
+    expect(v.settling).toHaveLength(0);
+    // A broadcast that never shows up stops hiding the coin after the expiry.
+    const ov2 = C.newOverlay();
+    C.noteBroadcast(ov2, tb, txid, 'release', 0);
+    expect(view(config, stale, ov2, C.OVERLAY_MS + 1).pending).toHaveLength(1);
+  });
+
+  it('home code screen shows the vault frozen right after its own freeze, even before the server lists the new vault coin', async () => {
+    const { contract, config, homeKey } = await created(false);
+    const stale = await rawRead(contract);
+    let v = view(config, stale, C.newOverlay(), 0);
+    const before = v.main!.satoshis;
+    expect(C.homeActions(v.state!, config.hasGuardian).map((a) => a.act)).toContain('freeze');
+    const home = new SignatureTemplate(homeKey);
+    const tb = V.buildFreeze({ contract, main: v.main!, state: v.state!, pk: home.publicKey, signer: home, duress: false });
+    const txid = (await tb.send()).txid;
+    const ov = C.newOverlay();
+    C.noteBroadcast(ov, tb, txid, 'freeze', 0);
+    v = view(config, stale, ov, 1);
+    expect(v.state!.level).toBe(2);
+    expect(v.main!.txid).toBe(txid);
+    expect(v.main!.satoshis).toBe(before - V.VAULT_FEE);
+    expect(v.total).toBe(before - V.VAULT_FEE);
+    expect(v.allowanceLeft).toBe(0n);
+    const acts = C.homeActions(v.state!, config.hasGuardian);
+    expect(acts[0].act).toBe('approve-unfreeze');
+    expect(acts[0].primary).toBe(true);
+    expect(acts.map((a) => a.act)).not.toContain('freeze');
+    // Chaining: the next home code action can build on the new coin right away.
+    const tb2 = V.buildApprove({ contract, main: v.main!, state: v.state!, pk: home.publicKey, ...C.approveRoles(config, 'home'), signer: home, what: 'unfreeze' });
+    const txid2 = (await tb2.send()).txid;
+    C.noteBroadcast(ov, tb2, txid2, 'approve', 2);
+    v = view(config, stale, ov, 3);
+    expect(v.state!.level).toBe(0);
+    expect(v.main!.satoshis).toBe(before - 2n * V.VAULT_FEE);
+    // Live A2 unfreeze, 7:43 PM: the screen must stop showing the frozen box and "Approve unfreeze".
+    expect(C.frozenText(v.state!, config.hasGuardian)).toBeNull();
+    expect(C.homeActions(v.state!, config.hasGuardian)[0].act).toBe('freeze');
+    expect(C.homeActions(v.state!, config.hasGuardian).map((a) => a.act)).not.toContain('approve-unfreeze');
+    expect(v.allowanceLeft).toBeGreaterThan(0n);
+  });
+
+  it('a wallet-signed broadcast (cancel) is reflected the same way', async () => {
+    const { provider, contract, read, config } = await created(false);
+    let v = await read();
+    await viaWallet(provider, V.buildStartWithdrawal({ contract, main: v.main!, state: v.state!, amount: 70_000n, to: someone, owner: 'wallet' }), [0]);
+    const stale = await rawRead(contract);
+    v = view(config, stale, C.newOverlay(), 0);
+    const tb = V.buildMerge({ contract, main: v.main!, state: v.state!, other: v.pending[0].utxo, pk: hexToBin(config.ownerPk), signer: 'wallet' });
+    const txid = await viaWallet(provider, tb, [0]);
+    const ov = C.newOverlay();
+    C.noteBroadcast(ov, tb, txid, 'cancel', 0);
+    const after = view(config, stale, ov, 1);
+    expect(after.pending).toHaveLength(0);
+    expect(after.settling).toHaveLength(0); // a cancel is not "leaving"
+    expect(after.total).toBe(v.total - V.MERGE_FEE);
+  });
+
+  it('frozen box copy says which approvals are needed and which are given', () => {
+    const s = (o: Partial<V.MainState>): V.MainState => ({ ...V.OPEN, level: 2, ...o });
+    expect(C.frozenText(s({}), false)).toEqual({ title: 'Vault frozen', body: 'Nothing can leave until it\'s unfrozen.', next: 'Unfreeze with your home code on the Home code screen.' });
+    expect(C.frozenText(s({ level: 1 }), false)!.body).toBe('Frozen by the duress PIN. Only the daily allowance can leave.');
+    expect(C.frozenText(s({}), true)!.next).toBe('To unfreeze, your home code and your guardian each approve. Neither has approved yet.');
+    expect(C.frozenText(s({ unfreezeHome: true }), true)!.next).toBe('To unfreeze, your home code and your guardian each approve. Your home code has approved; waiting for your guardian.');
+    expect(C.frozenText(s({ unfreezeGuardian: true }), true)!.next).toBe('To unfreeze, your home code and your guardian each approve. Your guardian has approved; waiting for your home code.');
+    expect(C.frozenText(V.OPEN, false)).toBeNull();
+  });
+
+  it('home code buttons: unfreeze and recovery cannot be confused', () => {
+    const frozen: V.MainState = { ...V.OPEN, level: 2 };
+    const ng = C.homeActions(frozen, false);
+    expect(ng.map((a) => a.label)).toEqual(['Unfreeze the vault', 'Allow moving everything out (only if you lost your phone)']);
+    const g = C.homeActions(frozen, true);
+    expect(g[0]).toMatchObject({ act: 'approve-unfreeze', label: 'Approve unfreezing (your guardian approves too)', primary: true });
+    const open = C.homeActions(V.OPEN, false);
+    expect(open[0]).toMatchObject({ act: 'freeze', label: 'Freeze vault', primary: true });
+    expect(open.map((a) => a.act)).not.toContain('approve-unfreeze');
+    expect(C.homeActions({ ...frozen, unfreezeHome: true }, true).map((a) => a.act)).not.toContain('approve-unfreeze');
+    expect(C.homeActions({ ...V.OPEN, level: 1 }, false)[0]).toMatchObject({ act: 'approve-unfreeze', primary: true });
+  });
+});

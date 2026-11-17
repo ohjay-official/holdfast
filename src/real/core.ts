@@ -7,6 +7,7 @@ import {
   decodeBip39Mnemonic,
   decodeCashAddress,
   encodeBip39Mnemonic,
+  cashAddressToLockingBytecode,
   encodeCashAddress,
   getDustThreshold,
   hash160,
@@ -186,12 +187,14 @@ export interface VaultView {
   /** Blocks until the allowance refills, when it isn't full. */
   refillIn: number | null;
   pending: PendingView[];
+  /** Withdrawals this page just released, still listed by a lagging server. Not counted anywhere. */
+  settling: Settling[];
   deposits: Utxo[];
   tickets: Utxo[];
   tip: number;
 }
 
-export function readVault(c: VaultConfig, utxos: Utxo[], heights: Map<string, number>, tip: number): VaultView {
+export function readVault(c: VaultConfig, utxos: Utxo[], heights: Map<string, number>, tip: number, settling: SettlingRaw[] = []): VaultView {
   const coins = V.classify(utxos, c.category);
   const h = (u: Utxo) => heights.get(`${u.txid}:${u.vout}`) ?? 0;
   const age = (u: Utxo) => (h(u) > 0 ? tip - h(u) + 1 : 0);
@@ -238,10 +241,115 @@ export function readVault(c: VaultConfig, utxos: Utxo[], heights: Map<string, nu
     fresh,
     refillIn,
     pending,
+    settling: settling.map((x) => ({ what: x.what, sats: x.sats, to: addressOfLock(x.toLock, c.net), txid: x.txid })),
     deposits,
     tickets,
     tip,
   };
+}
+
+// ---------------- what this page just broadcast ----------------
+//
+// A server can keep listing a coin for a while after our transaction spent it,
+// and can be slow to list the coins it created. Without this, the screen right
+// after a release still showed the withdrawal as "Ready to release", and the
+// home code screen right after a freeze still showed the vault open.
+
+/** How long a broadcast hides the coins it spent if the network never confirms it. */
+export const OVERLAY_MS = 30 * 60_000;
+
+export type BroadcastKind = 'release' | 'cancel' | 'freeze' | 'approve' | 'send' | 'withdraw' | 'merge' | 'recover' | 'create' | 'other';
+
+export interface SettlingRaw { what: 'release'; sats: bigint; toLock: string; txid: string }
+export interface Settling { what: 'release'; sats: bigint; to: string; txid: string }
+
+export interface Overlay {
+  spent: Map<string, { until: number; settle?: SettlingRaw }>;
+  added: Map<string, { until: number; lock: string; utxo: Utxo }>;
+}
+
+export const newOverlay = (): Overlay => ({ spent: new Map(), added: new Map() });
+
+const op = (u: { txid: string; vout: number }) => `${u.txid}:${u.vout}`;
+
+/** Remember the coins a successful broadcast spent and the coins it made. */
+export function noteBroadcast(ov: Overlay, tb: TransactionBuilder, txid: string, what: BroadcastKind, now = Date.now()): void {
+  const until = now + OVERLAY_MS;
+  for (const i of tb.inputs) {
+    const commitment = i.token?.nft?.commitment ?? '';
+    const isPending = i.token?.nft?.capability === 'mutable' && commitment.startsWith('50');
+    const settle = what === 'release' && isPending ? { what: 'release' as const, sats: i.satoshis, toLock: commitment.slice(4), txid } : undefined;
+    ov.spent.set(op(i), { until, settle });
+  }
+  tb.outputs.forEach((o, vout) => {
+    if (typeof o.to !== 'string') return;
+    const lock = cashAddressToLockingBytecode(o.to);
+    if (typeof lock === 'string') return;
+    ov.added.set(`${txid}:${vout}`, { until, lock: binToHex(lock.bytecode), utxo: { txid, vout, satoshis: o.amount, lockingBytecode: binToHex(lock.bytecode), ...(o.token ? { token: o.token } : {}) } as Utxo });
+  });
+}
+
+/**
+ * The coins to show for the address with locking bytecode `lockHex`: what the
+ * network listed, minus coins we spent, plus coins we made that it doesn't list yet.
+ * `added` holds the outpoints that are ours and unconfirmed.
+ */
+export function applyOverlay(ov: Overlay, utxos: Utxo[], lockHex: string, now = Date.now()): { utxos: Utxo[]; added: Set<string>; settling: SettlingRaw[] } {
+  for (const [k, e] of ov.spent) if (e.until < now) ov.spent.delete(k);
+  for (const [k, e] of ov.added) if (e.until < now) ov.added.delete(k);
+  const listed = new Set(utxos.map(op));
+  for (const [k, e] of ov.added) if (e.lock === lockHex && listed.has(k)) ov.added.delete(k);
+  const settling: SettlingRaw[] = [];
+  const out = utxos.filter((u) => {
+    const s = ov.spent.get(op(u));
+    if (!s) return true;
+    if (s.settle) settling.push(s.settle);
+    return false;
+  });
+  const added = new Set<string>();
+  for (const [k, e] of ov.added) {
+    if (e.lock !== lockHex || ov.spent.has(k)) continue;
+    out.push(e.utxo);
+    added.add(k);
+  }
+  return { utxos: out, added, settling };
+}
+
+/** The vault's locking bytecode, from its configuration alone. */
+export function lockOf(c: VaultConfig): string {
+  const offline = { network: c.net } as unknown as NetworkProvider;
+  const r = cashAddressToLockingBytecode(V.makeVault(paramsOf(c), offline).address);
+  if (typeof r === 'string') throw new Error(r);
+  return binToHex(r.bytecode);
+}
+
+// ---------------- frozen state, in words ----------------
+
+export function frozenText(s: V.MainState, hasGuardian: boolean): { title: string; body: string; next: string } | null {
+  if (s.level === 0) return null;
+  const body = s.level === 1 ? 'Frozen by the duress PIN. Only the daily allowance can leave.' : 'Nothing can leave until it\'s unfrozen.';
+  if (!hasGuardian) return { title: 'Vault frozen', body, next: 'Unfreeze with your home code on the Home code screen.' };
+  const given = s.unfreezeHome && s.unfreezeGuardian
+    ? 'Both have approved.'
+    : s.unfreezeHome
+      ? 'Your home code has approved; waiting for your guardian.'
+      : s.unfreezeGuardian
+        ? 'Your guardian has approved; waiting for your home code.'
+        : 'Neither has approved yet.';
+  return { title: 'Vault frozen', body, next: `To unfreeze, your home code and your guardian each approve. ${given}` };
+}
+
+export interface HomeAction { act: 'approve-unfreeze' | 'freeze' | 'approve-recover'; label: string; primary: boolean }
+
+/** The buttons on the home code screen, most important first. Unfreeze and recovery are worded apart on purpose. */
+export function homeActions(s: V.MainState, hasGuardian: boolean): HomeAction[] {
+  const out: HomeAction[] = [];
+  if (s.level > 0 && !s.unfreezeHome) {
+    out.push({ act: 'approve-unfreeze', label: hasGuardian ? 'Approve unfreezing (your guardian approves too)' : 'Unfreeze the vault', primary: true });
+  }
+  if (s.level < 2) out.push({ act: 'freeze', label: s.level === 1 ? 'Freeze fully, allowance too' : 'Freeze vault', primary: s.level === 0 });
+  if (!s.recoverHome) out.push({ act: 'approve-recover', label: 'Allow moving everything out (only if you lost your phone)', primary: false });
+  return out;
 }
 
 // ---------------- limits the app checks before building ----------------
