@@ -26,12 +26,13 @@ At kickoff the repo held only a pre-hackathon risk test: a signing test page and
 
 | Action | Who | How long |
 | --- | --- | --- |
-| Spend the allowance | Phone | Right away, refills after about 24 hours with no spending |
+| Spend the allowance | Phone | Right away, refills after about 24 hours in which the vault coin isn't touched (any spend, cancel or approval restarts that clock) |
 | Withdraw more | Phone | Waits the vault's wait, 1 to 7 days |
+| Release a withdrawal | Anyone, no signature needed | Once the wait is over. The 0.00002 BCH network fee comes out of the amount |
 | Cancel a withdrawal | Phone, home code, guardian or duress key | Right away |
 | Fast withdrawal | Guardian approves | About 1 hour |
-| Freeze | Home code or guardian (everything); duress PIN (all but the allowance) | Right away |
-| Unfreeze, recover | Home code and guardian, one approval each | Right away |
+| Freeze | Home code or guardian (everything); duress PIN (all but the allowance) | Right away. A freeze stops the vault coin; withdrawals already waiting are cancelled separately, which the app does by itself after a home code or duress freeze |
+| Unfreeze, recover | Home code and guardian, one approval each (home code alone if the vault has no guardian) | Right away |
 | Replace the guardian | Phone and home code | About 7 days |
 
 ## The contract
@@ -48,7 +49,7 @@ Key points:
 - **No admin key.** Only the vault's own keys can do anything.
 - **Approvals are one signer per transaction,** so a guardian never needs to co-sign on the owner's phone.
 - **Waits use relative time locks,** not timestamps the spender could choose.
-- **Every spend fixes its outputs exactly and caps its own fee,** so the wallet only signs.
+- **Every spend the phone or a guardian can make fixes its outputs and caps its own fee,** so the wallet only signs. The two that move everything out (`recover`, `evict`) need the home code's signature, which covers the exact outputs.
 
 Transaction builders for every function are in [`src/vault.ts`](src/vault.ts).
 
@@ -56,13 +57,14 @@ Transaction builders for every function are in [`src/vault.ts`](src/vault.ts).
 
 ```bash
 npm install
-npm test        # 71 tests
+npm test        # 91 tests
 npm run build   # compiles the contracts, typechecks, builds the site
 ```
 
 - [`test/vault.test.ts`](test/vault.test.ts): 18 contract tests on CashScript's mock network, run through the BCH VM. They cover every function, the wrong keys, amounts and timing, and three attacks: minting a fake vault coin, keeping a released withdrawal's NFT alive, and skipping the guardian-replacement wait.
 - [`test/model.test.ts`](test/model.test.ts): the same rules as plain state changes, used by the demo.
-- [`test/real.test.ts`](test/real.test.ts): the real app's flows end to end: creation with the fee, the robbery, duress, refill, release, owner and guardian actions from a wallet.
+- [`test/real.test.ts`](test/real.test.ts): the real app's flows end to end: creation with the fee, the robbery, duress (freeze, cancel everything, allowance-only view), refill, release with no signature (recipient gets the amount minus 2,000 sats), adding deposits, unfreezing with no guardian, release after an unfreeze, a guardian working from the vault code on a second device, and the backend limits (dust, smallest withdrawal, stale reads, crash safety).
+- [`test/provider.test.ts`](test/provider.test.ts): the electrum fallback: a silent server times out and the next is tried, a rejected transaction is not retried, and sending the same transaction twice counts as sent.
 - `test/signtest.test.ts`, `test/cosigntest.test.ts`: the pre-kickoff WizardConnect signing tests.
 
 ## Live on mainnet
@@ -85,7 +87,7 @@ The robbery story, run on Bitcoin Cash mainnet on Nov 16 with Paytaca on one iPh
 - [x] First live run on mainnet (Nov 16): vault created from Paytaca over WizardConnect, with the 0.0001 BCH creation fee. [5d4e7cac](https://blockchair.com/bitcoin-cash/transaction/5d4e7cac3a9beca6235ef74a7bae37f239b78980a4b0d6b4f77f207cf329d519)
 - [ ] Outside audit
 
-Until the last two are done, use test coins or small amounts only.
+Until there has been an outside audit, use test coins or small amounts only.
 
 ## Before kickoff: the signing risk test (Nov 11, 2026)
 
