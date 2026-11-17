@@ -59,6 +59,7 @@ Transaction builders for every function are in [`src/vault.ts`](src/vault.ts).
 npm install
 npm test        # 91 tests
 npm run build   # compiles the contracts, typechecks, builds the site
+bash scripts/verify.sh   # tests, build, live pages answer, payout address matches the code
 ```
 
 - [`test/vault.test.ts`](test/vault.test.ts): 18 contract tests on CashScript's mock network, run through the BCH VM. They cover every function, the wrong keys, amounts and timing, and three attacks: minting a fake vault coin, keeping a released withdrawal's NFT alive, and skipping the guardian-replacement wait.
