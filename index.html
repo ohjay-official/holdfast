@@ -2,171 +2,277 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Holdfast: a Bitcoin Cash vault a robber can't empty</title>
     <meta name="description" content="Anyone holding your phone can spend a small daily allowance. Anything more waits days, and you can cancel it from home." />
     <meta property="og:title" content="Holdfast: a Bitcoin Cash vault a robber can't empty" />
     <meta property="og:description" content="Anyone holding your phone can spend a small daily allowance. Anything more waits days, and you can cancel it from home." />
     <meta property="og:url" content="https://holdfast-bch.vercel.app/" />
-    <meta name="theme-color" content="#f2f3ef" />
+    <meta name="theme-color" content="#07090a" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="/src/site.css" />
+    <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png" />
+    <link rel="icon" href="/favicon-16.png" sizes="16x16" type="image/png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Holdfast" />
+    <meta property="og:image" content="https://holdfast-bch.vercel.app/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Holdfast: a vault a robber can't empty." />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content="https://holdfast-bch.vercel.app/og.png" />
+    <script defer src="/_vercel/insights/script.js"></script>
+    <script type="module" src="/src/site.ts"></script>
+    <script type="module" src="/src/home/home.ts"></script>
   </head>
-  <body>
-    <!-- @banner -->
-    <!-- @header -->
-    <main id="main" class="home">
-      <div class="door-zone">
-        <div class="door-stage" aria-hidden="true">
-          <canvas id="door"></canvas>
-          <div class="door-loader"><span>Loading the vault</span><i></i></div>
+  <body class="home">
+    <!-- @include judge-bar.html -->
+    <a class="skip" href="#main">Skip to content</a>
+    <!-- @include header.html -->
+    <main id="main" class="home-main">
+<div class="door-zone">
+  <div class="door-stage" aria-hidden="true">
+    <div class="door-glow"></div>
+    <!-- static SVG door: visible until WebGL is ready, and permanently if WebGL fails or motion is reduced -->
+    <svg class="door-fallback" viewBox="0 0 400 400">
+      <defs>
+        <radialGradient id="dfSteel" cx="40%" cy="35%" r="75%"><stop offset="0" stop-color="#c9d3ce"/><stop offset=".55" stop-color="#6f7b75"/><stop offset="1" stop-color="#2a3530"/></radialGradient>
+        <radialGradient id="dfFace" cx="45%" cy="40%" r="70%"><stop offset="0" stop-color="#2a3530"/><stop offset="1" stop-color="#0e1412"/></radialGradient>
+      </defs>
+      <circle cx="200" cy="200" r="190" fill="#0e1412" stroke="#22302a" stroke-width="2"/>
+      <circle cx="200" cy="200" r="176" fill="none" stroke="#3a4842" stroke-width="10" stroke-dasharray="3 9"/>
+      <circle cx="200" cy="200" r="150" fill="url(#dfSteel)"/>
+      <circle cx="200" cy="200" r="118" fill="url(#dfFace)"/>
+      <g fill="#c9d3ce">
+        <rect x="196" y="38" width="8" height="34" rx="4"/><rect x="196" y="328" width="8" height="34" rx="4"/>
+        <rect x="38" y="196" width="34" height="8" rx="4"/><rect x="328" y="196" width="34" height="8" rx="4"/>
+        <rect x="196" y="38" width="8" height="34" rx="4" transform="rotate(45 200 200)"/><rect x="196" y="38" width="8" height="34" rx="4" transform="rotate(135 200 200)"/>
+        <rect x="196" y="38" width="8" height="34" rx="4" transform="rotate(225 200 200)"/><rect x="196" y="38" width="8" height="34" rx="4" transform="rotate(315 200 200)"/>
+      </g>
+      <g stroke="#dfe6e1" stroke-width="7" fill="none" stroke-linecap="round">
+        <circle cx="200" cy="200" r="58"/><path d="M200 142v116M142 200h116M159 159l82 82M241 159l-82 82"/>
+      </g>
+      <circle cx="200" cy="200" r="16" fill="#dfe6e1"/>
+      <circle cx="200" cy="74" r="5" fill="#3fa483"/>
+    </svg>
+    <canvas id="door"></canvas>
+    <div class="door-loader"><span>Loading the vault</span><i></i></div>
+    <div class="door-hud mono">
+      <span class="hud-tl">CONTRACT · BITCOIN CASH</span>
+      <span class="hud-br">1 BCH · 5% ALLOWANCE · 3-DAY WAIT</span>
+    </div>
+  </div>
+
+  <section class="dz dz-hero" data-k="0">
+    <div class="guides" aria-hidden="true"></div>
+    <div class="wrap dz-grid">
+      <div class="dz-copy">
+        <p class="eyebrow" data-reveal><b>●</b> Bitcoin Cash vault</p>
+        <h1 class="mask">A Bitcoin Cash vault a robber <em class="accent">can't</em> empty.</h1>
+        <p class="lede" data-reveal style="--d:450ms">Whoever holds your phone can only spend a small daily allowance. Anything more waits days in the open, and you can cancel it from home.</p>
+        <div class="actions" data-reveal style="--d:600ms">
+          <span class="magnetic"><a class="btn btn-primary" href="/app/#/quick">Try the demo, no wallet needed <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4"/></svg></a></span>
+          <a class="btn btn-ghost" href="/real/">Open the real vault</a>
         </div>
-
-        <section class="dz dz-hero" data-k="0">
-          <div class="wrap dz-grid">
-            <div class="dz-copy">
-              <h1 class="rise">A Bitcoin Cash vault a robber can't empty.</h1>
-              <p class="lede">Whoever holds your phone can only spend a small daily allowance. Anything more waits days in the open, and you can cancel it from home.</p>
-              <div class="actions">
-                <a class="btn btn-dark" href="/app/#/quick">Try the demo, no wallet needed</a>
-                <a class="btn btn-line" href="/real/">Open the real vault</a>
-              </div>
-              <p class="dz-proof">Live on mainnet since Nov 16. <a href="/security/#proof">See the transactions</a></p>
-            </div>
-          </div>
-        </section>
-
-        <section class="dz" data-k="1" aria-labelledby="s1">
-          <div class="wrap dz-grid dz-right">
-            <div class="dz-copy reveal">
-              <p class="dz-step"><b>01</b> Minute 1</p>
-              <h2 id="s1">They take your phone and make you send it all.</h2>
-              <p>They get the daily allowance you chose. The contract won't let one more coin out at once, whoever is holding the phone.</p>
-            </div>
-          </div>
-        </section>
-
-        <section class="dz" data-k="2" aria-labelledby="s2">
-          <div class="wrap dz-grid">
-            <div class="dz-copy reveal">
-              <p class="dz-step"><b>02</b> The next 1 to 7 days</p>
-              <h2 id="s2">The rest waits where anyone can see it.</h2>
-              <p>A bigger withdrawal becomes a pending one on the chain. It can't be released until the wait you picked runs out, and the app counts it down.</p>
-            </div>
-          </div>
-        </section>
-
-        <section class="dz" data-k="3" aria-labelledby="s3">
-          <div class="wrap dz-grid dz-right">
-            <div class="dz-copy reveal">
-              <p class="dz-step"><b>03</b> From home</p>
-              <h2 id="s3">You cancel it, and the vault locks.</h2>
-              <p>Your home code, written down and kept off your phone, sends the money back and freezes the vault. A guardian you trust can do the same. Neither can take it.</p>
-              <div class="actions"><a class="btn btn-dark" href="/how-it-works/">See every rule</a></div>
-            </div>
-          </div>
-        </section>
+        <p class="dz-proof" data-reveal style="--d:750ms"><span class="live-dot" aria-hidden="true"></span>Live on mainnet since Nov 16. <a href="/security/#proof">See the transactions</a></p>
       </div>
+    </div>
+    <div class="scroll-cue" aria-hidden="true"><span>Scroll</span><i></i></div>
+  </section>
 
-      <section class="section after-zone">
-        <div class="wrap split">
+  <section class="dz dz-story" data-k="1" aria-labelledby="s1">
+    <div class="wrap dz-grid dz-right">
+      <div class="dz-copy glass-m">
+        <p class="dz-step" data-reveal><b>01</b> Minute 1</p>
+        <h2 id="s1" class="mask">They take your phone and make you send it all.</h2>
+        <p data-reveal style="--d:300ms">They get the daily allowance you chose. The contract won't let one more coin out at once, whoever is holding the phone.</p>
+        <div class="hud glass glass--taken" data-reveal style="--d:450ms" aria-hidden="true">
+          <span class="hud-k">Taken</span><b class="hud-v">0.05 BCH</b>
+          <div class="bar in"><span class="seg-taken" style="width:5%"></span><span class="seg-safe" style="width:95%"></span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="dz dz-story" data-k="2" aria-labelledby="s2">
+    <div class="wrap dz-grid">
+      <div class="dz-copy glass-m">
+        <p class="dz-step" data-reveal><b>02</b> The next 1 to 7 days</p>
+        <h2 id="s2" class="mask">The rest waits where anyone can see it.</h2>
+        <p data-reveal style="--d:300ms">A bigger withdrawal becomes a pending one on the chain. It can't be released until the wait you picked runs out, and the app counts it down.</p>
+        <div class="hud glass glass--held" data-reveal style="--d:450ms" aria-hidden="true">
+          <span class="hud-k">Held, can be cancelled</span><b class="hud-v">0.95 BCH</b>
+          <span class="hud-clock mono" data-countdown="259200">72:00:00</span>
+          <div class="bar in"><span class="seg-taken" style="width:5%"></span><span class="seg-held" style="width:95%"></span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="dz dz-story" data-k="3" aria-labelledby="s3">
+    <div class="wrap dz-grid dz-right">
+      <div class="dz-copy glass-m">
+        <p class="dz-step" data-reveal><b>03</b> From home</p>
+        <h2 id="s3" class="mask">You cancel it, and the vault <em class="accent">locks.</em></h2>
+        <p data-reveal style="--d:300ms">Your home code, written down and kept off your phone, sends the money back and freezes the vault. A guardian you trust can do the same. Neither can take it.</p>
+        <div class="hud glass" data-reveal style="--d:450ms" aria-hidden="true">
+          <span class="hud-k">Back in the vault</span><b class="hud-v">0.95 BCH</b>
+          <div class="bar in"><span class="seg-taken" style="width:5%"></span><span class="seg-safe" style="width:95%"></span></div>
+        </div>
+        <div class="actions" data-reveal style="--d:550ms"><a class="btn btn-ghost" href="/how-it-works/">See every rule</a></div>
+      </div>
+    </div>
+  </section>
+</div>
+<section class="section ordeal-sec" id="robbery">
+  <div class="wrap split">
+    <div class="ordeal-left">
+      <div class="num-strip" data-reveal aria-hidden="true"><b>04</b><span>// One bar</span></div>
+      <h2 class="mask">The whole robbery, on <em class="accent">one bar</em></h2>
+      <p class="lede muted" data-reveal style="margin-top:1rem">Example vault of 1 BCH, a 5% allowance and a 3-day wait.</p>
+      <div class="live glass" aria-hidden="true">
+        <div class="live-top"><span class="live-when mono">Before</span><span class="live-label">In the vault</span></div>
+        <b class="live-amt">1.00 BCH</b>
+        <div class="bar live-bar in"><span class="seg-taken" style="width:0%"></span><span class="seg-held" style="width:0%"></span><span class="seg-safe" style="width:100%"></span></div>
+      </div>
+    </div>
+    <figure class="ordeal" aria-labelledby="ordeal-title">
+      <div class="ordeal-head">
+        <h3 id="ordeal-title">A robbery, with Holdfast</h3>
+        <p class="mono">Example vault: 1 BCH</p>
+      </div>
+      <ol data-stagger>
+        <li class="moment glass" data-reveal data-state="0,0,100" data-label="In the vault" data-amt="1.00 BCH">
+          <span class="when">Before</span>
           <div>
-            <h2>The whole robbery, on one bar</h2>
-            <p class="lede muted" style="margin-top:1rem">Example vault of 1 BCH, a 5% allowance and a 3-day wait.</p>
+            <p class="what">Your savings sit in the vault. Your phone holds one of its keys.</p>
+            <div class="bar" role="img" aria-label="Whole vault safe"><span class="seg-safe" style="width:100%"></span></div>
           </div>
-          <figure class="ordeal" aria-labelledby="ordeal-title">
-            <div class="ordeal-head">
-              <h2 id="ordeal-title">A robbery, with Holdfast</h2>
-              <p>Example vault: 1 BCH</p>
-            </div>
-            <ol>
-              <li class="moment">
-                <span class="when">Before</span>
-                <div>
-                  <p class="what">Your savings sit in the vault. Your phone holds one of its keys.</p>
-                  <div class="bar" role="img" aria-label="Whole vault safe"><span class="seg-safe" style="width:100%"></span></div>
-                </div>
-                <p class="bar-note"><span>In the vault</span><b>1.00 BCH</b></p>
-              </li>
-              <li class="moment">
-                <span class="when">Minute 1</span>
-                <div>
-                  <p class="what">Someone forces you to unlock and send everything. They get the allowance you chose, and nothing more.</p>
-                  <div class="bar" role="img" aria-label="Five percent taken, the rest still in the vault"><span class="seg-taken" style="width:5%"></span><span class="seg-safe" style="width:95%"></span></div>
-                </div>
-                <p class="bar-note"><span>Taken</span><b>0.05 BCH</b></p>
-              </li>
-              <li class="moment">
-                <span class="when">Next 3 days</span>
-                <div>
-                  <p class="what">The rest becomes a pending withdrawal. The contract won't release it before the wait ends.</p>
-                  <div class="bar" role="img" aria-label="Five percent taken, the rest held and waiting"><span class="seg-taken" style="width:5%"></span><span class="seg-held" style="width:95%"></span></div>
-                </div>
-                <p class="bar-note"><span>Held, can be cancelled</span><b>0.95 BCH</b></p>
-              </li>
-              <li class="moment">
-                <span class="when">From home</span>
-                <div>
-                  <p class="what">You cancel it with your home code, or a guardian does. The vault freezes until you recover it.</p>
-                  <div class="bar" role="img" aria-label="Five percent taken, the rest back in the vault"><span class="seg-taken" style="width:5%"></span><span class="seg-safe" style="width:95%"></span></div>
-                </div>
-                <p class="bar-note"><span>Back in the vault</span><b>0.95 BCH</b></p>
-              </li>
-            </ol>
-            <ul class="legend" aria-hidden="true">
-              <li><i style="background:var(--safe)"></i>Yours</li>
-              <li><i style="background:var(--taken)"></i>Taken</li>
-              <li><i style="background:var(--held)"></i>Waiting, cancellable</li>
-            </ul>
-          </figure>
-        </div>
-      </section>
-
-      <section class="section">
-        <div class="wrap">
-          <h2>Three things decide who can move your money</h2>
-          <p class="lede muted" style="margin-bottom:2rem">The rules live in a Bitcoin Cash contract. No company, server or app update can bend them, including ours.</p>
-          <ul class="facts three">
-            <li>
-              <h3>Your phone</h3>
-              <p>Spends the daily allowance straight away. Can start a bigger withdrawal, which then waits 1 to 7 days. You pick the wait; 3 days is the default.</p>
-            </li>
-            <li>
-              <h3>Your home code</h3>
-              <p>A second key you keep off your phone, written down at home. It cancels withdrawals, freezes the vault and, with a guardian, recovers it.</p>
-            </li>
-            <li>
-              <h3>A guardian</h3>
-              <p>Someone you trust. They can cancel and freeze, and approve a fast withdrawal with you in about an hour. They can never take your money.</p>
-            </li>
-          </ul>
-          <div class="actions"><a class="btn btn-line" href="/how-it-works/">Read every rule</a></div>
-        </div>
-      </section>
-
-      <section class="section">
-        <div class="wrap split">
-          <h2>If they make you open the app</h2>
-          <div class="prose">
-            <p>Set a duress PIN alongside your real one. Typed under pressure, it opens a vault that looks normal and shows only the allowance. In the background it freezes everything else.</p>
-            <p>Nothing on screen tells the robber that happened. They see a small balance, take it and leave.</p>
-            <p><a href="/security/">What Holdfast protects against, and what it doesn't</a></p>
+          <p class="bar-note"><span>In the vault</span><b>1.00 BCH</b></p>
+        </li>
+        <li class="moment glass glass--taken" data-reveal data-state="5,0,95" data-label="Taken" data-amt="0.05 BCH">
+          <span class="when">Minute 1</span>
+          <div>
+            <p class="what">Someone forces you to unlock and send everything. They get the allowance you chose, and nothing more.</p>
+            <div class="bar" role="img" aria-label="Five percent taken, the rest still in the vault"><span class="seg-taken" style="width:5%"></span><span class="seg-safe" style="width:95%"></span></div>
           </div>
-        </div>
-      </section>
-
-      <section class="section">
-        <div class="wrap split">
-          <h2>Where things stand</h2>
-          <div class="prose">
-            <p>Holdfast is being built for BCH BLAZE 2026, from Nov 14 to 22. Before kickoff we only proved the risky part: that Paytaca on a phone can sign this kind of contract. All five tests passed on chipnet, the Bitcoin Cash test network.</p>
-            <p>The vault contract is written and passes its tests, including attack cases. The real vault app connects Paytaca and runs on mainnet: the first vault was created on Nov 16 (<a href="https://blockchair.com/bitcoin-cash/transaction/5d4e7cac3a9beca6235ef74a7bae37f239b78980a4b0d6b4f77f207cf329d519" rel="noopener">see the transaction</a>). Start with a small amount: there's been no outside audit yet.</p>
-            <div class="actions"><a class="btn btn-line" href="/security/#proof">See the test transactions</a></div>
+          <p class="bar-note"><span>Taken</span><b>0.05 BCH</b></p>
+        </li>
+        <li class="moment glass glass--held" data-reveal data-state="5,95,0" data-label="Held, can be cancelled" data-amt="0.95 BCH">
+          <span class="when">Next 3 days</span>
+          <div>
+            <p class="what">The rest becomes a pending withdrawal. The contract won't release it before the wait ends.</p>
+            <div class="bar" role="img" aria-label="Five percent taken, the rest held and waiting"><span class="seg-taken" style="width:5%"></span><span class="seg-held" style="width:95%"></span></div>
           </div>
+          <p class="bar-note"><span>Held, can be cancelled</span><b>0.95 BCH</b></p>
+        </li>
+        <li class="moment glass" data-reveal data-state="5,0,95" data-label="Back in the vault" data-amt="0.95 BCH">
+          <span class="when">From home</span>
+          <div>
+            <p class="what">You cancel it with your home code, or a guardian does. The vault freezes until you recover it.</p>
+            <div class="bar" role="img" aria-label="Five percent taken, the rest back in the vault"><span class="seg-taken" style="width:5%"></span><span class="seg-safe" style="width:95%"></span></div>
+          </div>
+          <p class="bar-note"><span>Back in the vault</span><b>0.95 BCH</b></p>
+        </li>
+      </ol>
+      <ul class="legend" aria-hidden="true">
+        <li><i style="background:var(--green-lit)"></i>Yours</li>
+        <li><i style="background:var(--taken-lit)"></i>Taken</li>
+        <li><i style="background:var(--held-lit)"></i>Waiting, cancellable</li>
+      </ul>
+    </figure>
+  </div>
+</section>
+<section class="section keys-sec">
+  <div class="wrap">
+    <div class="num-strip" data-reveal aria-hidden="true"><b>05</b><span>// Who holds a key</span></div>
+    <div class="sec-head">
+      <h2 class="mask">Three things decide who can <span class="glow-word">move your money</span></h2>
+      <p class="lede muted" data-reveal>The rules live in a Bitcoin Cash contract. No company, server or app update can bend them, including ours.</p>
+    </div>
+    <ul class="key-cards" data-stagger>
+      <li class="key-card glass" data-reveal>
+        <div class="key-stage" aria-hidden="true"><svg viewBox="0 0 160 120" fill="none" stroke="url(#kg1)" stroke-width="1.4" aria-hidden="true"><defs><linearGradient id="kg1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c9f0dc"/><stop offset="1" stop-color="#0a7a5a"/></linearGradient></defs><rect x="58" y="14" width="44" height="88" rx="9"/><path d="M74 22h12"/><circle cx="80" cy="58" r="13"/><path d="M78 50v16M82 50v16"/><path d="M108 44a20 20 0 0 1 0 28"/><path d="M116 38a30 30 0 0 1 0 40"/><circle cx="124" cy="58" r="2.5" fill="#cf9136" stroke="none"/></svg></div>
+        <h3>Your phone</h3>
+        <p>Spends the daily allowance straight away. Can start a bigger withdrawal, which then waits 1 to 7 days. You pick the wait; 3 days is the default.</p>
+      </li>
+      <li class="key-card glass" data-reveal>
+        <div class="key-stage" aria-hidden="true"><svg viewBox="0 0 160 120" fill="none" stroke="url(#kg2)" stroke-width="1.4" aria-hidden="true"><defs><linearGradient id="kg2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c9f0dc"/><stop offset="1" stop-color="#0a7a5a"/></linearGradient></defs><path d="M48 18h50l14 14v70H48z"/><path d="M98 18v14h14"/><path d="M58 44h36M58 54h44M58 64h30M58 74h40M58 84h26"/><circle cx="118" cy="92" r="7"/><path d="M125 92h14M134 92v6"/></svg></div>
+        <h3>Your home code</h3>
+        <p>A second key you keep off your phone, written down at home. It cancels withdrawals, freezes the vault and, with a guardian, recovers it.</p>
+      </li>
+      <li class="key-card glass" data-reveal>
+        <div class="key-stage" aria-hidden="true"><svg viewBox="0 0 160 120" fill="none" stroke="url(#kg3)" stroke-width="1.4" aria-hidden="true"><defs><linearGradient id="kg3" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c9f0dc"/><stop offset="1" stop-color="#0a7a5a"/></linearGradient></defs><circle cx="80" cy="40" r="12"/><path d="M56 92c0-16 11-26 24-26s24 10 24 26"/><path d="M112 50l12 5v8c0 8-5 13-12 16-7-3-12-8-12-16v-8z"/><path d="M107 62l4 4 7-8"/></svg></div>
+        <h3>A guardian</h3>
+        <p>Someone you trust. They can cancel and freeze, and approve a fast withdrawal with you in about an hour. They can never take your money.</p>
+      </li>
+    </ul>
+    <div class="actions" data-reveal><a class="btn btn-ghost" href="/how-it-works/">Read every rule</a></div>
+  </div>
+</section>
+<section class="section duress-sec">
+  <div class="wrap split">
+    <div>
+      <div class="num-strip" data-reveal aria-hidden="true"><b>06</b><span>// Duress PIN</span></div>
+      <h2 class="mask">If they make you <em class="accent">open the app</em></h2>
+    </div>
+    <div class="duress-grid">
+      <div class="prose" data-stagger>
+        <p data-reveal>Set a duress PIN alongside your real one. Typed under pressure, it opens a vault that looks normal and shows only the allowance. In the background it freezes everything else.</p>
+        <p data-reveal>Nothing on screen tells the robber that happened. They see a small balance, take it and leave.</p>
+        <p data-reveal><a href="/security/">What Holdfast protects against, and what it doesn't</a></p>
+      </div>
+      <div class="decoy" data-inview aria-hidden="true">
+        <div class="decoy-back glass-flat"><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="#c9d3ce" stroke-width="1.6"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><span class="pill pill-neutral">Frozen</span><span class="decoy-big">0.95 BCH</span></div>
+        <div class="phone">
+          <div class="phone-notch"></div>
+          <div class="scr scr-pin"><span class="mono">Enter your PIN</span><div class="pin-dots"><i></i><i></i><i></i><i></i></div>
+            <div class="pad"><b>1</b><b>2</b><b>3</b><b>4</b><b>5</b><b>6</b><b>7</b><b>8</b><b>9</b><b></b><b>0</b><b></b></div></div>
+          <div class="scr scr-vault"><span class="mono">In your vault</span><strong>0.05 BCH</strong><div class="bar in"><span class="seg-safe" style="width:100%"></span></div><small>Spendable now</small><div class="fake-btns"><i>Send</i><i>Receive</i></div></div>
         </div>
-      </section>
+      </div>
+    </div>
+  </div>
+</section>
+<section class="section status-sec">
+  <div class="wrap split">
+    <div>
+      <div class="num-strip" data-reveal aria-hidden="true"><b>07</b><span>// Status</span></div>
+      <h2 class="mask">Where things <em class="accent">stand</em></h2>
+      <div class="prose" data-stagger style="margin-top:2rem">
+        <p data-reveal>Holdfast is being built for BCH BLAZE 2026, from Nov 14 to 22. Before kickoff we only proved the risky part: that Paytaca on a phone can sign this kind of contract. All five tests passed on chipnet, the Bitcoin Cash test network.</p>
+        <p data-reveal>The vault contract is written and passes its tests, including attack cases. The real vault app connects Paytaca and runs on mainnet: the first vault was created on Nov 16 (<a href="https://blockchair.com/bitcoin-cash/transaction/5d4e7cac3a9beca6235ef74a7bae37f239b78980a4b0d6b4f77f207cf329d519" rel="noopener">see the transaction</a>). Start with a small amount: there's been no outside audit yet.</p>
+        <div class="actions" data-reveal><a class="btn btn-ghost" href="/security/#proof">See the test transactions</a></div>
+      </div>
+    </div>
+    <div>
+      <div class="flow glass" data-reveal>
+        <div class="flow-col"><p class="flow-h mono">Chipnet · before kickoff</p>
+          <ul><li>Create</li><li>Contract spend</li><li>Wait</li><li>Withdraw</li><li>Two keys</li></ul></div>
+        <svg class="flow-wires" viewBox="0 0 100 200" preserveAspectRatio="none" aria-hidden="true">
+          <path d="M0 20 C40 20 40 100 50 100"/><path d="M0 60 C40 60 40 100 50 100"/><path d="M0 100 H50"/><path d="M0 140 C40 140 40 100 50 100"/><path d="M0 180 C40 180 40 100 50 100"/>
+          <path d="M50 100 C60 100 60 35 100 35"/><path d="M50 100 C60 100 60 80 100 80"/><path d="M50 100 C60 100 60 120 100 120"/><path d="M50 100 C60 100 60 165 100 165"/>
+        </svg>
+        <div class="flow-hub" aria-hidden="true"><svg viewBox="0 0 32 32" width="34" height="34"><path d="M16 4l10 4.4v6.4c0 6.6-4.4 11-10 13.2C10.4 25.8 6 21.4 6 14.8V8.4z" fill="none" stroke="#c9f0dc" stroke-width="2" stroke-linejoin="round"/><circle cx="16" cy="14.2" r="2.7" fill="#8fdcbb"/><path d="M16 16.4v5" stroke="#c9f0dc" stroke-width="2" stroke-linecap="round"/></svg></div>
+        <div class="flow-col flow-out"><p class="flow-h mono">Mainnet · Nov 16</p>
+          <ul>
+            <li><a class="hash" href="https://blockchair.com/bitcoin-cash/transaction/5d4e7cac3a9beca6235ef74a7bae37f239b78980a4b0d6b4f77f207cf329d519" rel="noopener">5d4e7cac</a></li>
+            <li><a class="hash" href="https://blockchair.com/bitcoin-cash/transaction/1243b5043acc0dd0e8fb191c1af48e3fd3bdba25e840b8dc32d9f6c603686105" rel="noopener">1243b504</a></li>
+            <li><a class="hash" href="https://blockchair.com/bitcoin-cash/transaction/af31478b5f9e91733e2684687f6d8fc51bb413a9c4d9d371b908aace1004fd2c" rel="noopener">af31478b</a></li>
+            <li><a class="hash" href="https://blockchair.com/bitcoin-cash/transaction/fdec605dc778aa35902fcd7f60fc7b7e94e4bee79012ab3a742445a9f710741b" rel="noopener">fdec605d</a></li>
+          </ul></div>
+      </div>
+      <dl class="stats" aria-hidden="true" data-stagger>
+        <div data-reveal><dt><span data-count="5">5</span>/5</dt><dd>chipnet tests passed</dd></div>
+        <div data-reveal><dt><span data-count="4">4</span></dt><dd>mainnet transactions so far</dd></div>
+        <div data-reveal><dt><span data-count="18">18</span></dt><dd>contract tests</dd></div>
+      </dl>
+    </div>
+  </div>
+</section>
     </main>
-    <!-- @footer -->
-    <script type="module" src="/src/home.ts"></script>
+    <!-- @include footer.html -->
+    <div class="grain" aria-hidden="true"></div>
   </body>
 </html>

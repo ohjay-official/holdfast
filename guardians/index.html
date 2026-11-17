@@ -2,91 +2,97 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Guardians: a trusted person for your Holdfast vault</title>
-    <meta name="description" content="What a Holdfast guardian can and can't do, how to choose one, and what being one asks of you." />
+    <meta name="description" content="Someone you trust to say stop. They can't send your money anywhere, not even to themselves." />
     <meta property="og:title" content="Guardians: a trusted person for your Holdfast vault" />
-    <meta property="og:description" content="What a Holdfast guardian can and can't do, how to choose one, and what being one asks of you." />
+    <meta property="og:description" content="Someone you trust to say stop. They can't send your money anywhere, not even to themselves." />
     <meta property="og:url" content="https://holdfast-bch.vercel.app/guardians/" />
-    <meta name="theme-color" content="#f2f3ef" />
+    <meta name="theme-color" content="#07090a" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="/src/site.css" />
+    <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png" />
+    <link rel="icon" href="/favicon-16.png" sizes="16x16" type="image/png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Holdfast" />
+    <meta property="og:image" content="https://holdfast-bch.vercel.app/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Holdfast: a vault a robber can't empty." />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content="https://holdfast-bch.vercel.app/og.png" />
+    <script defer src="/_vercel/insights/script.js"></script>
+    <script type="module" src="/src/site.ts"></script>
+    <script type="module" src="/src/guardians.ts"></script>
+    <script type="module" src="/src/how.ts"></script>
   </head>
-  <body>
-    <!-- @banner -->
-    <!-- @header -->
-    <main id="main">
-      <header class="vela" data-tone="held">
-        <div class="wrap">
-          <h1 class="vela-h"><span class="vela-lead">A guardian can</span>
-            <ul class="vela-words" aria-live="polite"><li class="vela-word" data-tone="held" data-what="a withdrawal while it waits"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg><span>Cancel</span></li><li class="vela-word" data-tone="ink" data-what="the whole vault in one tap" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v20M3.3 7l17.4 10M20.7 7L3.3 17"/><path d="M9 4l3 2 3-2M9 20l3-2 3 2"/></svg><span>Freeze</span></li><li class="vela-word" data-tone="safe" data-what="a fast withdrawal, with you" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12.5l5 5L20 6.5"/></svg><span>Approve</span></li><li class="vela-word" data-tone="slate" data-what="the vault, with your home code" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4v5h5"/></svg><span>Recover</span></li></ul>
-            <span class="vela-what">a withdrawal while it waits</span>
-          </h1>
-          <p class="vela-sub">Someone you trust to say stop. They can't send your money anywhere, not even to themselves.</p>
-          <div class="actions"><a class="btn btn-light" href="/app/#/quick">See it in the demo</a></div>
-        </div>
-        <dl class="vela-strip">
-          <div><dt>0</dt><dd>coins a guardian can move to anyone</dd></div>
-          <div><dt>About 1 hour</dt><dd>for a fast withdrawal they approve with you</dd></div>
-          <div><dt>7 days</dt><dd>to remove a guardian, so a thief can't do it quietly</dd></div>
-        </dl>
-      </header>
+  <body class="page-guardians">
+    <!-- @include judge-bar.html -->
+    <a class="skip" href="#main">Skip to content</a>
+    <!-- @include header.html -->
+    <main id="main" class="page-guardians-main">
+<header class="verb" data-tone="held">
+  <div class="verb-panel">
+    <div class="guides" aria-hidden="true"></div>
+    <div class="wrap">
+      <p class="eyebrow" data-reveal><b>●</b> Guardians</p>
+      <h1 class="verb-h">
+        <span class="verb-lead">A guardian can</span>
+        <span class="verb-words" aria-live="polite">
+          <span class="verb-word" data-tone="held" data-what="a withdrawal while it waits"><span class="orb" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M9 9l6 6M15 9l-6 6"/></svg></span><span>Cancel</span></span>
+          <span class="verb-word" data-tone="ink" data-what="the whole vault in one tap" hidden><span class="orb" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3v18M4.2 7.5l15.6 9M4.2 16.5l15.6-9M9.5 4.5L12 7l2.5-2.5M9.5 19.5L12 17l2.5 2.5"/></svg></span><span>Freeze</span></span>
+          <span class="verb-word" data-tone="safe" data-what="a fast withdrawal, with you" hidden><span class="orb" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span><span>Approve</span></span>
+          <span class="verb-word" data-tone="slate" data-what="the vault, with your home code" hidden><span class="orb" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M19 12a7 7 0 1 1-2.05-4.95M19 4v4h-4"/></svg></span><span>Recover</span></span>
+        </span>
+        <span class="verb-what">a withdrawal while it waits</span>
+      </h1>
+      <p class="verb-sub" data-reveal style="--d:300ms">Someone you trust to say stop. They can't send your money anywhere, not even to themselves.</p>
+      <div class="actions" data-reveal style="--d:450ms"><a class="btn btn-light" href="/app/#/quick">See it in the demo</a></div>
+    </div>
+  </div>
+  <dl class="verb-strip glass" data-stagger>
+    <div data-reveal><dt><span data-count="0">0</span></dt><dd>coins a guardian can move to anyone</dd></div>
+    <div data-reveal><dt>About <span data-count="1">1</span> hour</dt><dd>for a fast withdrawal they approve with you</dd></div>
+    <div data-reveal><dt><span data-count="7">7</span> days</dt><dd>to remove a guardian, so a thief can't do it quietly</dd></div>
+  </dl>
+</header>
+<section class="section">
+  <div class="wrap">
+    <ul class="canlist" data-stagger>
+      <li class="glass" data-reveal>
+        <h2 class="can-h"><span class="pill pill-safe" aria-hidden="true">✓</span> A guardian can</h2>
+        <ul class="ticks"><li>Cancel a withdrawal while it waits</li><li>Freeze the vault</li><li>Approve a fast withdrawal with you, in about an hour</li><li>Unfreeze or recover the vault with your home code</li></ul>
+      </li>
+      <li class="glass glass--taken" data-reveal>
+        <h2 class="can-h"><span class="pill pill-taken" aria-hidden="true">✕</span> A guardian can't</h2>
+        <ul class="ticks no"><li>Send money anywhere, alone or with anyone but you</li><li>Change your allowance or wait</li><li>See anything that isn't already public on Bitcoin Cash</li><li>Stop you from removing them, given 7 days</li></ul>
+      </li>
+    </ul>
+  </div>
+</section>
+<section class="section"><div class="wrap split">
+  <div><div class="num-strip" data-reveal aria-hidden="true"><b>01</b><span>// Choosing</span></div><h2 class="mask">Choosing one</h2></div>
+  <div class="prose" data-stagger>
+    <p data-reveal>Pick someone who answers their phone, who won't usually be with you, and who you'd trust with a spare house key. A sibling in another city is a good guardian. Your flatmate is a weaker one.</p>
+    <p data-reveal>You don't have to have a guardian. Without one, your home code does their job alone, and fast withdrawals aren't available.</p>
+  </div></div></section>
 
-      <section class="section">
-        <div class="wrap">
-          <ul class="facts two">
-            <li>
-              <h3>A guardian can</h3>
-              <ul>
-                <li>Cancel a withdrawal while it waits</li>
-                <li>Freeze the vault</li>
-                <li>Approve a fast withdrawal with you, in about an hour</li>
-                <li>Unfreeze or recover the vault with your home code</li>
-              </ul>
-            </li>
-            <li>
-              <h3>A guardian can't</h3>
-              <ul>
-                <li>Send money anywhere, alone or with anyone but you</li>
-                <li>Change your allowance or wait</li>
-                <li>See anything that isn't already public on Bitcoin Cash</li>
-                <li>Stop you from removing them, given 7 days</li>
-              </ul>
-            </li>
-          </ul>
-        </div>
-      </section>
+<section class="section"><div class="wrap split">
+  <div><div class="num-strip" data-reveal aria-hidden="true"><b>02</b><span>// Invited?</span></div><h2 class="mask">If you've been asked to be one</h2></div>
+  <ol class="steps" data-stagger>
+    <li data-reveal><h3>Open the invite link</h3><p>It comes from the vault owner. It only shows a request; nothing happens until you accept.</p></li>
+    <li data-reveal><h3>Connect your wallet</h3><p>Paytaca, with WizardConnect. Your wallet signs to show which key is yours. You don't send any money.</p></li>
+    <li data-reveal><h3>Turn on alerts</h3><p>So you hear when a withdrawal starts. If the owner calls and says it isn't them, cancel it.</p></li>
+  </ol></div></section>
 
-      <section class="section">
-        <div class="wrap split">
-          <h2>Choosing one</h2>
-          <div class="prose">
-            <p>Pick someone who answers their phone, who won't usually be with you, and who you'd trust with a spare house key. A sibling in another city is a good guardian. Your flatmate is a weaker one.</p>
-            <p>You don't have to have a guardian. Without one, your home code does their job alone, and fast withdrawals aren't available.</p>
-          </div>
-        </div>
-      </section>
-
-      <section class="section">
-        <div class="wrap split">
-          <h2>If you've been asked to be one</h2>
-          <ol class="steps">
-            <li><h3>Open the invite link</h3><p>It comes from the vault owner. It only shows a request; nothing happens until you accept.</p></li>
-            <li><h3>Connect your wallet</h3><p>Paytaca, with WizardConnect. Your wallet signs to show which key is yours. You don't send any money.</p></li>
-            <li><h3>Turn on alerts</h3><p>So you hear when a withdrawal starts. If the owner calls and says it isn't them, cancel it.</p></li>
-          </ol>
-        </div>
-      </section>
-
-      <section class="section">
-        <div class="wrap split">
-          <h2>Status</h2>
-          <div class="prose">
-            <p>Guardians work in the demo and in the real vault app. The vault tested on mainnet so far has no guardian; a mainnet guardian test is next. Two-signer spends, which guardian approval relies on, passed on chipnet before kickoff. <a href="/security/#proof">See the transactions</a>.</p>
-          </div>
-        </div>
-      </section>
+<section class="section"><div class="wrap split">
+  <div><div class="num-strip" data-reveal aria-hidden="true"><b>03</b><span>// Status</span></div><h2 class="mask">Status</h2></div>
+  <div class="prose" data-reveal>
+    <p>Guardians work in the demo and in the real vault app. The vault tested on mainnet so far has no guardian; a mainnet guardian test is next. Two-signer spends, which guardian approval relies on, passed on chipnet before kickoff. <a href="/security/#proof">See the transactions</a>.</p>
+  </div></div></section>
     </main>
-    <!-- @footer -->
+    <!-- @include footer.html -->
+    <div class="grain" aria-hidden="true"></div>
   </body>
 </html>

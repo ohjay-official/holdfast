@@ -1,38 +1,30 @@
-// Copy buttons: <button data-copy="#id">. Says what happened, then resets.
-for (const btn of document.querySelectorAll<HTMLButtonElement>('button[data-copy]')) {
-  const label = btn.textContent ?? 'Copy';
-  btn.addEventListener('click', async () => {
-    const target = document.querySelector(btn.dataset.copy!);
-    const text = target?.textContent?.trim() ?? '';
-    try {
-      await navigator.clipboard.writeText(text);
-      btn.textContent = 'Copied';
-    } catch {
-      // Clipboard blocked: select the text so a long-press copy works.
-      if (target) {
-        const range = document.createRange();
-        range.selectNodeContents(target);
-        const sel = getSelection();
-        sel?.removeAllRanges();
-        sel?.addRange(range);
-      }
-      btn.textContent = 'Selected, copy it';
-    }
-    setTimeout(() => (btn.textContent = label), 2200);
-  });
-}
+import '@fontsource-variable/bricolage-grotesque';
+import '@fontsource-variable/source-serif-4';
+import '@fontsource-variable/source-serif-4/wght-italic.css';
+import '@fontsource-variable/jetbrains-mono';
+import './styles/tokens.css';
+import './styles/base.css';
+import './styles/components.css';
+import './styles/pages.css';
+import { initReveal } from './lib/reveal';
+import { initSplit } from './lib/split';
+import { initMagnetic } from './lib/magnetic';
+import { initCountUps } from './lib/countup';
+import { initCopy } from './lib/copy';
+import { initNav } from './lib/nav';
 
-// Guardians hero: one verb at a time, the panel takes that verb's colour.
-const vela = document.querySelector<HTMLElement>('.vela');
-if (vela) {
-  const words = [...vela.querySelectorAll<HTMLElement>('.vela-word')];
-  const what = vela.querySelector<HTMLElement>('.vela-what')!;
-  const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  let i = 0;
-  const show = (n: number) => {
-    words.forEach((w, k) => (w.hidden = k !== n));
-    vela.dataset.tone = words[n].dataset.tone!;
-    what.textContent = words[n].dataset.what!;
-  };
-  if (!still) setInterval(() => { i = (i + 1) % words.length; show(i); }, 2600);
-}
+document.documentElement.classList.add('js');
+export const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+initSplit(reduced);     // must run before reveal so .mask headings get split first
+initReveal(reduced);
+initMagnetic(reduced);
+initCountUps(reduced);
+initCopy();
+initNav();
+
+document.querySelectorAll<HTMLElement>('[data-coin]').forEach(el => {
+  const peers = () => document.querySelectorAll(`[data-coin="${el.dataset.coin}"]`);
+  el.addEventListener('pointerenter', () => peers().forEach(p => p.classList.add('hl')));
+  el.addEventListener('pointerleave', () => peers().forEach(p => p.classList.remove('hl')));
+});

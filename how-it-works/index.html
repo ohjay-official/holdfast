@@ -2,93 +2,169 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>How Holdfast works</title>
-    <meta name="description" content="Every rule of the Holdfast vault: the allowance, the wait, the home code, guardians, freezing and recovery." />
+    <meta name="description" content="One vault, two kinds of money: a small allowance you can spend now, and savings that only leave slowly, in the open, where you can stop them." />
     <meta property="og:title" content="How Holdfast works" />
-    <meta property="og:description" content="Every rule of the Holdfast vault: the allowance, the wait, the home code, guardians, freezing and recovery." />
+    <meta property="og:description" content="One vault, two kinds of money: a small allowance you can spend now, and savings that only leave slowly, in the open, where you can stop them." />
     <meta property="og:url" content="https://holdfast-bch.vercel.app/how-it-works/" />
-    <meta name="theme-color" content="#f2f3ef" />
+    <meta name="theme-color" content="#07090a" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="/src/site.css" />
+    <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png" />
+    <link rel="icon" href="/favicon-16.png" sizes="16x16" type="image/png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Holdfast" />
+    <meta property="og:image" content="https://holdfast-bch.vercel.app/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Holdfast: a vault a robber can't empty." />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content="https://holdfast-bch.vercel.app/og.png" />
+    <script defer src="/_vercel/insights/script.js"></script>
+    <script type="module" src="/src/site.ts"></script>
+    <script type="module" src="/src/how.ts"></script>
   </head>
-  <body>
-    <!-- @banner -->
-    <!-- @header -->
-    <main id="main">
-      <header class="atrium">
-        <div class="wrap atrium-grid">
-          <div class="atrium-copy">
-            <h1 class="atrium-h">How the vault works</h1>
-            <p class="lede">One vault, two kinds of money. A small allowance you can spend now, and savings that only leave slowly, in the open, where you can stop them.</p>
-            <div class="actions"><a class="btn btn-dark" href="/app/#/quick">Try the demo</a><a class="btn btn-line" href="#rules">Jump to the rules</a></div>
-          </div>
-          <div class="mosaic" role="group" aria-label="Screens from the Holdfast app"><div class="mosaic-col"><div class="mosaic-track"><figure class="tile shot"><img src="/shots/setup.webp" width="300" height="600" alt="Setup, step one: connect your wallet" loading="lazy" /></figure><figure class="tile t-safe"><p class="tile-k">Allowance</p><p class="tile-t">Spend a little, straight away.</p></figure><figure class="tile shot"><img src="/shots/vault.webp" width="300" height="600" alt="The vault screen: spendable now, saved and waiting" loading="lazy" /></figure><figure class="tile shot"><img src="/shots/send.webp" width="300" height="600" alt="Sending from the allowance" loading="lazy" /></figure></div><div class="mosaic-track" aria-hidden="true"><figure class="tile shot"><img src="/shots/setup.webp" width="300" height="600" alt="" data-alt="Setup, step one: connect your wallet" loading="lazy" /></figure><figure class="tile t-safe"><p class="tile-k">Allowance</p><p class="tile-t">Spend a little, straight away.</p></figure><figure class="tile shot"><img src="/shots/vault.webp" width="300" height="600" alt="" data-alt="The vault screen: spendable now, saved and waiting" loading="lazy" /></figure><figure class="tile shot"><img src="/shots/send.webp" width="300" height="600" alt="" data-alt="Sending from the allowance" loading="lazy" /></figure></div></div><div class="mosaic-col"><div class="mosaic-track"><figure class="tile t-held"><p class="tile-k">Wait</p><p class="tile-t">1 to 7 days before savings leave.</p></figure><figure class="tile shot"><img src="/shots/home-code.webp" width="300" height="600" alt="Home code screen with cancel and freeze" loading="lazy" /></figure><figure class="tile shot"><img src="/shots/frozen.webp" width="300" height="600" alt="Vault frozen from home" loading="lazy" /></figure><figure class="tile t-ink"><p class="tile-k">Home code</p><p class="tile-t">Cancels and freezes from home.</p></figure></div><div class="mosaic-track" aria-hidden="true"><figure class="tile t-held"><p class="tile-k">Wait</p><p class="tile-t">1 to 7 days before savings leave.</p></figure><figure class="tile shot"><img src="/shots/home-code.webp" width="300" height="600" alt="" data-alt="Home code screen with cancel and freeze" loading="lazy" /></figure><figure class="tile shot"><img src="/shots/frozen.webp" width="300" height="600" alt="" data-alt="Vault frozen from home" loading="lazy" /></figure><figure class="tile t-ink"><p class="tile-k">Home code</p><p class="tile-t">Cancels and freezes from home.</p></figure></div></div><div class="mosaic-col"><div class="mosaic-track"><figure class="tile shot"><img src="/shots/lock.webp" width="300" height="600" alt="Lock screen asking for the PIN" loading="lazy" /></figure><figure class="tile shot"><img src="/shots/duress.webp" width="300" height="600" alt="Duress PIN view showing only the allowance" loading="lazy" /></figure><figure class="tile t-paper"><p class="tile-k">Guardian</p><p class="tile-t">Says stop. Never sends.</p></figure><figure class="tile shot"><img src="/shots/guardian.webp" width="300" height="600" alt="Guardian view: can stop things, never send" loading="lazy" /></figure><figure class="tile shot"><img src="/shots/review.webp" width="300" height="600" alt="Setup review of the rules before funding" loading="lazy" /></figure></div><div class="mosaic-track" aria-hidden="true"><figure class="tile shot"><img src="/shots/lock.webp" width="300" height="600" alt="" data-alt="Lock screen asking for the PIN" loading="lazy" /></figure><figure class="tile shot"><img src="/shots/duress.webp" width="300" height="600" alt="" data-alt="Duress PIN view showing only the allowance" loading="lazy" /></figure><figure class="tile t-paper"><p class="tile-k">Guardian</p><p class="tile-t">Says stop. Never sends.</p></figure><figure class="tile shot"><img src="/shots/guardian.webp" width="300" height="600" alt="" data-alt="Guardian view: can stop things, never send" loading="lazy" /></figure><figure class="tile shot"><img src="/shots/review.webp" width="300" height="600" alt="" data-alt="Setup review of the rules before funding" loading="lazy" /></figure></div></div></div>
+  <body class="page-how">
+    <!-- @include judge-bar.html -->
+    <a class="skip" href="#main">Skip to content</a>
+    <!-- @include header.html -->
+    <main id="main" class="page-how-main">
+<header class="mhero">
+  <div class="guides" aria-hidden="true"></div>
+  <div class="wrap mhero-grid">
+    <div class="mhero-copy">
+      <p class="eyebrow" data-reveal><b>●</b> How it works</p>
+      <h1 class="mask mhero-h">How the vault works</h1>
+      <p class="lede" data-reveal style="--d:400ms">One vault, two kinds of money. A small allowance you can spend now, and savings that only leave slowly, in the open, where you can stop them.</p>
+      <div class="actions" data-reveal style="--d:550ms">
+        <span class="magnetic"><a class="btn btn-primary" href="/app/#/quick">Try the demo</a></span>
+        <a class="btn btn-ghost" href="#rules">Jump to the rules</a>
+      </div>
+    </div>
+    <div class="mosaic" data-reveal="fade" style="--d:300ms">
+      <!-- COLUMN 1 -->
+      <div class="mosaic-col">
+        <div class="mosaic-track">
+          <figure class="tile shot"><img src="/shots/setup.webp" width="300" height="600" alt="Setup, step one: connect your wallet" loading="lazy" /></figure>
+          <figure class="tile t-safe"><p class="tile-k">Allowance</p><p class="tile-t">Spend a little, straight away.</p></figure>
+          <figure class="tile shot"><img src="/shots/vault.webp" width="300" height="600" alt="The vault screen: spendable now, saved and waiting" loading="lazy" /></figure>
+          <figure class="tile shot"><img src="/shots/send.webp" width="300" height="600" alt="Sending from the allowance" loading="lazy" /></figure>
         </div>
-      </header>
-
-      <section class="section">
-        <div class="wrap split">
-          <h2>Setting up</h2>
-          <ol class="steps">
-            <li><h3>Connect your wallet</h3><p>Open Holdfast and connect Paytaca with WizardConnect. Your wallet keeps its keys; Holdfast only asks it to sign.</p></li>
-            <li><h3>Choose an allowance</h3><p>The most anyone can spend from your phone in a day. Pick what you'd hand over without a fight.</p></li>
-            <li><h3>Choose the wait</h3><p>How long bigger withdrawals take: 1 to 7 days, 3 by default. Longer is safer, shorter is handier.</p></li>
-            <li><h3>Write down your home code</h3><p>A second key, shown once as words to write on paper. Keep it at home, never on the phone.</p></li>
-            <li><h3>Invite a guardian</h3><p>Optional but recommended. Send them a link; they connect their own wallet.</p></li>
-            <li><h3>Set a duress PIN, then fund the vault</h3><p>Review the rules in plain words, then send BCH in. From here the contract enforces everything.</p></li>
-          </ol>
+        <div class="mosaic-track" aria-hidden="true">
+          <figure class="tile shot"><img src="/shots/setup.webp" width="300" height="600" alt="" loading="lazy" /></figure>
+          <figure class="tile t-safe"><p class="tile-k">Allowance</p><p class="tile-t">Spend a little, straight away.</p></figure>
+          <figure class="tile shot"><img src="/shots/vault.webp" width="300" height="600" alt="" loading="lazy" /></figure>
+          <figure class="tile shot"><img src="/shots/send.webp" width="300" height="600" alt="" loading="lazy" /></figure>
         </div>
-      </section>
-
-      <section class="section" id="rules">
-        <div class="wrap">
-          <h2>Every rule, in one table</h2>
-          <p class="muted" style="max-width:var(--measure)">The contract checks who signed and how much time has passed. Times are approximate because Bitcoin Cash counts time in blocks, about 10 minutes each.</p>
-          <div class="table-wrap">
-            <table>
-              <thead><tr><th scope="col">Action</th><th scope="col">Who can do it</th><th scope="col">How long it takes</th></tr></thead>
-              <tbody>
-                <tr><td data-label="Action">Spend the allowance</td><td data-label="Who can do it">Your phone</td><td data-label="How long it takes"><span class="tag tag-safe">Right away</span> Refills after about 24 hours with no vault activity</td></tr>
-                <tr><td data-label="Action">Withdraw more</td><td data-label="Who can do it">Your phone</td><td data-label="How long it takes"><span class="tag tag-held">Waits 1 to 7 days</span> Your choice, 3 by default</td></tr>
-                <tr><td data-label="Action">Cancel a withdrawal</td><td data-label="Who can do it">Phone, home code or guardian</td><td data-label="How long it takes"><span class="tag tag-safe">Right away</span></td></tr>
-                <tr><td data-label="Action">Fast withdrawal</td><td data-label="Who can do it">Your phone and a guardian together</td><td data-label="How long it takes"><span class="tag tag-held">About 1 hour</span></td></tr>
-                <tr><td data-label="Action">Freeze the vault</td><td data-label="Who can do it">Home code, guardian or your panic key</td><td data-label="How long it takes"><span class="tag tag-safe">Right away</span></td></tr>
-                <tr><td data-label="Action">Unfreeze or recover</td><td data-label="Who can do it">Home code and a guardian together, or the home code alone if you have no guardian</td><td data-label="How long it takes"><span class="tag tag-safe">Right away</span> Can move everything to a new phone</td></tr>
-                <tr><td data-label="Action">Remove a guardian</td><td data-label="Who can do it">Your phone and home code together</td><td data-label="How long it takes"><span class="tag tag-held">About 7 days</span> So a stolen phone can't remove them quietly</td></tr>
-                <tr><td data-label="Action">Add more BCH</td><td data-label="Who can do it">Anyone</td><td data-label="How long it takes"><span class="tag tag-plain">Merged in later</span> Deposits join the vault when you tap Add to vault</td></tr>
-              </tbody>
-            </table>
-          </div>
+      </div>
+      <!-- COLUMN 2 -->
+      <div class="mosaic-col">
+        <div class="mosaic-track">
+          <figure class="tile t-held"><p class="tile-k">Wait</p><p class="tile-t">1 to 7 days before savings leave.</p></figure>
+          <figure class="tile shot"><img src="/shots/home-code.webp" width="300" height="600" alt="Home code screen with cancel and freeze" loading="lazy" /></figure>
+          <figure class="tile shot"><img src="/shots/frozen.webp" width="300" height="600" alt="Vault frozen from home" loading="lazy" /></figure>
+          <figure class="tile t-ink"><p class="tile-k">Home code</p><p class="tile-t">Cancels and freezes from home.</p></figure>
         </div>
-      </section>
-
-      <section class="section">
-        <div class="wrap split">
-          <h2>The keys, and why there are several</h2>
-          <div class="prose">
-            <h3 style="margin-top:0">Phone key</h3>
-            <p>Lives in your wallet. It's the key a robber gets, so the rules give it the least power: the allowance now, everything else only after the wait.</p>
-            <h3>Home code</h3>
-            <p>A key that never touches the phone. It can stop anything the phone starts. Holdfast asks you to check it every 30 days, so you find out it's lost before you need it.</p>
-            <h3>Guardian</h3>
-            <p>A person with a key that can stop and approve, but never send money anywhere on their own. <a href="/guardians/">More on guardians</a>.</p>
-            <h3>Panic key and duress PIN</h3>
-            <p>The duress PIN opens a normal-looking vault and freezes the real one in the background. The panic key is the freeze it uses: it can freeze and nothing else.</p>
-          </div>
+        <div class="mosaic-track" aria-hidden="true">
+          <figure class="tile t-held"><p class="tile-k">Wait</p><p class="tile-t">1 to 7 days before savings leave.</p></figure>
+          <figure class="tile shot"><img src="/shots/home-code.webp" width="300" height="600" alt="" loading="lazy" /></figure>
+          <figure class="tile shot"><img src="/shots/frozen.webp" width="300" height="600" alt="" loading="lazy" /></figure>
+          <figure class="tile t-ink"><p class="tile-k">Home code</p><p class="tile-t">Cancels and freezes from home.</p></figure>
         </div>
-      </section>
-
-      <section class="section">
-        <div class="wrap split">
-          <h2>What Holdfast never does</h2>
-          <div class="prose">
-            <p>It never holds your keys, never runs a server that can move your money, and has no admin switch. If this website disappeared, the contract would still follow its rules, and your home code and guardian could still recover your BCH.</p>
-            <p><a href="/security/">Read the security page</a></p>
-          </div>
+      </div>
+      <!-- COLUMN 3 -->
+      <div class="mosaic-col">
+        <div class="mosaic-track">
+          <figure class="tile shot"><img src="/shots/lock.webp" width="300" height="600" alt="Lock screen asking for the PIN" loading="lazy" /></figure>
+          <figure class="tile shot"><img src="/shots/duress.webp" width="300" height="600" alt="Duress PIN view showing only the allowance" loading="lazy" /></figure>
+          <figure class="tile t-paper"><p class="tile-k">Guardian</p><p class="tile-t">Says stop. Never sends.</p></figure>
+          <figure class="tile shot"><img src="/shots/guardian.webp" width="300" height="600" alt="Guardian view: can stop things, never send" loading="lazy" /></figure>
+          <figure class="tile shot"><img src="/shots/review.webp" width="300" height="600" alt="Setup review of the rules before funding" loading="lazy" /></figure>
         </div>
-      </section>
+        <div class="mosaic-track" aria-hidden="true">
+          <figure class="tile shot"><img src="/shots/lock.webp" width="300" height="600" alt="" loading="lazy" /></figure>
+          <figure class="tile shot"><img src="/shots/duress.webp" width="300" height="600" alt="" loading="lazy" /></figure>
+          <figure class="tile t-paper"><p class="tile-k">Guardian</p><p class="tile-t">Says stop. Never sends.</p></figure>
+          <figure class="tile shot"><img src="/shots/guardian.webp" width="300" height="600" alt="" loading="lazy" /></figure>
+          <figure class="tile shot"><img src="/shots/review.webp" width="300" height="600" alt="" loading="lazy" /></figure>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+<section class="section setup-sec">
+  <div class="wrap split">
+    <div class="setup-left">
+      <div class="num-strip" data-reveal aria-hidden="true"><b>01</b><span>// Six steps</span></div>
+      <h2 class="mask">Setting up</h2>
+      <svg class="ring" viewBox="0 0 260 260" aria-hidden="true">
+        <circle cx="130" cy="130" r="100" fill="none" stroke="#22302a" stroke-width="1.5" stroke-dasharray="2 6"/>
+        <circle class="ring-prog" cx="130" cy="130" r="100" fill="none" stroke="#3fa483" stroke-width="1.5" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1" transform="rotate(-90 130 130)"/>
+        <!-- 6 nodes at angles -90, -30, 30, 90, 150, 210 deg on r=100 -->
+        <g class="ring-nodes"><circle r="9" cx="130" cy="30"/><circle r="9" cx="216.6" cy="80"/><circle r="9" cx="216.6" cy="180"/><circle r="9" cx="130" cy="230"/><circle r="9" cx="43.4" cy="180"/><circle r="9" cx="43.4" cy="80"/></g>
+        <path d="M130 100l26 11.4v16.6c0 17-11.4 28.6-26 34.3-14.6-5.7-26-17.3-26-34.3v-16.6z" fill="none" stroke="#8fdcbb" stroke-width="2" stroke-linejoin="round"/>
+        <circle cx="130" cy="126" r="6" fill="#8fdcbb"/><path d="M130 131v12" stroke="#8fdcbb" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <ol class="steps" data-stagger>
+      <li data-reveal><h3>Connect your wallet</h3><p>Open Holdfast and connect Paytaca with WizardConnect. Your wallet keeps its keys; Holdfast only asks it to sign.</p></li>
+      <li data-reveal><h3>Choose an allowance</h3><p>The most anyone can spend from your phone in a day. Pick what you'd hand over without a fight.</p></li>
+      <li data-reveal><h3>Choose the wait</h3><p>How long bigger withdrawals take: 1 to 7 days, 3 by default. Longer is safer, shorter is handier.</p></li>
+      <li data-reveal><h3>Write down your home code</h3><p>A second key, shown once as words to write on paper. Keep it at home, never on the phone.</p></li>
+      <li data-reveal><h3>Invite a guardian</h3><p>Optional but recommended. Send them a link; they connect their own wallet.</p></li>
+      <li data-reveal><h3>Set a duress PIN, then fund the vault</h3><p>Review the rules in plain words, then send BCH in. From here the contract enforces everything.</p></li>
+    </ol>
+  </div>
+</section>
+<section class="section" id="rules">
+  <div class="wrap">
+    <div class="num-strip" data-reveal aria-hidden="true"><b>02</b><span>// The contract</span></div>
+    <div class="sec-head">
+      <h2 class="mask">Every rule, in <em class="accent">one table</em></h2>
+      <p class="muted" data-reveal>The contract checks who signed and how much time has passed. Times are approximate because Bitcoin Cash counts time in blocks, about 10 minutes each.</p>
+    </div>
+    <div class="table" data-reveal>
+      <table>
+        <thead><tr><th>Action</th><th>Who can do it</th><th>How long it takes</th></tr></thead>
+        <tbody>
+          <tr><td>Spend the allowance</td><td data-label="Who can do it">Your phone</td><td data-label="How long it takes"><span class="pill pill-safe">Right away</span><span class="note">Refills after about 24 hours with no vault activity</span></td></tr>
+          <tr><td>Withdraw more</td><td data-label="Who can do it">Your phone</td><td data-label="How long it takes"><span class="pill pill-held">Waits 1 to 7 days</span><span class="note">Your choice, 3 by default</span></td></tr>
+          <tr><td>Cancel a withdrawal</td><td data-label="Who can do it">Phone, home code or guardian</td><td data-label="How long it takes"><span class="pill pill-safe">Right away</span></td></tr>
+          <tr><td>Fast withdrawal</td><td data-label="Who can do it">Your phone and a guardian together</td><td data-label="How long it takes"><span class="pill pill-held">About 1 hour</span></td></tr>
+          <tr><td>Freeze the vault</td><td data-label="Who can do it">Home code, guardian or your panic key</td><td data-label="How long it takes"><span class="pill pill-safe">Right away</span></td></tr>
+          <tr><td>Unfreeze or recover</td><td data-label="Who can do it">Home code and a guardian together, or the home code alone if you have no guardian</td><td data-label="How long it takes"><span class="pill pill-safe">Right away</span><span class="note">Can move everything to a new phone</span></td></tr>
+          <tr><td>Remove a guardian</td><td data-label="Who can do it">Your phone and home code together</td><td data-label="How long it takes"><span class="pill pill-held">About 7 days</span><span class="note">So a stolen phone can't remove them quietly</span></td></tr>
+          <tr><td>Add more BCH</td><td data-label="Who can do it">Anyone</td><td data-label="How long it takes"><span class="pill pill-neutral">Merged in later</span><span class="note">Deposits join the vault when you tap Add to vault</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+<section class="section">
+  <div class="wrap">
+    <div class="num-strip" data-reveal aria-hidden="true"><b>03</b><span>// Keys</span></div>
+    <div class="sec-head"><h2 class="mask">The keys, and why there are <em class="accent">several</em></h2></div>
+    <div class="key-grid" data-stagger>
+      <article class="key-card glass" data-reveal><div class="key-ico" aria-hidden="true"><svg viewBox="0 0 160 120" fill="none" stroke="#8fdcbb" stroke-width="1.6" aria-hidden="true"><rect x="58" y="14" width="44" height="88" rx="9"/><path d="M74 22h12"/><circle cx="80" cy="58" r="13"/><path d="M78 50v16M82 50v16"/><path d="M108 44a20 20 0 0 1 0 28"/><path d="M116 38a30 30 0 0 1 0 40"/><circle cx="124" cy="58" r="2.5" fill="#cf9136" stroke="none"/></svg></div><h3>Phone key</h3><p>Lives in your wallet. It's the key a robber gets, so the rules give it the least power: the allowance now, everything else only after the wait.</p></article>
+      <article class="key-card glass" data-reveal><div class="key-ico" aria-hidden="true"><svg viewBox="0 0 160 120" fill="none" stroke="#8fdcbb" stroke-width="1.6" aria-hidden="true"><path d="M48 18h50l14 14v70H48z"/><path d="M98 18v14h14"/><path d="M58 44h36M58 54h44M58 64h30M58 74h40M58 84h26"/><circle cx="118" cy="92" r="7"/><path d="M125 92h14M134 92v6"/></svg></div><h3>Home code</h3><p>A key that never touches the phone. It can stop anything the phone starts. Holdfast asks you to check it every 30 days, so you find out it's lost before you need it.</p></article>
+      <article class="key-card glass" data-reveal><div class="key-ico" aria-hidden="true"><svg viewBox="0 0 160 120" fill="none" stroke="#8fdcbb" stroke-width="1.6" aria-hidden="true"><circle cx="80" cy="40" r="12"/><path d="M56 92c0-16 11-26 24-26s24 10 24 26"/><path d="M112 50l12 5v8c0 8-5 13-12 16-7-3-12-8-12-16v-8z"/><path d="M107 62l4 4 7-8"/></svg></div><h3>Guardian</h3><p>A person with a key that can stop and approve, but never send money anywhere on their own. <a href="/guardians/">More on guardians</a>.</p></article>
+      <article class="key-card glass" data-reveal><div class="key-ico" aria-hidden="true"><svg viewBox="0 0 64 64" fill="none" stroke="#8fdcbb" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="32" cy="32" r="20"/><path d="M14 32h36M23 16.4l18 31.2M41 16.4l-18 31.2"/><path d="M14 32l4-3M14 32l4 3M50 32l-4-3M50 32l-4 3"/><path d="M23 16.4l4 2M23 16.4l1 4.5M41 47.6l-4-2M41 47.6l-1-4.5"/><path d="M41 16.4l-4 2M41 16.4l-1 4.5M23 47.6l4-2M23 47.6l1-4.5"/></svg></div><h3>Panic key and duress PIN</h3><p>The duress PIN opens a normal-looking vault and freezes the real one in the background. The panic key is the freeze it uses: it can freeze and nothing else.</p></article>
+    </div>
+  </div>
+</section>
+<section class="section never-sec">
+  <div class="wrap">
+    <div class="num-strip" data-reveal aria-hidden="true"><b>04</b><span>// No admin switch</span></div>
+    <h2 class="mask">What Holdfast never does</h2>
+    <p class="never-big" data-inview>It <span class="strike">never holds your keys</span>, <span class="strike">never runs a server that can move your money</span>, and <span class="strike">has no admin switch</span>.</p>
+    <p class="never-rest" data-reveal>If this website disappeared, the contract would still follow its rules, and your home code and guardian could still recover your BCH.</p>
+    <p data-reveal><a class="btn btn-ghost" href="/security/">Read the security page</a></p>
+  </div>
+</section>
     </main>
-    <!-- @footer -->
+    <!-- @include footer.html -->
+    <div class="grain" aria-hidden="true"></div>
   </body>
 </html>

@@ -18,20 +18,46 @@ function findPages(dir: string, out: Record<string, string> = {}): Record<string
   return out;
 }
 
-// Shared header, footer and judge banner, filled in at build time.
+// Judge-bar copy on the apps, which do not load the marketing runtime.
+const appCopy = `<script>
+document.addEventListener('DOMContentLoaded',function(){
+  var btn=document.querySelector('.judge-bar button[data-copy]');
+  if(!btn)return;
+  var label=btn.textContent||'Copy';
+  btn.addEventListener('click',async function(){
+    var src=document.querySelector(btn.getAttribute('data-copy'));
+    var text=(src&&src.textContent||'').trim();
+    try{await navigator.clipboard.writeText(text);btn.textContent='Copied';}
+    catch{if(src){var r=document.createRange();r.selectNodeContents(src);var s=getSelection();if(s){s.removeAllRanges();s.addRange(r);}}btn.textContent='Selected, copy it';}
+    setTimeout(function(){btn.textContent=label;},2200);
+  });
+});
+</script>`;
+
+// Shared partials, inlined at build time. Marks the current nav link.
 function partials(): Plugin {
   const read = (n: string) => readFileSync(resolve(root, 'partials', n), 'utf8');
   return {
     name: 'holdfast-partials',
-    transformIndexHtml: { order: 'pre', handler(html, ctx) {
-      const file = ctx.filename ?? '';
-      const rel = relative(root, dirname(file)).replace(/\\/g, '/');
-      const route = '/' + (rel ? rel + '/' : '');
-      let header = read('header.html');
-      header = header.replace(/href="([^"]+)"( data-nav)/g, (m, href, rest) =>
-        href === route ? `href="${href}" aria-current="page"${rest}` : m,
-      );
-      const head = `
+    transformIndexHtml: {
+      order: 'pre',
+      handler(html, ctx) {
+        let out = html.replace(/<!--\s*@include\s+([\w./-]+)\s*-->/g, (_, file) => read(file));
+        out = out
+          .replace('<!-- @banner -->', read('judge-bar.html') + appCopy)
+          .replace('<!-- @header -->', read('header.html'))
+          .replace('<!-- @footer -->', read('footer.html'));
+        const file = ctx.filename ?? '';
+        const rel = relative(root, dirname(file)).replace(/\\/g, '/');
+        const route = '/' + (rel && rel !== '.' ? rel + '/' : '');
+        if (route !== '/') {
+          out = out.replace(
+            new RegExp(`(<a[^>]*href="${route}"[^>]*data-nav)`, 'g'),
+            '$1 aria-current="page"',
+          );
+        }
+        if (!out.includes('og:image')) {
+          const head = `
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png" />
     <link rel="icon" href="/favicon-16.png" sizes="16x16" type="image/png" />
@@ -47,20 +73,19 @@ function partials(): Plugin {
     <meta name="twitter:image" content="https://holdfast-bch.vercel.app/og.png" />
     <script defer src="/_vercel/insights/script.js"></script>
   </head>`;
-      html = html.replace(/\s*<link rel="icon" href="\/favicon.svg" type="image\/svg\+xml" \/>/, '');
-      if (!html.includes('og:image')) html = html.replace('</head>', head);
-      return html
-        .replace('<!-- @banner -->', read('banner.html'))
-        .replace('<!-- @header -->', header)
-        .replace('<!-- @footer -->', read('footer.html'));
-    } },
+          out = out.replace(/\s*<link rel="icon" href="\/favicon.svg" type="image\/svg\+xml" \/>/, '');
+          out = out.replace('</head>', head);
+        }
+        return out;
+      },
+    },
   };
 }
 
 export default defineConfig({
+  plugins: [partials()],
   build: {
     target: 'es2022',
     rollupOptions: { input: findPages(root) },
   },
-  plugins: [partials()],
 });

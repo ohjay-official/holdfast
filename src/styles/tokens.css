@@ -1,0 +1,52 @@
+:root{
+  /* ground */
+  --bg:#07090a;            /* page */
+  --bg-1:#0b0f0d;          /* alt band */
+  --surface:#111715;       /* cards */
+  --surface-2:#151c19;     /* raised */
+  --surface-3:#1c2521;     /* hover */
+  --line:#22302a;          /* solid hairline */
+  --line-soft:rgba(238,241,236,.08);
+  --line-strong:rgba(238,241,236,.16);
+
+  /* text */
+  --text:#eef1ec;
+  --text-2:rgba(238,241,236,.72);
+  --text-3:rgba(238,241,236,.50);
+  --text-4:rgba(238,241,236,.34);
+
+  /* brand (the ONE accent) */
+  --green:#0a7a5a;
+  --green-2:#14a077;       /* gradient top of primary button */
+  --green-lit:#3fa483;
+  --green-glow:#8fdcbb;
+  --green-ink:#c9f0dc;
+  --green-soft:rgba(63,164,131,.14);
+
+  /* semantics ONLY */
+  --held:#b9791a;
+  --held-lit:#cf9136;
+  --held-soft:rgba(207,145,54,.14);
+  --taken:#a8432f;
+  --taken-lit:#d0664f;
+  --taken-soft:rgba(208,102,79,.14);
+
+  /* type */
+  --sans:"Bricolage Grotesque Variable","Segoe UI",system-ui,sans-serif;
+  --serif:"Source Serif 4 Variable",Georgia,serif;
+  --mono:"JetBrains Mono Variable",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+
+  /* layout */
+  --wide:76rem;            /* 1216px content max */
+  --measure:40rem;         /* body column */
+  --read:68ch;             /* long-form column */
+  --gutter:clamp(1.25rem,4vw,2.5rem);
+  --r-sm:8px; --r:14px; --r-lg:22px; --r-pill:999px;
+
+  /* motion */
+  --ease-out:cubic-bezier(.22,1,.36,1);
+  --ease-mask:cubic-bezier(.2,.75,.15,1);
+  --dur:.9s;
+
+  color-scheme:dark;
+}

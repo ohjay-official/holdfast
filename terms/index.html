@@ -2,43 +2,64 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Holdfast terms</title>
-    <meta name="description" content="The terms for using Holdfast: experimental, open-source software that never holds your money." />
+    <meta name="description" content="Short version: Holdfast is experimental open-source software. You keep your keys, and you carry the risk." />
     <meta property="og:title" content="Holdfast terms" />
-    <meta property="og:description" content="The terms for using Holdfast: experimental, open-source software that never holds your money." />
+    <meta property="og:description" content="Short version: Holdfast is experimental open-source software. You keep your keys, and you carry the risk." />
     <meta property="og:url" content="https://holdfast-bch.vercel.app/terms/" />
-    <meta name="theme-color" content="#f2f3ef" />
+    <meta name="theme-color" content="#07090a" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="/src/site.css" />
+    <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png" />
+    <link rel="icon" href="/favicon-16.png" sizes="16x16" type="image/png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Holdfast" />
+    <meta property="og:image" content="https://holdfast-bch.vercel.app/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Holdfast: a vault a robber can't empty." />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content="https://holdfast-bch.vercel.app/og.png" />
+    <script defer src="/_vercel/insights/script.js"></script>
+    <script type="module" src="/src/site.ts"></script>
+    <script type="module" src="/src/prose.ts"></script>
   </head>
-  <body>
-    <!-- @banner -->
-    <!-- @header -->
-    <main id="main">
-      <header class="page-head"><div class="wrap"><h1>Terms</h1><p class="lede">Short version: Holdfast is experimental open-source software. You keep your keys, and you carry the risk.</p></div></header>
-      <section class="section">
-        <div class="wrap prose legal">
-          <p class="muted small">Last updated Nov 14, 2026.</p>
-          <h2>What Holdfast is</h2>
-          <p>A website and a Bitcoin Cash contract that help you set up and use a vault. We never hold your money or your keys and can't move, freeze or recover funds for you.</p>
-          <h2>It's experimental</h2>
-          <p>Holdfast is being built for a hackathon and hasn't been audited. It's provided as is, without any warranty, under the <a href="https://github.com/ohjay-official/holdfast/blob/main/LICENSE" rel="noopener">MIT License</a>. Use test coins, or only amounts you can afford to lose.</p>
-          <h2>Your responsibilities</h2>
-          <ul>
-            <li>Keep your wallet, home code and guardian details safe. If you lose enough of them, nobody can recover your funds.</li>
-            <li>Check every transaction your wallet asks you to sign.</li>
-            <li>Follow the laws where you live.</li>
-          </ul>
-          <h2>No advice</h2>
-          <p>Nothing on this site is financial, legal or safety advice. In a robbery, your safety comes before your money.</p>
-          <h2>Liability</h2>
-          <p>To the extent the law allows, the people who build Holdfast aren't liable for any loss from using it, including bugs, lost keys, network problems or third-party wallets and relays.</p>
-          <h2>Changes</h2>
-          <p>We may update these terms. The date above shows the latest version. A deployed contract's rules can't change, whatever these terms say.</p>
-        </div>
-      </section>
+  <body class="page-terms">
+    <!-- @include judge-bar.html -->
+    <a class="skip" href="#main">Skip to content</a>
+    <!-- @include header.html -->
+    <main id="main" class="page-terms-main">
+<header class="page-hero"><div class="wrap">
+  <p class="eyebrow" data-reveal><b>●</b> Legal</p>
+  <h1 data-reveal>Terms</h1>
+  <p class="lede" data-reveal>Short version: Holdfast is experimental open-source software. You keep your keys, and you carry the risk.</p>
+</div></header>
+<div class="wrap read">
+  <nav class="toc" aria-label="On this page"><p>On this page</p><ol>
+    <li><a href="#what-holdfast-is">What Holdfast is</a></li><li><a href="#its-experimental">It's experimental</a></li>
+    <li><a href="#your-responsibilities">Your responsibilities</a></li><li><a href="#no-advice">No advice</a></li>
+    <li><a href="#liability">Liability</a></li><li><a href="#changes">Changes</a></li></ol></nav>
+  <article class="doc" data-reveal="fade">
+    <p class="updated">Last updated Nov 14, 2026.</p>
+    <h2 id="what-holdfast-is">What Holdfast is</h2>
+    <p>A website and a Bitcoin Cash contract that help you set up and use a vault. We never hold your money or your keys and can't move, freeze or recover funds for you.</p>
+    <h2 id="its-experimental">It's experimental</h2>
+    <p>Holdfast is being built for a hackathon and hasn't been audited. It's provided as is, without any warranty, under the <a href="https://github.com/ohjay-official/holdfast/blob/main/LICENSE" rel="noopener">MIT License</a>. Use test coins, or only amounts you can afford to lose.</p>
+    <h2 id="your-responsibilities">Your responsibilities</h2>
+    <ul><li>Keep your wallet, home code and guardian details safe. If you lose enough of them, nobody can recover your funds.</li><li>Check every transaction your wallet asks you to sign.</li><li>Follow the laws where you live.</li></ul>
+    <h2 id="no-advice">No advice</h2>
+    <p>Nothing on this site is financial, legal or safety advice. In a robbery, your safety comes before your money.</p>
+    <h2 id="liability">Liability</h2>
+    <p>To the extent the law allows, the people who build Holdfast aren't liable for any loss from using it, including bugs, lost keys, network problems or third-party wallets and relays.</p>
+    <h2 id="changes">Changes</h2>
+    <p>We may update these terms. The date above shows the latest version. A deployed contract's rules can't change, whatever these terms say.</p>
+  </article>
+</div>
+
     </main>
-    <!-- @footer -->
+    <!-- @include footer.html -->
+    <div class="grain" aria-hidden="true"></div>
   </body>
 </html>

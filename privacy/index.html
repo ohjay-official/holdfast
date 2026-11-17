@@ -2,43 +2,68 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Privacy at Holdfast</title>
-    <meta name="description" content="Holdfast has no accounts and no cookies. Here is exactly what is stored and where." />
+    <meta name="description" content="Holdfast has no accounts and no cookies. Here's everything that is stored, and where." />
     <meta property="og:title" content="Privacy at Holdfast" />
-    <meta property="og:description" content="Holdfast has no accounts and no cookies. Here is exactly what is stored and where." />
+    <meta property="og:description" content="Holdfast has no accounts and no cookies. Here's everything that is stored, and where." />
     <meta property="og:url" content="https://holdfast-bch.vercel.app/privacy/" />
-    <meta name="theme-color" content="#f2f3ef" />
+    <meta name="theme-color" content="#07090a" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="/src/site.css" />
+    <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png" />
+    <link rel="icon" href="/favicon-16.png" sizes="16x16" type="image/png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Holdfast" />
+    <meta property="og:image" content="https://holdfast-bch.vercel.app/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Holdfast: a vault a robber can't empty." />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content="https://holdfast-bch.vercel.app/og.png" />
+    <script defer src="/_vercel/insights/script.js"></script>
+    <script type="module" src="/src/site.ts"></script>
+    <script type="module" src="/src/prose.ts"></script>
   </head>
-  <body>
-    <!-- @banner -->
-    <!-- @header -->
-    <main id="main">
-      <header class="page-head"><div class="wrap"><h1>Privacy</h1><p class="lede">Holdfast has no accounts and no cookies. Here's everything that is stored, and where.</p></div></header>
-      <section class="section">
-        <div class="wrap prose legal">
-          <p class="muted small">Last updated Nov 17, 2026.</p>
-          <h2>On your device</h2>
-          <p>The app keeps its working data in your browser's local storage: your vault's settings, its recent activity and a support log, and on the signing test page, your test results and a log. It never leaves your device unless you send it. Clearing your browser data removes it.</p>
-          <h2>On Bitcoin Cash</h2>
-          <p>Every vault action is a transaction on a public blockchain. Anyone can see the vault's address, its balance and its history. That's how Bitcoin Cash works, and nobody, including us, can hide or remove it.</p>
-          <h2>Reading the blockchain</h2>
-          <p>To show balances and waits, the app asks public Bitcoin Cash servers (on mainnet bch.imaginary.cash, electrum.imaginary.cash, bch.loping.net and electroncash.de; on chipnet chipnet.bch.ninja and chipnet.imaginary.cash) about your vault's address and your wallet's addresses. Like any website, they see your IP address and which addresses you asked about. We don't run them.</p>
-          <h2>Wallet connection</h2>
-          <p>WizardConnect passes messages between this site and your wallet through public Nostr relays. The messages are encrypted end to end, so relays see only that two parties are talking, not what they say.</p>
-          <h2>Hosting</h2>
-          <p>The site is hosted on Vercel, which records basic request logs such as IP addresses to run its service. Fonts are served from this site, not from a third party.</p>
-          <h2>Visitor counts</h2>
-          <p>We use Vercel Web Analytics to count page views. It sets no cookies and doesn't follow you across sites: it records the page, the referring site, the country and the device type, in aggregate. It never sees your wallet, your vault or anything you type.</p>
-          <h2>Alerts</h2>
-          <p>If you choose to turn on Telegram alerts once they're available, we'll store your Telegram chat ID and your vault's address, only to message you about vault activity. You can turn them off at any time, which deletes both.</p>
-          <h2>Questions</h2>
-          <p>Open an issue on <a href="https://github.com/ohjay-official/holdfast/issues" rel="noopener">GitHub</a>.</p>
-        </div>
-      </section>
+  <body class="page-privacy">
+    <!-- @include judge-bar.html -->
+    <a class="skip" href="#main">Skip to content</a>
+    <!-- @include header.html -->
+    <main id="main" class="page-privacy-main">
+<header class="page-hero"><div class="wrap">
+  <p class="eyebrow" data-reveal><b>●</b> Legal</p>
+  <h1 data-reveal>Privacy</h1>
+  <p class="lede" data-reveal>Holdfast has no accounts and no cookies. Here's everything that is stored, and where.</p>
+</div></header>
+<div class="wrap read">
+  <nav class="toc" aria-label="On this page"><p>On this page</p><ol>
+    <li><a href="#on-your-device">On your device</a></li><li><a href="#on-bitcoin-cash">On Bitcoin Cash</a></li>
+    <li><a href="#reading-the-blockchain">Reading the blockchain</a></li><li><a href="#wallet-connection">Wallet connection</a></li>
+    <li><a href="#hosting">Hosting</a></li><li><a href="#visitor-counts">Visitor counts</a></li><li><a href="#alerts">Alerts</a></li><li><a href="#questions">Questions</a></li></ol></nav>
+  <article class="doc" data-reveal="fade">
+    <p class="updated">Last updated Nov 17, 2026.</p>
+    <h2 id="on-your-device">On your device</h2>
+    <p>The app keeps its working data in your browser's local storage: your vault's settings, its recent activity and a support log, and on the signing test page, your test results and a log. It never leaves your device unless you send it. Clearing your browser data removes it.</p>
+    <h2 id="on-bitcoin-cash">On Bitcoin Cash</h2>
+    <p>Every vault action is a transaction on a public blockchain. Anyone can see the vault's address, its balance and its history. That's how Bitcoin Cash works, and nobody, including us, can hide or remove it.</p>
+    <h2 id="reading-the-blockchain">Reading the blockchain</h2>
+    <p>To show balances and waits, the app asks public Bitcoin Cash servers (on mainnet bch.imaginary.cash, electrum.imaginary.cash, bch.loping.net and electroncash.de; on chipnet chipnet.bch.ninja and chipnet.imaginary.cash) about your vault's address and your wallet's addresses. Like any website, they see your IP address and which addresses you asked about. We don't run them.</p>
+    <h2 id="wallet-connection">Wallet connection</h2>
+    <p>WizardConnect passes messages between this site and your wallet through public Nostr relays. The messages are encrypted end to end, so relays see only that two parties are talking, not what they say.</p>
+    <h2 id="hosting">Hosting</h2>
+    <p>The site is hosted on Vercel, which records basic request logs such as IP addresses to run its service. Fonts are served from this site, not from a third party.</p>
+    <h2 id="visitor-counts">Visitor counts</h2>
+    <p>We use Vercel Web Analytics to count page views. It sets no cookies and doesn't follow you across sites: it records the page, the referring site, the country and the device type, in aggregate. It never sees your wallet, your vault or anything you type.</p>
+    <h2 id="alerts">Alerts</h2>
+    <p>If you choose to turn on Telegram alerts once they're available, we'll store your Telegram chat ID and your vault's address, only to message you about vault activity. You can turn them off at any time, which deletes both.</p>
+    <h2 id="questions">Questions</h2>
+    <p>Open an issue on <a href="https://github.com/ohjay-official/holdfast/issues" rel="noopener">GitHub</a>.</p>
+  </article>
+</div>
+
     </main>
-    <!-- @footer -->
+    <!-- @include footer.html -->
+    <div class="grain" aria-hidden="true"></div>
   </body>
 </html>

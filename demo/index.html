@@ -2,54 +2,72 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Holdfast demo</title>
-    <meta name="description" content="Try Holdfast on chipnet with test coins, or walk through a robbery in demo mode without a wallet." />
+    <meta name="description" content="Play every side of a robbery in about two minutes, with pretend BCH and no wallet." />
     <meta property="og:title" content="Holdfast demo" />
-    <meta property="og:description" content="Try Holdfast on chipnet with test coins, or walk through a robbery in demo mode without a wallet." />
+    <meta property="og:description" content="Play every side of a robbery in about two minutes, with pretend BCH and no wallet." />
     <meta property="og:url" content="https://holdfast-bch.vercel.app/demo/" />
-    <meta name="theme-color" content="#f2f3ef" />
+    <meta name="theme-color" content="#07090a" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="/src/site.css" />
+    <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png" />
+    <link rel="icon" href="/favicon-16.png" sizes="16x16" type="image/png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Holdfast" />
+    <meta property="og:image" content="https://holdfast-bch.vercel.app/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Holdfast: a vault a robber can't empty." />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content="https://holdfast-bch.vercel.app/og.png" />
+    <script defer src="/_vercel/insights/script.js"></script>
+    <script type="module" src="/src/site.ts"></script>
+    <script type="module" src="/src/how.ts"></script>
   </head>
-  <body>
-    <!-- @banner -->
-    <!-- @header -->
-    <main id="main">
-      <header class="page-head">
-        <div class="wrap">
-          <h1>Try it</h1>
-          <p class="lede">Play every side of a robbery in about two minutes, with pretend BCH and no wallet. You set up a vault, rob yourself, then stop it from home.</p>
-          <div class="actions"><a class="btn btn-dark" href="/app/#/quick">Start the demo</a></div>
-        </div>
-      </header>
-
-      <section class="section">
-        <div class="wrap split">
-          <h2>What you'll do</h2>
-          <ol class="steps">
-            <li><h3>Make a vault</h3><p>Pick an allowance and a wait, write down a home code and name a guardian. It all stays in your browser.</p></li>
-            <li><h3>Get robbed</h3><p>Play the robber: send everything. Watch the allowance leave and the rest start waiting.</p></li>
-            <li><h3>Stop it from home</h3><p>Switch to your home code and cancel. The vault freezes.</p></li>
-            <li><h3>Unfreeze</h3><p>Approve as your home code, then as your guardian.</p></li>
-            <li><h3>Use the duress PIN</h3><p>Lock the phone and open it with the duress PIN. The robber sees only the allowance; the rest freezes quietly.</p></li>
-          </ol>
-        </div>
-      </section>
-
-      <section class="section">
-        <div class="wrap split">
-          <h2>Real wallet signing</h2>
-          <div class="prose">
-            <p>Demo mode follows the vault rules but doesn't touch the blockchain. The signing test page does: it connects Paytaca over WizardConnect and runs five real transactions on chipnet: create, contract spend, wait, withdraw and two-key spend. You'll need Paytaca with chipnet turned on and some free test coins.</p>
-            <div class="actions" style="margin-top:1rem">
-              <a class="btn btn-line" href="/signing-test/">Open the signing test</a>
-            </div>
-            <p class="small muted" style="margin-top:1.25rem">In Paytaca, turn on chipnet under Apps, then Settings, then Use Chipnet Network.</p>
-          </div>
-        </div>
-      </section>
+  <body class="page-demo">
+    <!-- @include judge-bar.html -->
+    <a class="skip" href="#main">Skip to content</a>
+    <!-- @include header.html -->
+    <main id="main" class="page-demo-main">
+<header class="page-hero demo-hero">
+  <div class="guides" aria-hidden="true"></div>
+  <div class="wrap why-grid">
+    <div>
+      <p class="eyebrow" data-reveal><b>●</b> Demo</p>
+      <h1 class="mask">Try <em class="accent">it</em></h1>
+      <p class="lede" data-reveal style="--d:400ms">Play every side of a robbery in about two minutes, with pretend BCH and no wallet. You set up a vault, rob yourself, then stop it from home.</p>
+      <div class="actions" data-reveal style="--d:550ms"><span class="magnetic"><a class="btn btn-primary" href="/app/#/quick">Start the demo <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4"/></svg></a></span></div>
+    </div>
+    <div class="demo-phone" aria-hidden="true">
+      <div class="phone"><div class="phone-notch"></div>
+        <img src="/shots/vault.webp" alt=""><img src="/shots/send.webp" alt=""><img src="/shots/home-code.webp" alt=""><img src="/shots/frozen.webp" alt=""><img src="/shots/duress.webp" alt="">
+      </div>
+      <p class="demo-cap mono"><span>PHONE</span><span>PHONE</span><span>HOME CODE</span><span>HOME CODE</span><span>DURESS PIN</span></p>
+    </div>
+  </div>
+</header>
+<section class="section"><div class="wrap split">
+  <div><div class="num-strip" data-reveal aria-hidden="true"><b>01</b><span>// Two minutes</span></div><h2 class="mask">What you'll do</h2></div>
+  <ol class="steps" data-stagger>
+    <li data-reveal><h3>Make a vault</h3><p>Pick an allowance and a wait, write down a home code and name a guardian. It all stays in your browser.</p></li>
+    <li data-reveal><h3>Get robbed</h3><p>Play the robber: send everything. Watch the allowance leave and the rest start waiting.</p></li>
+    <li data-reveal><h3>Stop it from home</h3><p>Switch to your home code and cancel. The vault freezes.</p></li>
+    <li data-reveal><h3>Unfreeze</h3><p>Approve as your home code, then as your guardian.</p></li>
+    <li data-reveal><h3>Use the duress PIN</h3><p>Lock the phone and open it with the duress PIN. The robber sees only the allowance; the rest freezes quietly.</p></li>
+  </ol></div></section>
+<section class="section"><div class="wrap">
+  <div class="todo glass" data-reveal>
+    <span class="pill pill-neutral" aria-hidden="true">Chipnet</span>
+    <h2 class="mask">Real wallet signing</h2>
+    <p class="prose">Demo mode follows the vault rules but doesn't touch the blockchain. The signing test page does: it connects Paytaca over WizardConnect and runs five real transactions on chipnet: create, contract spend, wait, withdraw and two-key spend. You'll need Paytaca with chipnet turned on and some free test coins.</p>
+    <div class="actions" style="margin-top:0"><a class="btn btn-ghost" href="/signing-test/">Open the signing test</a></div>
+    <p class="small muted">In Paytaca, turn on chipnet under Apps, then Settings, then Use Chipnet Network.</p>
+  </div>
+</div></section>
     </main>
-    <!-- @footer -->
+    <!-- @include footer.html -->
+    <div class="grain" aria-hidden="true"></div>
   </body>
 </html>
