@@ -6,6 +6,7 @@ import * as C from './core.js';
 import { FallbackNetworkProvider } from '../provider.js';
 import { Wallet } from './wallet.js';
 import { fmtBch, toSats } from '../app/model.js';
+import { paint, repaintNext } from './paint.js';
 
 // ---------------- setup ----------------
 
@@ -128,7 +129,10 @@ function setStatus(kind: 'ok' | 'err' | 'info', text: string, tx?: string) {
   status = { kind, text, tx };
   log(`${kind}: ${text}${tx ? ` tx ${tx}` : ''}`);
   const el = document.getElementById('status');
-  if (el) el.outerHTML = statusBox();
+  if (el) {
+    el.outerHTML = statusBox();
+    repaintNext(app);
+  }
   else render();
 }
 
@@ -653,7 +657,7 @@ function render() {
   else if (h === '/home' && !decoy) html = screenHome(saved.config, view, '/vault');
   else if (h === '/settings' && !decoy) html = screenSettings();
   else html = screenVault();
-  app.innerHTML = html;
+  paint(app, html);
 }
 
 // ---------------- events ----------------
@@ -710,6 +714,7 @@ app.addEventListener('click', async (e) => {
   if (!el) return;
   if (el.dataset.copy) {
     const t = document.querySelector(el.dataset.copy)?.textContent ?? '';
+    repaintNext(app);
     try {
       await navigator.clipboard.writeText(t);
       el.textContent = 'Copied';
@@ -739,6 +744,7 @@ app.addEventListener('click', async (e) => {
       return render();
     }
     case 'copy-log': {
+      repaintNext(app);
       const text = [`Holdfast real vault log`, `UA: ${navigator.userAgent}`, `Vault: ${saved ? contractFor(saved.config).address : 'none'}`, ...logLines].join('\n');
       try {
         await navigator.clipboard.writeText(text);
