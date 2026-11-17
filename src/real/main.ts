@@ -54,6 +54,10 @@ let qr: { uri: string; img: string } | null = null;
 let homeKey: Uint8Array | null = null;
 let guardianConfig: C.VaultConfig | null = null;
 let guardianView: C.VaultView | null = null;
+/** A vault opened on this phone with only its vault code and home code (lost or new phone). */
+let homeOnly: C.VaultConfig | null = null;
+let homeOnlyView: C.VaultView | null = null;
+const onHomeOnly = () => location.hash === '#/home-code' && homeOnly !== null;
 let walletSats: bigint | null = null;
 let own = new Set<string>();
 
@@ -205,6 +209,7 @@ async function refresh() {
     refreshWallet().then(render);
     if (saved) view = await readConfig(saved.config);
     if (guardianConfig) guardianView = await readConfig(guardianConfig);
+    if (homeOnly) homeOnlyView = await readConfig(homeOnly);
   } catch (e) {
     setStatus('err', errText(e));
   }
@@ -318,6 +323,7 @@ function screenStart(): string {
     <div class="stack stack-end">
       <button class="btn btn-dark" data-act="connect">${saved ? 'Open my vault' : 'Connect Paytaca'}</button>
       <a class="btn btn-line" href="#/guardian">I'm someone's guardian</a>
+      <a class="btn btn-line" href="#/home-code">Lost your phone? Use your home code</a>
       <a class="btn btn-line" href="/app/#/quick">Try the demo instead</a>
     </div>
     <p class="small" style="margin-top:1.5rem"><button class="linkish" data-act="copy-log">Copy log for support</button></p>
@@ -524,6 +530,18 @@ function screenSettings(): string {
   </main>`;
 }
 
+function screenHomeOnly(): string {
+  if (homeOnly && homeKey) return screenHome(homeOnly, homeOnlyView, '/');
+  return `${topbar('Home code', '/')}
+  <main class="screen" id="main">${statusBox()}
+    <form data-form="homeonly" novalidate>
+      <p>Lost your phone, or on a new one? With your vault code and your 12-word home code you can cancel withdrawals, freeze the vault and move everything to a new address. No wallet needed.</p>
+      <label class="field"><span>Vault code (starts with HF1.)</span><textarea name="code" rows="3" autocomplete="off" autocapitalize="none" spellcheck="false"></textarea></label>
+      <label class="field"><span>Home code</span><textarea name="words" rows="3" autocomplete="off" autocapitalize="none" spellcheck="false" class="words-in"></textarea></label>
+      <div class="stack stack-end"><button class="btn btn-dark" type="submit">Open with home code</button></div>
+    </form></main>`;
+}
+
 function screenGuardian(): string {
   if (!wallet.ready) {
     return `${topbar('Guardian', '/')}
@@ -570,6 +588,7 @@ function render() {
     return render();
   }
   if (h === '/guardian') html = screenGuardian();
+  else if (h === '/home-code') html = screenHomeOnly();
   else if (h === '/connect') html = screenConnect();
   else if (!saved && h === '/setup' && wallet.ready) html = screenSetup();
   else if (!saved || !wallet.ready) html = screenStart();
@@ -647,7 +666,9 @@ app.addEventListener('click', async (e) => {
     return;
   }
   const a = el.dataset.act!;
-  const c = saved?.config;
+  // On the lost-phone route, the home code actions work on the vault opened from its code.
+  const c = onHomeOnly() ? homeOnly! : saved?.config;
+  const shownView = onHomeOnly() ? homeOnlyView : view;
   switch (a) {
     case 'net': {
       net = (el as HTMLInputElement).value as C.Net;
@@ -748,7 +769,7 @@ app.addEventListener('click', async (e) => {
       });
     case 'cancel-home':
       return act('Cancelling', async () => {
-        const { v, p } = await freshPending(c!, view, el.dataset.i);
+        const { v, p } = await freshPending(c!, shownView, el.dataset.i);
         const home = new SignatureTemplate(homeKey!);
         return sendLocal(V.buildMerge({ contract: contractFor(c!), main: v.main!, state: v.state!, other: p.utxo, pk: home.publicKey, signer: home }));
       });
@@ -777,6 +798,11 @@ app.addEventListener('click', async (e) => {
       });
     case 'forget-home':
       homeKey = null;
+      if (onHomeOnly()) {
+        homeOnly = null;
+        homeOnlyView = null;
+        return go('/');
+      }
       return go('/vault');
     case 'disconnect':
       await wallet.disconnect();
@@ -845,7 +871,7 @@ app.addEventListener('submit', async (e) => {
   e.preventDefault();
   const f = e.target as HTMLFormElement;
   const val = (n: string) => ((f.elements.namedItem(n) as HTMLInputElement | null)?.value ?? '').trim();
-  const c = saved?.config;
+  const c = onHomeOnly() ? homeOnly! : saved?.config;
   const err = (t: string) => setStatus('err', t);
   switch (f.dataset.form) {
     case 'setup':
@@ -924,6 +950,23 @@ app.addEventListener('submit', async (e) => {
         return sendLocal(V.buildRecover({ contract: contractFor(c!), main: v.main!, home, to }));
       });
     }
+    case 'homeonly':
+      try {
+        const hc = C.decodeVaultCode(val('code'));
+        if (hc.net !== net) return err(`That vault is on ${hc.net}. Switch network on the first screen.`);
+        const key = C.homeKeyFromWords(val('words'));
+        if (binToHex(C.publicKeyOf(key)) !== hc.homePk) return err('Those words are a valid home code, but not this vault\'s.');
+        homeOnly = hc;
+        homeOnlyView = null;
+        homeKey = key;
+        status = null;
+        log(`opened ${contractFor(hc).address} with the home code`);
+        render();
+        await refresh();
+      } catch (ex) {
+        return err((ex as Error).message);
+      }
+      return;
     case 'gcode':
       try {
         const gc = C.decodeVaultCode(val('code'));
@@ -1055,7 +1098,7 @@ window.addEventListener('hashchange', () => {
   render();
 });
 setInterval(() => {
-  if (!busy && document.visibilityState === 'visible' && (unlocked || guardianConfig)) refresh();
+  if (!busy && document.visibilityState === 'visible' && (unlocked || guardianConfig || homeOnly)) refresh();
 }, 60_000);
 
 function readPendingRecord(): Saved | null {

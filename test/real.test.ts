@@ -489,3 +489,46 @@ describe('backend bugs found in review (Nov 17)', () => {
     await expect(C.resolveEarlierCreation(config, async () => { throw new Error('websocket closed'); })).rejects.toThrow(/earlier/);
   });
 });
+
+describe('lost phone: home code and vault code on another device, no wallet', () => {
+  it('no guardian: freeze, cancel and move everything to a new address with only the 12 words and the HF1 code', async () => {
+    const { provider, contract, read, config, words } = await created(false);
+    let v = await read();
+    await viaWallet(provider, V.buildStartWithdrawal({ contract, main: v.main!, state: v.state!, amount: 120_000n, to: someone, owner: 'wallet' }), [0]);
+    // New device: nothing saved, no Paytaca.
+    const c2 = C.decodeVaultCode(C.encodeVaultCode(config));
+    const key = C.homeKeyFromWords(words.join(' '));
+    expect(binToHex(C.publicKeyOf(key))).toBe(c2.homePk);
+    const k2 = V.makeVault(C.paramsOf(c2), provider);
+    const r2 = async () => { const u = await k2.getUtxos(); return C.readVault(c2, u, new Map(u.map((x) => [`${x.txid}:${x.vout}`, 900])), 1000); };
+    const home = new SignatureTemplate(key);
+    const steps = await C.lockDown({ read: r2, send: sendLocal, contract: k2, key: home, mode: 'home', wait: async () => {} });
+    expect(steps.map((s) => s.what)).toEqual(['freeze', 'cancel']);
+    v = await r2();
+    await V.buildApprove({ contract: k2, main: v.main!, state: v.state!, pk: home.publicKey, ...C.approveRoles(c2, 'home'), signer: home, what: 'recover' }).send();
+    v = await r2();
+    expect(v.state!.recoverHome && v.state!.recoverGuardian).toBe(true);
+    const fresh = C.p2pkhAddress(C.publicKeyOf(new Uint8Array(32).fill(21)), 'chipnet');
+    const tb = V.buildRecover({ contract: k2, main: v.main!, home, to: fresh });
+    vmCheck(tb);
+    await tb.send();
+    expect(await sumAt(provider, fresh)).toBe(v.main!.satoshis - V.VAULT_FEE);
+    expect((await r2()).main).toBeNull();
+  });
+
+  it('with a guardian: the home code alone cannot move everything until the guardian approves', async () => {
+    const { provider, read, config, words, guardianKey } = await created(true);
+    const c2 = C.decodeVaultCode(C.encodeVaultCode(config));
+    const k2 = V.makeVault(C.paramsOf(c2), provider);
+    const home = new SignatureTemplate(C.homeKeyFromWords(words.join(' ')));
+    let v = await read();
+    await V.buildApprove({ contract: k2, main: v.main!, state: v.state!, pk: home.publicKey, ...C.approveRoles(c2, 'home'), signer: home, what: 'recover' }).send();
+    v = await read();
+    const fresh = C.p2pkhAddress(C.publicKeyOf(new Uint8Array(32).fill(21)), 'chipnet');
+    expect(() => vmCheck(V.buildRecover({ contract: k2, main: v.main!, home, to: fresh }))).toThrow();
+    const g = new SignatureTemplate(guardianKey);
+    await V.buildApprove({ contract: k2, main: v.main!, state: v.state!, pk: g.publicKey, ...C.approveRoles(c2, 'guardian'), signer: g, what: 'recover' }).send();
+    v = await read();
+    vmCheck(V.buildRecover({ contract: k2, main: v.main!, home, to: fresh }));
+  });
+});
