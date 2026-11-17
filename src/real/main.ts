@@ -789,6 +789,12 @@ app.addEventListener('click', async (e) => {
         duressFreeze();
         return;
       }
+      const want = saved!.pinLen;
+      log(`wrong PIN: ${entry.length} digits entered${want ? `, PIN has ${want}` : ''}`);
+      if (want && entry.length !== want) {
+        setStatus('err', `That was ${entry.length} digits, but your PINs have ${want}. A tap may not have counted. Try again a little slower and watch the dots.`);
+        return render();
+      }
       setStatus('err', 'Wrong PIN. Try again.');
       return render();
     }
