@@ -1,76 +1,44 @@
 # Holdfast
 
+<p align="center">
+  <img src="docs/images/home-phone.png" alt="Phone view of the Holdfast home page. The headline reads A Bitcoin Cash vault a robber can't empty, with a Try the demo button under it." width="260">
+</p>
+
 **A Bitcoin Cash vault a robber can't empty.**
 
-Whoever holds your phone can only spend a small daily allowance. Anything more waits days in the open, and your home code or a guardian can cancel it and freeze the vault. A duress PIN opens a view that shows only the allowance while the rest freezes quietly. The rules live in a CashScript contract, so they hold even if someone has your real PIN.
+Whoever has your phone can make you send what the phone can spend, and a Bitcoin Cash payment cannot be reversed. Holdfast is a vault contract: the phone can spend only a small daily allowance, and anything more waits in public so a home code or a guardian can cancel it.
 
-- Site: https://holdfast-bch.vercel.app
-- Demo, no wallet needed: https://holdfast-bch.vercel.app/app/#/quick
-- Real vault with Paytaca: https://holdfast-bch.vercel.app/real/
-- How the contract works: https://holdfast-bch.vercel.app/under-the-hood/
+**For judges:** open the [demo](https://holdfast-bch.vercel.app/app/), tap **Start the demo**, then **Send**, **Use a sample address**, **Send all: 1.00 BCH**, **Review**, and **Send 1.00 BCH**. Then tap **Home code** and **Cancel withdrawal**. You should see **0.05 BCH** leave now and **0.95 BCH** come back.
 
-Built for [BCH BLAZE 2026](https://dorahacks.io/hackathon/bchblaze2026) by [@jayejone](https://t.me/jayejone).
+## Quick Links
 
-## Before and after kickoff
+| What | What it needs |
+| --- | --- |
+| [Demo](#try-it) | 5 steps, pretend money, no wallet |
+| [Live site](#proof-its-real) | A browser |
+| [Real vault](#what-works-today) | Paytaca, and a little BCH or chipnet |
+| [Tests](#more-ways-to-test) | Node and npm, 101 tests |
+| [How it was built](#built-during-bch-blaze-2026) | `git log --reverse` |
 
-Judging covers only work from kickoff (Nov 14, 2026, 14:13 UTC) onwards.
+## Try It
 
-| | Code | Demo |
-| --- | --- | --- |
-| At kickoff | [`nov14-start` branch](https://github.com/ohjay-official/holdfast/tree/nov14-start) (commit `03f53db`, Nov 11) | https://holdfast-kickoff.vercel.app |
-| Now | [`main`](https://github.com/ohjay-official/holdfast) | https://holdfast-bch.vercel.app |
+The [demo](https://holdfast-bch.vercel.app/app/) uses pretend money. No wallet and no signup.
 
-At kickoff the repo held only a pre-hackathon risk test: a signing test page and two throwaway contracts (`SignTest.cash`, `CoSignTest.cash`) that checked Paytaca can sign this kind of contract over WizardConnect. Everything else was built after kickoff: the vault contract, its builders and tests, the app and demo mode, and the website. `git log 03f53db..main` shows it.
+1. Open the demo and tap **Start the demo**. You see **In your vault**, **1.00 BCH**, and **Demo vault ready: 1 BCH, 0.05 BCH a day, 3-day wait, Ada as guardian.**
+2. Tap **Send**, then **Use a sample address**, then **Send all: 1.00 BCH**, then **Review**. You see **0.05 BCH leaves now** and **0.95 BCH waits 3 days**.
+3. Tap **Send 1.00 BCH**. You see **Waiting to leave** and **0.95 BCH**. The **0.05 BCH** has already gone.
+4. At the bottom, tap **Home code**, then **Cancel withdrawal**. You see **Withdrawal cancelled. The BCH stays in the vault.** and **Nothing is waiting.** **Saved** is **0.95 BCH**. **Spendable now** stays **0.00 BCH** until the allowance window refills, because the **0.05 BCH** already left.
+5. Tap **Freeze vault**. You see **Vault frozen** and **Frozen by your home code.**
 
-## How it works
+The words in bold are the words on the screen. The sample address is a demo address in the app, not a real wallet.
 
-| Action | Who | How long |
-| --- | --- | --- |
-| Spend the allowance | Phone | Right away, refills after about 24 hours in which the vault coin isn't touched (any spend, cancel or approval restarts that clock) |
-| Withdraw more | Phone | Waits the vault's wait, 1 to 7 days |
-| Release a withdrawal | Anyone, no signature needed | Once the wait is over. The 0.00002 BCH network fee comes out of the amount |
-| Cancel a withdrawal | Phone, home code, guardian or duress key | Right away |
-| Fast withdrawal | Guardian approves | About 1 hour |
-| Freeze | Home code or guardian (everything); duress PIN (all but the allowance) | Right away. A freeze stops the vault coin; withdrawals already waiting are cancelled separately, which the app does by itself after a home code or duress freeze |
-| Unfreeze, recover | Home code and guardian, one approval each (home code alone if the vault has no guardian) | Right away |
-| Replace the guardian | Phone and home code | About 7 days |
+## Proof It's Real
 
-## The contract
-
-[`contracts/Holdfast.cash`](contracts/Holdfast.cash). One address holds four kinds of coin, told apart by CashToken NFTs of the vault's own category:
-
-- **Vault coin** (minting NFT): commitment `level(1) spent(8) unfreezeHome(1) unfreezeGuardian(1) recoverHome(1) recoverGuardian(1)`.
-- **Waiting withdrawal** (mutable NFT): `0x50 fast(1) recipientLockingBytecode`. Its age is the wait.
-- **Guardian-replacement ticket** (immutable NFT `0x45`). Its age is the week.
-- **Deposit** (no token), merged in by any vault key.
-
-Key points:
-
-- **No admin key.** Only the vault's own keys can do anything.
-- **Approvals are one signer per transaction,** so a guardian never needs to co-sign on the owner's phone.
-- **Waits use relative time locks,** not timestamps the spender could choose.
-- **Every spend the phone or a guardian can make fixes its outputs and caps its own fee,** so the wallet only signs. The two that move everything out (`recover`, `evict`) need the home code's signature, which covers the exact outputs.
-
-Transaction builders for every function are in [`src/vault.ts`](src/vault.ts).
-
-## Tests
-
-```bash
-npm install
-npm test        # 93 tests
-npm run build   # compiles the contracts, typechecks, builds the site
-bash scripts/verify.sh   # tests, build, live pages answer, payout address matches the code
-```
-
-- [`test/vault.test.ts`](test/vault.test.ts): 18 contract tests on CashScript's mock network, run through the BCH VM. They cover every function, the wrong keys, amounts and timing, and three attacks: minting a fake vault coin, keeping a released withdrawal's NFT alive, and skipping the guardian-replacement wait.
-- [`test/model.test.ts`](test/model.test.ts): the same rules as plain state changes, used by the demo.
-- [`test/real.test.ts`](test/real.test.ts): the real app's flows end to end: creation with the fee, the robbery, duress (freeze, cancel everything, allowance-only view), refill, release with no signature (recipient gets the amount minus 2,000 sats), adding deposits, unfreezing with no guardian, release after an unfreeze, a guardian working from the vault code on a second device, and the backend limits (dust, smallest withdrawal, stale reads, crash safety).
-- [`test/provider.test.ts`](test/provider.test.ts): the electrum fallback: a silent server times out and the next is tried, a rejected transaction is not retried, and sending the same transaction twice counts as sent.
-- `test/signtest.test.ts`, `test/cosigntest.test.ts`: the pre-kickoff WizardConnect signing tests.
-
-## Live on mainnet
-
-The robbery story, run on Bitcoin Cash mainnet on Nov 16 and 17 with Paytaca on one iPhone:
+- The rules are the contract [`contracts/Holdfast.cash`](contracts/Holdfast.cash) (`pragma cashscript ^0.14.0`).
+- [`test/vault.test.ts`](test/vault.test.ts) runs 18 contract tests through the Bitcoin Cash VM, including three attacks named in that file.
+- `npm test` passes 101 tests (counted 18 Nov 2026 on this commit).
+- The site is live: [holdfast-bch.vercel.app](https://holdfast-bch.vercel.app). The same proof list is on [Security](https://holdfast-bch.vercel.app/security/#proof).
+- A real vault was created from Paytaca on mainnet on 16 Nov 2026, and the later steps below were broadcast on 16 and 17 Nov 2026. There has been no outside audit.
 
 | Step | Transaction |
 | --- | --- |
@@ -84,31 +52,200 @@ The robbery story, run on Bitcoin Cash mainnet on Nov 16 and 17 with Paytaca on 
 | Duress PIN quietly freezes the vault while showing only the allowance | [ad5c27ea](https://blockchair.com/bitcoin-cash/transaction/ad5c27ea0245f9140dfda45ea57a60490d33ce64028a0a728e2e19ef2e6baece) |
 | Home code unfreezes it again | [48f2f9e4](https://blockchair.com/bitcoin-cash/transaction/48f2f9e44e6d4e79ac921f83a5c5769f45fc7fa81c89e05c638b3f6c6d21ffb9) |
 
-## Status
+## What's New Here
 
-- [x] Vault contract and tests
-- [x] Demo mode (no wallet), covering the whole robbery story
-- [x] Real vault app at [/real/](https://holdfast-bch.vercel.app/real/): Paytaca over WizardConnect, mainnet or chipnet. Create (with a 0.0001 BCH fee), send, withdraw, release, cancel, add deposits; home code screen (cancel, freeze, approve, move everything), also usable on another phone with just the vault code and the home code; guardian screen on the guardian's own phone; duress PIN that freezes with a panic key and cancels everything waiting.
-- [x] End-to-end tests of those flows on the mock network, with Paytaca's signing simulated and every signed transaction checked by the BCH 2025 VM ([`test/real.test.ts`](test/real.test.ts))
-- [x] First live run on mainnet (Nov 16): vault created from Paytaca over WizardConnect, with the 0.0001 BCH creation fee. [5d4e7cac](https://blockchair.com/bitcoin-cash/transaction/5d4e7cac3a9beca6235ef74a7bae37f239b78980a4b0d6b4f77f207cf329d519)
-- [ ] Outside audit
+**A real PIN does not let the phone empty the vault.**
 
-Until there has been an outside audit, use test coins or small amounts only.
+- **The phone can spend only the allowance in the current window.** `spend` in the contract requires `spent + amount <= allowance`, and `int(level) < 2`.
+- **Anything bigger becomes a waiting withdrawal on the same address.** `startWithdrawal` mints that coin. `release` pays only the recorded recipient, and only after `this.age >= waitBlocks`.
+- **A home code or a guardian can cancel. Neither can take the money alone.** Cancel is `merge`. Moving the whole vault is `recover`, and that needs both recovery flags. With no guardian, the contract sets both flags from the home code alone (`guardianPk == homePk`).
+- **A duress key can freeze without blocking the allowance.** `freeze` with the panic key sets level 1. Level 2, from the home code or a guardian, blocks spends and new withdrawals. Level 2 does not stop `release` on a withdrawal whose wait is already over.
 
-## Before kickoff: the signing risk test (Nov 11, 2026)
+People already lose money this way. The [Why](https://holdfast-bch.vercel.app/why/) page states two sourced figures. One is ₦2.6 million from a bank app after a robbery at gunpoint in September 2025 ([WeeTracker](https://weetracker.com/2025/10/07/panic-mode-banking-nigeria-duress-features); the link path is dated 7 Oct 2025). The other is 72 verified "wrench attacks" in 2025, up 75% on 2024 ([Decrypt](https://decrypt.co/356604/41m-in-losses-as-crypto-wrench-attacks-hit-record-high-in-2025)). A day-level date for the Decrypt piece is not in this repo.
 
-Signed by Paytaca over WizardConnect on chipnet, one iPhone:
+## How Bitcoin Cash Is Used
 
-| Test | What it proves | Transaction |
-| --- | --- | --- |
-| Create | Wallet funds a contract with a mutable state NFT | [8dbbb25b](https://chipnet.imaginary.cash/tx/8dbbb25b24e2c2f705bc686fcc25de68125e585f28c8355345d4503f4145a24f) |
-| Contract spend | Wallet signs a covenant spend that updates the NFT | [04108f18](https://chipnet.imaginary.cash/tx/04108f1818f275ecd911e057af01c043a225f5124b75f0c487d985d533b0e2e0) |
-| Wait | Same, gated by a relative time lock | [ecfaaecb](https://chipnet.imaginary.cash/tx/ecfaaecb9d0f8d00a5fe67b9e9ab75b74a0ef573cf825e9a148c66be81aff8ba) |
-| Withdraw | Wallet signs the contract spend back to itself | [682c878e](https://chipnet.imaginary.cash/tx/682c878ecf95d0ef7a5cfd3307233d131d0731911ee20795326dd8b3b3c64937) |
-| Two keys | One spend needs two signers | [bcc703ae](https://chipnet.imaginary.cash/tx/bcc703ae85c60cc17f631fc8384928714b8e03eb6036dee951c8a3964b3e2935) |
+- **CashScript 0.14 covenants.** [`contracts/Holdfast.cash`](contracts/Holdfast.cash) checks signatures, fixes its own outputs, and carries state in CashToken NFT commitments. Waits use `this.age` (a relative time lock), not a timestamp the spender picks. The contract allows at most 2,500 sats of fee on a spend, and 4,000 on a merge.
+- **libauth 3.1.0-next.8.** The real vault and the signing test use it for addresses, hashes, and transaction bytes (`src/vault.ts`, `src/real/core.ts`, `src/main.ts`).
+- **WizardConnect 0.2 and Paytaca.** [`src/real/wallet.ts`](src/real/wallet.ts) connects the real vault to Paytaca. The same path is what the pre-kickoff signing test used.
+- **In the repo, not in the vault app.** `contracts/SignTest.cash` and `contracts/CoSignTest.cash` are the chipnet signing tests, reached from [/signing-test/](https://holdfast-bch.vercel.app/signing-test/). Telegram alerts and a guardian-for-hire service are named on the [Why](https://holdfast-bch.vercel.app/why/) and [Privacy](https://holdfast-bch.vercel.app/privacy/) pages as later work. There is no code that sends those alerts.
 
-All five ran on code already in the `nov14-start` branch.
+The app's builders use 144 blocks for about a day, 6 blocks for about an hour, and 1,008 blocks for about a week (`src/vault.ts`). The contract checks whatever block counts were set when the vault was created. The demo uses a 0.05 BCH allowance and a 3-day wait. A real vault can use 1 to 7 days. The site says 3 is the default.
+
+## How It Compares
+
+Our row is first. A cell says Not stated when this repo does not give the date or the fact.
+
+| Product | What a forced phone can still take | Source | Date |
+| --- | --- | --- | --- |
+| Holdfast | The daily allowance now. The rest waits and can be cancelled. | [Contract](contracts/Holdfast.cash) and the [mainnet list](#proof-its-real) | 16 and 17 Nov 2026 |
+| Kuda Panic Balance | Not stated here. The Why page says it shows a lower balance when you shake the phone, and that money still moves if they make you send it. | [Kuda help](https://help.kuda.com/en/articles/8943120-use-private-mode) | Not stated |
+| Discovery Bank panic PIN | Not stated here. The Why page says a panic PIN alerts its fraud team. | [TechCentral](https://techcentral.co.za/discovery-bank-panic-code-app-kidnappings/261422/) | Not stated |
+| Deus Wallet duress mode | Not stated here. The Why page says duress mode opens a decoy account. | [Decrypt](https://decrypt.co/297742/deus-wallet-introduces-duress-mode-the-revolutionary-solution-for-cryptocurrency-security) | Not stated |
+
+A bank can call a fraud team. Holdfast cannot. Bitcoin Cash that has already left, including the allowance, is gone. The [Security](https://holdfast-bch.vercel.app/security/) page says that in those words.
+
+## What Works Today
+
+| Piece | State |
+| --- | --- |
+| Vault contract | In the repo. 18 contract tests. No outside audit. |
+| Demo | Live at [/app/](https://holdfast-bch.vercel.app/app/). Pretend BCH in the browser. |
+| Real vault | Live at [/real/](https://holdfast-bch.vercel.app/real/). Paytaca on mainnet or chipnet. Mainnet steps in the table above. |
+| Signing test | Live at [/signing-test/](https://holdfast-bch.vercel.app/signing-test/). Five chipnet tests from before kickoff are listed on the [Security](https://holdfast-bch.vercel.app/security/#proof) page. |
+| Website | Live at [holdfast-bch.vercel.app](https://holdfast-bch.vercel.app). |
+| Telegram alerts | Not built. The Privacy page says "once they're available". |
+| Guardian-for-hire | Not built. The Why page lists it under "Later". |
+
+## More Ways to Test
+
+<details>
+<summary><strong>Run the tests (101 tests, Node and npm)</strong></summary>
+
+```bash
+npm install
+npm test
+```
+
+Vitest should report `Tests  101 passed`.
+
+</details>
+
+<details>
+<summary><strong>Build the site (Node and npm)</strong></summary>
+
+```bash
+npm run build
+git checkout -- src/*.artifact.ts
+```
+
+`npm run build` compiles the three CashScript contracts, typechecks, and runs Vite. The checkout puts the generated artifact files back so they do not stay as a local change.
+
+</details>
+
+<details>
+<summary><strong>Run it locally (Node and npm)</strong></summary>
+
+```bash
+git clone https://github.com/ohjay-official/holdfast.git
+cd holdfast
+npm install
+npm run dev
+```
+
+Vite prints a local address. Its usual default is http://localhost:5173 . Open `/app/` for the demo.
+
+</details>
+
+<details>
+<summary><strong>Mainnet run (Paytaca and a small amount of BCH)</strong></summary>
+
+Open [the real vault](https://holdfast-bch.vercel.app/real/). The screen says **Mainnet** or **Chipnet (test)**. The app charges a one-time 0.0001 BCH Holdfast fee when you create a vault (`CREATE_FEE` in `src/real/core.ts`). That fee is not a line in the contract. Until there is an outside audit, the site says to start with a small amount.
+
+</details>
+
+## Screenshots
+
+Shots of the live site on 18 Nov 2026. The in-app shots are the demo, which uses pretend BCH.
+
+<p align="center">
+  <img src="docs/images/demo-vault.png" alt="Demo vault screen. It shows In your vault, 1.00 BCH, and the buttons Send and Receive. A Demo chip is in the top bar." width="260">
+</p>
+
+<p align="center">
+  <img src="docs/images/demo-home-code.png" alt="Demo home code screen after Cancel withdrawal. It shows Withdrawal cancelled, Saved 0.95 BCH, Nothing is waiting, and the button Freeze vault." width="260">
+</p>
+
+<p align="center">
+  <img src="docs/images/home-phone.png" alt="Phone view of the Holdfast home page with the demo button above the fold." width="260">
+</p>
+
+## What It Does
+
+1. You open the demo, or you connect Paytaca and create a real vault.
+2. You pick a daily allowance and a wait from 1 to 7 days.
+3. You write down a 12-word home code. A guardian is optional. With no guardian, the home code fills the guardian's role.
+4. The phone spends up to the allowance immediately (`spend`, or `spendFresh` after the refill age).
+5. A larger send starts a waiting withdrawal. When the wait is over, anyone can release it to the saved recipient. No new signature is required for `release`.
+6. The home code or a guardian can cancel that withdrawal (`merge`) or freeze the vault coin.
+7. Unfreezing or moving everything needs the home code and the guardian. One home-code approval does both jobs when there is no guardian.
+
+What it cannot promise:
+
+- It cannot reverse Bitcoin Cash that has already left, including the allowance.
+- A freeze of the vault coin does not, by itself, stop `release` on a withdrawal whose wait is already over. The real app's home-code and duress flows also cancel waiting withdrawals (`lockDown` in `src/real/core.ts`). A guardian-only freeze is the freeze function, not that whole flow.
+- If someone has both the phone and the home code, the contract cannot tell them from you.
+- There has been no outside audit.
+
+## Security and What It Doesn't Promise
+
+There is no `docs/SECURITY` file in this repo. The write-up is the live page: [Security](https://holdfast-bch.vercel.app/security/).
+
+The short version is the list in [What It Does](#what-it-does). Read that page before you put in more than a small amount.
+
+## Privacy
+
+The live [Privacy](https://holdfast-bch.vercel.app/privacy/) page is the current note (last updated 17 Nov 2026 on that page).
+
+The app keeps vault settings in the browser. Vault actions are public Bitcoin Cash transactions. The real app reads public Electrum servers named on that page. WizardConnect uses public Nostr relays. The site is hosted on Vercel. Fonts are files from this site.
+
+## Run Your Own
+
+```bash
+git clone https://github.com/ohjay-official/holdfast.git
+cd holdfast
+npm install
+npm test
+npm run build
+git checkout -- src/*.artifact.ts
+npm run dev
+```
+
+No environment variables are required for the demo. The real vault talks to public servers from the browser. Do not put keys or secrets in the repo.
+
+## Repository
+
+| | |
+| --- | --- |
+| Code | https://github.com/ohjay-official/holdfast |
+| License | [MIT](LICENSE) |
+| Issues | https://github.com/ohjay-official/holdfast/issues |
+| Live site | https://holdfast-bch.vercel.app |
+| Kickoff snapshot | [`nov14-start`](https://github.com/ohjay-official/holdfast/tree/nov14-start) (`03f53db`, 11 Nov 2026) and https://holdfast-kickoff.vercel.app |
+| Hackathon | [BCH BLAZE 2026](https://dorahacks.io/hackathon/bchblaze2026) |
+
+No BCH BLAZE track id is written in this repo, so there is no tracks table.
+
+## Built During BCH BLAZE 2026
+
+**First commit `5149a2f` was 11 Nov 2026, 11:36 UTC, which is 12:36 in Lagos (UTC+1).** That is before the site's kickoff mark of 14 Nov 2026. It was the chipnet signing test, not the vault.
+
+```bash
+git log --reverse --format='%h %ad %s' --date=format:'%Y-%m-%d %H:%M %z'
+```
+
+<details>
+<summary><strong>What landed each day (42 commits, Lagos dates)</strong></summary>
+
+- **11 Nov:** WizardConnect signing test on chipnet, including a two-signer spend.
+- **14 Nov:** Public site, demo app, and the vault contract with its first 18 tests.
+- **15 Nov:** Judge bar, Why and Under the hood pages, pitch deck, and the real vault app.
+- **16 Nov:** First mainnet vault, the allowance spend, a waiting withdrawal, a home-code cancel, and PIN-length fixes.
+- **17 Nov:** More tests, docs aligned with the contract, home code on a new phone with the vault code, and the PIN redraw fix.
+- **18 Nov:** Repeated-digit PIN fix, the Nov 17 mainnet transactions written into the docs, and the Night Vault site.
+
+</details>
+
+Code, tests, and docs were written with AI (Claude and Grok Bot), directed by Oh-Jay. Oh-Jay made the product decisions and did every wallet step and every real-money test.
+
+Libraries from `package-lock.json` on this commit:
+
+**Runtime:** `@bitauth/libauth` 3.1.0-next.8, `@wizardconnect/core` 0.2.5, `@wizardconnect/dapp` 0.2.2, `cashscript` 0.14.0, `qrcode` 1.5.4, `three` 0.170.0, `@types/three` 0.170.0, `@fontsource-variable/bricolage-grotesque` 5.3.0, `@fontsource-variable/jetbrains-mono` 5.3.0, `@fontsource-variable/source-serif-4` 5.3.1.
+
+**Dev:** `cashc` 0.14.0, `typescript` 7.0.2, `vite` 8.3.8, `vitest` 5.1.0, `@types/qrcode` 1.5.6.
+
+**Services:** Vercel hosts the site. The real app reads the public Electrum servers named on the Privacy page. WizardConnect uses public Nostr relays. No API keys are stored in the repo.
 
 ## License
 
-MIT
+[MIT](LICENSE). Copyright (c) 2026 ohjay-official.
