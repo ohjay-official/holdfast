@@ -14,13 +14,13 @@ Whoever has your phone can make you send what the phone can spend, and a Bitcoin
 
 | What | What it needs |
 | --- | --- |
-| [Demo](#try-it) | 5 steps, pretend money, no wallet |
+| [Demo](#try-it-in-5-steps) | 5 steps, pretend money, no wallet |
 | [Live site](#proof-its-real) | A browser |
 | [Real vault](#what-works-today) | Paytaca, and a little BCH or chipnet |
 | [Tests](#more-ways-to-test) | Node and npm, 101 tests |
 | [How it was built](#built-during-bch-blaze-2026) | `git log --reverse` |
 
-## Try It
+## Try It in 5 Steps
 
 The [demo](https://holdfast-bch.vercel.app/app/) uses pretend money. No wallet and no signup.
 
