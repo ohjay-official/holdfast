@@ -24,6 +24,8 @@ main {
   padding: 24px 16px 64px;
 }
 
+.eyebrow a { display: inline-flex; align-items: center; min-height: 44px; }
+
 .eyebrow {
   color: var(--accent);
   font-size: 13px;
@@ -74,7 +76,10 @@ h2 { font-size: 18px; margin: 0 0 8px; display: flex; align-items: center; gap: 
 }
 
 button, .button {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
   font: inherit;
   font-size: 15px;
   padding: 10px 14px;
