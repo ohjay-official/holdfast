@@ -12,8 +12,8 @@
   /* text */
   --text:#eef1ec;
   --text-2:rgba(238,241,236,.72);
-  --text-3:rgba(238,241,236,.50);
-  --text-4:rgba(238,241,236,.34);
+  --text-3:rgba(238,241,236,.62); /* muted copy, at least 4.5:1 on the page ground */
+  --text-4:rgba(238,241,236,.58); /* labels, at least 4.5:1 on the page ground */
 
   /* brand (the ONE accent) */
   --green:#0a7a5a;

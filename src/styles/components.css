@@ -34,10 +34,11 @@
 
 /* Elements start hidden ONLY when JS is running (html.js) and motion is allowed */
 @media (prefers-reduced-motion:no-preference){
-  html.js [data-reveal]{opacity:0;transform:translateY(24px);
-    transition:opacity var(--dur) var(--ease-out),transform var(--dur) var(--ease-out);
+  /* Slide only. An opacity fade is measured mid-way by contrast checks and drops muted text under 4.5:1. */
+  html.js [data-reveal]{transform:translateY(24px);
+    transition:transform var(--dur) var(--ease-out);
     transition-delay:calc(var(--i,0) * 80ms + var(--d,0ms))}
-  html.js [data-reveal].in{opacity:1;transform:none}
+  html.js [data-reveal].in{transform:none}
   html.js [data-reveal="fade"]{transform:none}
   html.js [data-reveal="scale"]{transform:scale(.96)}
   html.js [data-reveal="scale"].in{transform:none}
@@ -59,7 +60,7 @@ html.revealed .w>span{transform:none !important}
 .pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;box-shadow:0 0 10px currentColor}
 .pill-safe{color:var(--green-glow);background:var(--green-soft);box-shadow:inset 0 0 0 1px rgba(63,164,131,.3)}
 .pill-held{color:var(--held-lit);background:var(--held-soft);box-shadow:inset 0 0 0 1px rgba(207,145,54,.3)}
-.pill-taken{color:var(--taken-lit);background:var(--taken-soft);box-shadow:inset 0 0 0 1px rgba(208,102,79,.3)}
+.pill-taken{color:#e7a99b;background:var(--taken-soft);box-shadow:inset 0 0 0 1px rgba(208,102,79,.3)}
 .pill-neutral{color:var(--text-2);background:rgba(238,241,236,.06);box-shadow:inset 0 0 0 1px var(--line-soft)}
 .pill-neutral::before{box-shadow:none}
 
