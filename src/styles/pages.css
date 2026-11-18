@@ -63,6 +63,17 @@
   .glass-m{padding:1.5rem;border-radius:var(--r-lg);background:rgba(7,9,10,.72);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);box-shadow:inset 0 0 0 1px var(--line-soft)}
   .scroll-cue{display:none}
 }
+/* Phones: the vault door sits behind the headline. Dim it, nudge it up and right, and lay a dark scrim under the words. */
+@media (max-width:768px){
+  .door-stage.ready canvas{opacity:.32;transform:translate(16%,-14%)}
+  .door-fallback{opacity:.32;right:2%;top:2%;transform:none;width:60vmin}
+  .door-stage.ready .door-fallback{opacity:0}
+  .door-stage.failed .door-fallback,.door-stage.static .door-fallback{opacity:.32}
+  .door-glow{opacity:.35}
+  .dz-hero .dz-copy::before{content:"";position:absolute;z-index:-1;pointer-events:none;
+    left:-12vw;right:-8vw;top:-2rem;bottom:18%;
+    background:linear-gradient(180deg, rgba(7,9,10,.7) 0%, rgba(7,9,10,.96) 10%, rgba(7,9,10,.94) 72%, rgba(7,9,10,0) 100%)}
+}
 @media (max-height:820px) and (min-width:760px){
   .dz-hero{min-height:0;align-items:flex-start;padding-top:5.5rem;padding-bottom:1.5rem}
   .dz-hero h1{font-size:clamp(2.5rem,5vw,4rem)}
