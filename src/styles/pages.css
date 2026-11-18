@@ -12,7 +12,7 @@
 .door-loader i{display:block;width:140px;height:2px;background:var(--line);overflow:hidden;position:relative}
 .door-loader i::after{content:"";position:absolute;inset:0;width:40%;background:var(--green-lit);animation:load 1.2s var(--ease-out) infinite}
 @keyframes load{from{transform:translateX(-100%)}to{transform:translateX(260%)}}
-.door-stage.ready .door-loader,.door-stage.failed .door-loader{opacity:0;transition:opacity .4s}
+.door-stage.ready .door-loader,.door-stage.failed .door-loader,.door-stage.static .door-loader{opacity:0;transition:opacity .4s}
 .door-hud{position:absolute;inset:0;font-size:10.5px;letter-spacing:.22em;color:var(--text-4)}
 .door-hud span{position:absolute}
 .hud-tl{left:var(--gutter);top:calc(84px + 1.5rem)}

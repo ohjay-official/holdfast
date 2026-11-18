@@ -86,6 +86,18 @@ export default defineConfig({
   plugins: [partials()],
   build: {
     target: 'es2022',
-    rollupOptions: { input: findPages(root) },
+    modulePreload: {
+      resolveDependencies(_filename, deps) {
+        return deps.filter((dep) => !dep.includes('vault3d') && !dep.includes('three'));
+      },
+    },
+    rollupOptions: {
+      input: findPages(root),
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules/three')) return 'three';
+        },
+      },
+    },
   },
 });

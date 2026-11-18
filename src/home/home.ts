@@ -23,8 +23,20 @@ const hasWebGL = () => { try { const c = document.createElement('canvas'); retur
 const canvas = document.querySelector<HTMLCanvasElement>('#door');
 const stage = document.querySelector<HTMLElement>('.door-stage');
 const steps = [...document.querySelectorAll<HTMLElement>('.dz[data-k]')];
+const saveData = !!(navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData;
 
-if (canvas && stage && hasWebGL()) {
+/** Run after the load event, then on an idle slice. setTimeout covers browsers without requestIdleCallback. */
+function afterIdle(run: () => void) {
+  const arm = () => {
+    if ('requestIdleCallback' in window) requestIdleCallback(() => run(), { timeout: 2000 });
+    else setTimeout(run, 200);
+  };
+  if (document.readyState === 'complete') arm();
+  else addEventListener('load', arm, { once: true });
+}
+
+function mountDoor() {
+  if (!canvas || !stage) return;
   import('./vault3d').then(({ mountVault }) => {
     const v = mountVault(canvas, { onReady: () => stage.classList.add('ready') });
     const keys = () => (innerWidth < 760 ? KM : K);
@@ -36,10 +48,10 @@ if (canvas && stage && hasWebGL()) {
       return c.length - 1;
     };
     const pose = (p: number) => { const k = keys(), i = Math.min(k.length - 2, Math.floor(p)); return lerp(k[i], k[i + 1], smooth(Math.min(1, Math.max(0, p - i)))); };
-    let cur = progress(), intro = reduced ? 1 : 0, raf = 0, visible = true;
+    let cur = progress(), intro = 0, raf = 0, visible = true;
     const frame = () => {
       raf = 0;
-      const target = progress(); cur += (target - cur) * (reduced ? 1 : 0.12);
+      const target = progress(); cur += (target - cur) * 0.12;
       if (intro < 1) intro = Math.min(1, intro + 1 / 70);
       const st = pose(cur), l = smooth(intro);
       st.bolts *= l; st.wheel += (1 - l) * -3;
@@ -52,7 +64,34 @@ if (canvas && stage && hasWebGL()) {
     new IntersectionObserver(([e]) => { visible = e.isIntersecting; kick(); }).observe(stage.parentElement!);
     kick();
   }).catch(() => stage.classList.add('failed'));
-} else stage?.classList.add('failed');
+}
+
+// The SVG door in the page is the first paint. Three.js starts only once the hero is on screen and the browser is idle.
+if (!canvas || !stage) {
+  /* no door on this page */
+} else if (reduced || saveData || !hasWebGL()) {
+  stage.classList.add('static');
+} else {
+  const hero = document.querySelector('.dz-hero');
+  let seen = !hero;
+  let idle = false;
+  let started = false;
+  const start = () => {
+    if (started || !seen || !idle) return;
+    started = true;
+    mountDoor();
+  };
+  afterIdle(() => { idle = true; start(); });
+  if (hero) {
+    const watch = new IntersectionObserver(([e]) => {
+      if (!e.isIntersecting) return;
+      seen = true;
+      start();
+      watch.disconnect();
+    });
+    watch.observe(hero);
+  }
+}
 
 // step 02 HUD countdown (decorative)
 const clock = document.querySelector<HTMLElement>('[data-countdown]');
