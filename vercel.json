@@ -1,7 +1,7 @@
 {
-  "redirects": [
-    { "source": "/how", "destination": "/how-it-works/", "permanent": false },
-    { "source": "/how/", "destination": "/how-it-works/", "permanent": false }
+  "rewrites": [
+    { "source": "/how", "destination": "/how-it-works/index.html" },
+    { "source": "/how/", "destination": "/how-it-works/index.html" }
   ],
   "headers": [
     {
@@ -12,7 +12,7 @@
         { "key": "X-Frame-Options", "value": "DENY" },
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https: wss:; frame-ancestors 'none'; base-uri 'self'; object-src 'none'; form-action 'self'"
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https: wss:; worker-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'; object-src 'none'; form-action 'self'"
         }
       ]
     }
