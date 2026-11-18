@@ -25,11 +25,17 @@ const stage = document.querySelector<HTMLElement>('.door-stage');
 const steps = [...document.querySelectorAll<HTMLElement>('.dz[data-k]')];
 const saveData = !!(navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData;
 
-/** Run after the load event, then on an idle slice. setTimeout covers browsers without requestIdleCallback. */
+/**
+ * Start after the load event, once the main thread has had a quiet stretch,
+ * then on an idle slice. The quiet stretch keeps the Three.js parse off the
+ * first input. setTimeout covers browsers without requestIdleCallback.
+ */
 function afterIdle(run: () => void) {
   const arm = () => {
-    if ('requestIdleCallback' in window) requestIdleCallback(() => run(), { timeout: 2000 });
-    else setTimeout(run, 200);
+    setTimeout(() => {
+      if ('requestIdleCallback' in window) requestIdleCallback(() => run(), { timeout: 2000 });
+      else setTimeout(run, 200);
+    }, 6000);
   };
   if (document.readyState === 'complete') arm();
   else addEventListener('load', arm, { once: true });
