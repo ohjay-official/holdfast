@@ -30,7 +30,6 @@
 .btn-light:hover{color:var(--bg);background:#fff}
 .btn-sm{--h:38px;padding:0 1rem;font-size:.9rem}
 .btn:active{transform:scale(.98)}
-.magnetic{display:inline-flex}
 @media (max-width:560px){.actions .btn{width:100%}}
 
 /* Elements start hidden ONLY when JS is running (html.js) and motion is allowed */
@@ -64,7 +63,7 @@ html.revealed .w>span{transform:none !important}
 .pill-neutral{color:var(--text-2);background:rgba(238,241,236,.06);box-shadow:inset 0 0 0 1px var(--line-soft)}
 .pill-neutral::before{box-shadow:none}
 
-.bar{display:flex;height:14px;border-radius:var(--r-pill);overflow:hidden;background:rgba(238,241,236,.06);box-shadow:inset 0 0 0 1px var(--line-soft)}
+.bar{display:flex;height:14px;border-radius:4px;overflow:hidden;background:rgba(238,241,236,.06);box-shadow:inset 0 0 0 1px var(--line-soft)}
 .bar>span{height:100%;transform-origin:left;transition:transform 1.1s var(--ease-out),width 1.1s var(--ease-out),background .6s}
 .seg-safe{background:linear-gradient(180deg,#14a077,#0a7a5a);box-shadow:0 0 18px rgba(63,164,131,.55)}
 .seg-held{background:repeating-linear-gradient(-45deg,#cf9136 0 8px,#b9791a 8px 16px);box-shadow:0 0 18px rgba(207,145,54,.45)}
@@ -117,7 +116,7 @@ html.revealed .w>span{transform:none !important}
 
 .judge-bar{position:relative;z-index:50;background:#050706;border-bottom:1px solid var(--line-soft);color:var(--text-3);
   font-family:var(--sans);font-size:.8125rem;line-height:1.4}
-.judge-row{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem 1.75rem;padding-block:.55rem}
+.judge-row{display:flex;flex-wrap:wrap;align-items:center;gap:.35rem 1.25rem;padding-block:.3rem}
 .judge-title{margin:0;display:flex;align-items:center;gap:.6rem;font-weight:650;color:var(--text);letter-spacing:-.005em}
 .judge-live{width:7px;height:7px;border-radius:50%;background:var(--green-lit);box-shadow:0 0 0 0 rgba(63,164,131,.6);animation:live 2.4s var(--ease-out) infinite}
 @keyframes live{0%{box-shadow:0 0 0 0 rgba(63,164,131,.6)}70%{box-shadow:0 0 0 8px rgba(63,164,131,0)}100%{box-shadow:0 0 0 0 rgba(63,164,131,0)}}
@@ -173,7 +172,7 @@ html.revealed .w>span{transform:none !important}
   .mobile-menu.open nav>*{opacity:1;transform:none}
 }
 @media (max-width:899px){
-  .site-nav,.head-pill>.magnetic{display:none}
+  .site-nav,.head-pill>.nav-app{display:none}
   .menu-btn{display:block}
 }
 

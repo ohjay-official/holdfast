@@ -8,7 +8,6 @@ import './styles/components.css';
 import './styles/pages.css';
 import { initReveal } from './lib/reveal';
 import { initSplit } from './lib/split';
-import { initMagnetic } from './lib/magnetic';
 import { initCountUps } from './lib/countup';
 import { initCopy } from './lib/copy';
 import { initNav } from './lib/nav';
@@ -18,7 +17,6 @@ export const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 initSplit(reduced);     // must run before reveal so .mask headings get split first
 initReveal(reduced);
-initMagnetic(reduced);
 initCountUps(reduced);
 initCopy();
 initNav();

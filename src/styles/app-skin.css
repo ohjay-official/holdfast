@@ -2,7 +2,7 @@
 @import '@fontsource-variable/source-serif-4';
 @import '@fontsource-variable/jetbrains-mono';
 @import './tokens.css';
-body.app-body{--ground:#07090a;--ground-2:#151c19;--paper:#111715;--ink:#eef1ec;--slate:rgba(238,241,236,.62);--rule:#2a3530;
+body.app-body{--ground:#07090a;--ground-2:#151c19;--paper:#111715;--ink:#eef1ec;--slate:#c5cdc6;--rule:#2a3530;
   --safe:#3fa483;--safe-soft:rgba(63,164,131,.16);--held:#cf9136;--held-soft:rgba(207,145,54,.16);--taken:#d0664f;
   --sans:"Bricolage Grotesque Variable","Segoe UI",system-ui,sans-serif;--serif:"Source Serif 4 Variable",Georgia,serif;
   --mono:"JetBrains Mono Variable",ui-monospace,Menlo,monospace;--r:10px}
@@ -11,6 +11,10 @@ body.app-body .app{background:#0b0f0d;box-shadow:inset 0 0 0 1px #22302a}
 body.app-body .field input,body.app-body textarea,body.app-body .pad button{background:#0b0f0d;color:#eef1ec;border-color:#2a3530}
 body.app-body .field input:focus,body.app-body textarea:focus{outline:2px solid #8fdcbb;outline-offset:1px}
 body.app-body .flash-err,body.app-body .tag-taken{color:#f2b3a5;background:rgba(208,102,79,.16)}
+body.app-body .flash-ok{color:#d7f3e4;background:rgba(63,164,131,.28)}
+body.app-body .chip-main{color:#d7f3e4;background:rgba(63,164,131,.28)}
+body.app-body .demo-chip,body.app-body .tag-held{color:#f6e4c4;background:rgba(207,145,54,.28)}
+body.app-body .help,body.app-body .pend-meta{color:#d5ddd6}
 body.app-body .notice-frozen{background:rgba(159,183,192,.10);border-left-color:#9fb7c0}
 body.app-body .btn-dark,body.app-body .nav-app{background:#eef1ec;color:#07090a}
 body.app-body a{color:#8fdcbb}

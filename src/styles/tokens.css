@@ -41,7 +41,7 @@
   --measure:40rem;         /* body column */
   --read:68ch;             /* long-form column */
   --gutter:clamp(1.25rem,4vw,2.5rem);
-  --r-sm:8px; --r:14px; --r-lg:22px; --r-pill:999px;
+  --r-sm:8px; --r:14px; --r-lg:22px; --r-pill:10px;
 
   /* motion */
   --ease-out:cubic-bezier(.22,1,.36,1);

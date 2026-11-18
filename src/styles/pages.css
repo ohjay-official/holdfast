@@ -1,6 +1,7 @@
 .door-zone{position:relative;margin-top:-84px} /* tuck under the floating header */
 .door-stage{position:sticky;top:0;height:100svh;margin-bottom:-100svh;z-index:0;pointer-events:none;overflow:hidden}
-.door-stage canvas{position:absolute;inset:0;width:100%;height:100%;opacity:0;transition:opacity 1.2s var(--ease-out)}
+.door-stage canvas{position:absolute;inset:0;width:100%;height:100%;opacity:0;transition:opacity 1.2s var(--ease-out);z-index:0}
+.dz-copy{z-index:2}
 .door-stage.ready canvas{opacity:1}
 .door-glow{position:absolute;width:70vmin;height:70vmin;right:8%;top:50%;transform:translateY(-50%);border-radius:50%;
   background:radial-gradient(circle,rgba(10,122,90,.35),rgba(10,122,90,.08) 45%,transparent 70%);filter:blur(20px);transition:right 1s var(--ease-out)}
@@ -22,6 +23,10 @@
 .dz-copy{position:relative;max-width:36rem}
 .dz-right .dz-copy{margin-left:auto}
 .dz-hero h1{font-size:clamp(3rem,7.6vw,7rem);max-width:11ch}
+@media (prefers-reduced-motion:no-preference){
+  .dz-hero h1{animation:hero-rise .5s var(--ease-out) both}
+}
+@keyframes hero-rise{from{transform:translateY(10px)}to{transform:none}}
 .dz-hero .lede{margin-top:1.75rem;max-width:30rem}
 .dz-proof{display:flex;align-items:center;gap:.6rem;margin-top:1.75rem;font-family:var(--sans);font-size:.92rem;color:var(--text-3)}
 .live-dot{width:8px;height:8px;border-radius:50%;background:var(--green-lit);animation:live 2.4s var(--ease-out) infinite}
@@ -41,17 +46,28 @@
 /* the fallback door follows the copy side when WebGL is unavailable */
 .door-stage.failed .door-fallback{opacity:.9}
 @media (max-width:759px){
-  .door-glow{right:50%;transform:translate(50%,-50%);top:28%;width:90vmin;height:90vmin}
-  .door-fallback{right:50%;transform:translate(50%,-50%);top:26%;width:72vmin}
-  .door-loader{right:50%;transform:translateX(50%);top:calc(26% + 40vmin)}
+  .door-glow{right:50%;transform:translate(50%,-50%);top:22%;width:78vmin;height:78vmin}
+  .door-fallback{right:50%;transform:translate(50%,-50%);top:20%;width:64vmin}
+  .door-loader{right:50%;transform:translateX(50%);top:calc(20% + 34vmin)}
   .hud-br{display:none}
-  .dz{align-items:flex-end;min-height:120svh;padding-bottom:3rem;z-index:2}
-  .dz-hero{align-items:flex-end;min-height:100svh;padding-top:52svh}
+  .dz{align-items:flex-end;min-height:0;padding-bottom:1.5rem;z-index:2}
+  .dz-hero{align-items:flex-end;min-height:0;padding-top:16rem;padding-bottom:1rem}
+  .dz-hero h1{font-size:clamp(2.15rem,9.2vw,2.7rem)}
+  .dz-hero .lede{margin-top:.75rem;font-size:1.02rem;line-height:1.45}
+  .dz-hero .actions{margin-top:.85rem}
   .dz-copy{z-index:2}
   .door-stage{z-index:0}
+  .site-head{top:6px;margin-top:6px}
+  .head-pill{height:48px}
   .dz-right .dz-copy{margin-left:0}
   .glass-m{padding:1.5rem;border-radius:var(--r-lg);background:rgba(7,9,10,.72);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);box-shadow:inset 0 0 0 1px var(--line-soft)}
   .scroll-cue{display:none}
+}
+@media (max-height:820px) and (min-width:760px){
+  .dz-hero{min-height:0;align-items:flex-start;padding-top:5.5rem;padding-bottom:1.5rem}
+  .dz-hero h1{font-size:clamp(2.5rem,5vw,4rem)}
+  .dz-hero .lede{margin-top:1rem}
+  .dz-hero .actions{margin-top:1.1rem}
 }
 @media (prefers-reduced-motion:reduce){.live-dot,.scroll-cue i,.door-loader i::after{animation:none}}
 .ordeal-left{position:relative}
@@ -294,7 +310,7 @@
 .verb-words{display:block;min-height:1em}
 .verb-word{display:inline-flex;align-items:center;gap:.25em}
 .verb-word[hidden]{display:none}
-.verb-word>span:last-child{font-family:var(--serif);font-style:italic;font-weight:400;letter-spacing:-.03em;color:var(--tone,#cf9136)}
+.verb-word>span:last-child{font-family:inherit;font-style:normal;font-weight:700;letter-spacing:-.05em;color:var(--text)}
 .verb[data-tone=held]{--tone:#cf9136}.verb[data-tone=ink]{--tone:#dfe6e1}.verb[data-tone=safe]{--tone:#8fdcbb}.verb[data-tone=slate]{--tone:#b8ccd3}
 .orb{width:.82em;height:.82em;border-radius:50%;display:grid;place-items:center;flex:none;
   background:radial-gradient(circle at 32% 28%,rgba(255,255,255,.85),transparent 22%),radial-gradient(circle at 50% 60%,var(--tone),color-mix(in srgb,var(--tone) 35%,#000) 80%);
