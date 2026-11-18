@@ -15,7 +15,8 @@ body.app-body .flash-ok{color:#d7f3e4;background:rgba(63,164,131,.28)}
 body.app-body .chip-main{color:#d7f3e4;background:rgba(63,164,131,.28)}
 body.app-body .demo-chip,body.app-body .tag-held{color:#f6e4c4;background:rgba(207,145,54,.28)}
 body.app-body .help,body.app-body .pend-meta{color:#d5ddd6}
-body.app-body .linkish{min-height:44px;display:inline-flex;align-items:center}
+body.app-body .linkish{min-height:44px;min-width:44px;display:inline-flex;align-items:center;justify-content:center}
+body.app-body .mark,body.app-body .links a{min-height:44px;min-width:44px;display:inline-flex;align-items:center}
 body.app-body .notice-frozen{background:rgba(159,183,192,.10);border-left-color:#9fb7c0}
 body.app-body .btn-dark,body.app-body .nav-app{background:#eef1ec;color:#07090a}
 body.app-body a{color:#8fdcbb}
