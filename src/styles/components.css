@@ -200,7 +200,7 @@ html.revealed .w>span{transform:none !important}
 .foot-lockup{display:inline-flex;align-items:center;gap:.6rem;font-family:var(--sans);font-weight:700;font-size:1.75rem;letter-spacing:-.04em;color:var(--text);text-decoration:none}
 .foot-lockup svg{width:30px;height:30px;fill:none;stroke:var(--green-glow);stroke-width:1.8;stroke-linejoin:round}
 .foot-note{margin:1rem 0 2rem;max-width:30rem;color:var(--text-3);font-size:1rem}
-.foot-h{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--text-4);margin:0 0 1rem}
+.foot-h{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--text-2);margin:0 0 1rem}
 .site-foot ul{list-style:none;display:grid;gap:.6rem}
 .site-foot a{color:var(--text-2);text-decoration:none;font-family:var(--sans);font-weight:500;font-size:.98rem;display:inline-flex;align-items:center;min-height:44px;min-width:44px;transition:color .18s,transform .18s}
 .site-foot a:hover{color:#fff;transform:translateX(3px)}
@@ -210,7 +210,7 @@ html.revealed .w>span{transform:none !important}
 .foot-mark{font-family:var(--sans);font-weight:800;letter-spacing:-.06em;line-height:.8;font-size:clamp(5rem,22vw,20rem);text-align:center;
   color:transparent;-webkit-text-stroke:1px rgba(143,220,187,.18);background:linear-gradient(180deg,rgba(63,164,131,.16),transparent 75%);
   -webkit-background-clip:text;background-clip:text;user-select:none;margin:1rem 0 -1rem}
-.foot-legal{display:flex;flex-wrap:wrap;justify-content:space-between;gap:1rem;padding-block:1.5rem 2rem;border-top:1px solid var(--line-soft);font-size:.875rem;color:var(--text-4)}
+.foot-legal{display:flex;flex-wrap:wrap;justify-content:space-between;gap:1rem;padding-block:1.5rem 2rem;border-top:1px solid var(--line-soft);font-size:.875rem;color:var(--text-2)}
 .foot-legal p{margin:0}
 .foot-legal ul{display:flex;gap:1.25rem}
 @media (prefers-reduced-motion:reduce){.foot-dots__line,.chain-blocks rect,.chain-held rect{animation:none}}
