@@ -42,7 +42,7 @@ async function created(withGuardian = true) {
   expect(plan.needsPrepare).toBe(false);
   const genesis = coins.find((u) => u.vout === 0)!;
   const config: C.VaultConfig = {
-    v: 1, net: 'chipnet', ownerPk: binToHex(ownerPk), homePk: binToHex(C.publicKeyOf(homeKey)),
+    v: 2, net: 'chipnet', ownerPk: binToHex(ownerPk), homePk: binToHex(C.publicKeyOf(homeKey)),
     guardianPk: binToHex(withGuardian ? C.publicKeyOf(guardianKey) : C.publicKeyOf(homeKey)), panicPk: binToHex(C.publicKeyOf(panicKey)),
     hasGuardian: withGuardian, category: genesis.txid, allowance: '50000', waitBlocks: 432, fastBlocks: 6, refillBlocks: 144, evictBlocks: 1008,
   };
@@ -63,7 +63,7 @@ describe('real vault flows', () => {
     const v = await read();
     expect(v.total).toBe(400_000n);
     expect(v.state).toEqual(V.OPEN);
-    expect(v.allowanceLeft).toBe(50_000n);
+    expect(v.allowanceLeft).toBe(50_000n - 2n * V.VAULT_FEE);
     const fee = await provider.getUtxos(C.feeAddress('chipnet'));
     expect(fee.map((u) => u.satoshis)).toContain(C.CREATE_FEE);
     expect(C.decodeVaultCode(C.encodeVaultCode(config))).toEqual(config);
@@ -105,7 +105,8 @@ describe('real vault flows', () => {
     v = await read();
     expect(v.state!.level).toBe(1);
     expect(v.pending).toHaveLength(0);
-    expect(v.allowanceLeft).toBe(50_000n);
+    // Starting the withdrawal used one fee of the allowance.
+    expect(v.allowanceLeft).toBe(50_000n - 3n * V.VAULT_FEE);
   });
 
   it('allowance refill shows as fresh once the vault coin is a day old', async () => {
@@ -114,11 +115,12 @@ describe('real vault flows', () => {
     await viaWallet(provider, V.buildSpend({ contract, main: v.main!, state: v.state!, amount: 20_000n, to: ownerAddr, owner: 'wallet', fresh: false, refillBlocks: 144 }), [0]);
     v = await read(1000, 950);
     expect(v.fresh).toBe(false);
-    expect(v.allowanceLeft).toBe(30_000n);
+    // 50,000 allowance: 20,000 sent + its fee used, one more fee kept back for a withdrawal.
+    expect(v.allowanceLeft).toBe(50_000n - 20_000n - 3n * V.VAULT_FEE);
     expect(v.refillIn).toBe(93);
     v = await read(1100, 957);
     expect(v.fresh).toBe(true);
-    await viaWallet(provider, V.buildSpend({ contract, main: v.main!, state: v.state!, amount: 50_000n, to: ownerAddr, owner: 'wallet', fresh: true, refillBlocks: 144 }), [0]);
+    await viaWallet(provider, V.buildSpend({ contract, main: v.main!, state: v.state!, amount: 50_000n - 2n * V.VAULT_FEE, to: ownerAddr, owner: 'wallet', fresh: true, refillBlocks: 144 }), [0]);
   });
 
   it('release after the wait needs no signature', async () => {
@@ -247,7 +249,7 @@ describe('backend flows proven on the mock network', () => {
     await tb.send();
     v = await read();
     expect(v.state).toEqual({ ...V.OPEN, spent: v.state!.spent });
-    expect(v.allowanceLeft).toBe(50_000n);
+    expect(v.allowanceLeft).toBe(50_000n - 2n * V.VAULT_FEE);
     // With a guardian, the home code alone only records its half.
     expect(C.approveRoles({ ...config, hasGuardian: true }, 'home')).toEqual({ asHome: true, asGuardian: false });
     expect(C.approveRoles(config, 'guardian')).toEqual({ asHome: false, asGuardian: true });
@@ -381,12 +383,12 @@ describe('backend flows proven on the mock network', () => {
     expect(v.state!.level).toBe(1);
     expect(v.pending).toHaveLength(0);
     expect(v.total).toBe(before.total - V.VAULT_FEE - 2n * V.MERGE_FEE);
-    expect(C.duressBalance(v)).toBe(50_000n);
+    expect(C.duressBalance(v)).toBe(50_000n - v.state!.spent - 2n * V.VAULT_FEE);
     expect(C.duressBalance(v)).toBe(v.allowanceLeft);
     // The robber can't start a new withdrawal while duress-frozen...
     await expect(viaWallet(provider, V.buildStartWithdrawal({ contract, main: v.main!, state: v.state!, amount: 100_000n, to: someone, owner: 'wallet' }), [0])).rejects.toThrow();
     // ...but the allowance still works, so the decoy looks real.
-    await viaWallet(provider, V.buildSpend({ contract, main: v.main!, state: v.state!, amount: 50_000n, to: someone, owner: 'wallet', fresh: v.fresh, refillBlocks: 144 }), [0]);
+    await viaWallet(provider, V.buildSpend({ contract, main: v.main!, state: v.state!, amount: v.allowanceLeft, to: someone, owner: 'wallet', fresh: v.fresh, refillBlocks: 144 }), [0]);
     // Running the duress path again does nothing new.
     expect(await C.lockDown({ read: () => read(), send: sendLocal, contract, key: panic, mode: 'duress', wait: async () => {} })).toEqual([]);
   });
@@ -439,11 +441,12 @@ describe('backend bugs found in review (Nov 17)', () => {
   });
 
   it('a withdrawal too small to release is refused up front', () => {
-    expect(C.minWithdrawal(someone, 'chipnet')).toBe(V.VAULT_FEE + 546n);
+    // The contract floor (5,000 sats) is above the release minimum, so every withdrawal stays cancellable.
+    expect(C.minWithdrawal(someone, 'chipnet')).toBe(V.MIN_WITHDRAWAL);
     const p2sh32 = C.addressOfLock('aa20' + '11'.repeat(32) + '87', 'chipnet');
-    expect(C.minWithdrawal(p2sh32, 'chipnet')).toBe(V.VAULT_FEE + 576n);
+    expect(C.minWithdrawal(p2sh32, 'chipnet')).toBe(V.MIN_WITHDRAWAL);
     expect(C.minPayment(someone)).toBe(546n);
-    expect(C.minWithdrawal(someone, 'chipnet')).toBeGreaterThan(V.MIN_WITHDRAWAL);
+    expect(C.minWithdrawal(someone, 'chipnet')).toBeGreaterThan(V.VAULT_FEE + C.minPayment(someone));
   });
 
   it('lockDown waits for the network to show each step instead of spending a stale vault coin', async () => {
@@ -500,7 +503,8 @@ describe('lost phone: home code and vault code on another device, no wallet', ()
     const key = C.homeKeyFromWords(words.join(' '));
     expect(binToHex(C.publicKeyOf(key))).toBe(c2.homePk);
     const k2 = V.makeVault(C.paramsOf(c2), provider);
-    const r2 = async () => { const u = await k2.getUtxos(); return C.readVault(c2, u, new Map(u.map((x) => [`${x.txid}:${x.vout}`, 900])), 1000); };
+    let tip = 1000;
+    const r2 = async () => { const u = await k2.getUtxos(); return C.readVault(c2, u, new Map(u.map((x) => [`${x.txid}:${x.vout}`, 900])), tip); };
     const home = new SignatureTemplate(key);
     const steps = await C.lockDown({ read: r2, send: sendLocal, contract: k2, key: home, mode: 'home', wait: async () => {} });
     expect(steps.map((s) => s.what)).toEqual(['freeze', 'cancel']);
@@ -509,7 +513,13 @@ describe('lost phone: home code and vault code on another device, no wallet', ()
     v = await r2();
     expect(v.state!.recoverHome && v.state!.recoverGuardian).toBe(true);
     const fresh = C.p2pkhAddress(C.publicKeyOf(new Uint8Array(32).fill(21)), 'chipnet');
-    const tb = V.buildRecover({ contract: k2, main: v.main!, home, to: fresh });
+    // With no guardian the home code alone has to wait the normal wait after the last change.
+    expect(C.recoverBlocker(c2, v)).toMatch(/Ready in/);
+    expect(() => vmCheck(V.buildRecover({ contract: k2, main: v.main!, home, to: fresh, waitBlocks: c2.waitBlocks - 1 }))).toThrow();
+    tip = 900 + c2.waitBlocks;
+    v = await r2();
+    expect(C.recoverBlocker(c2, v)).toBeNull();
+    const tb = V.buildRecover({ contract: k2, main: v.main!, home, to: fresh, waitBlocks: c2.waitBlocks });
     vmCheck(tb);
     await tb.send();
     expect(await sumAt(provider, fresh)).toBe(v.main!.satoshis - V.VAULT_FEE);
@@ -522,6 +532,8 @@ describe('lost phone: home code and vault code on another device, no wallet', ()
     const k2 = V.makeVault(C.paramsOf(c2), provider);
     const home = new SignatureTemplate(C.homeKeyFromWords(words.join(' ')));
     let v = await read();
+    await V.buildFreeze({ contract: k2, main: v.main!, state: v.state!, pk: home.publicKey, signer: home, duress: false }).send();
+    v = await read();
     await V.buildApprove({ contract: k2, main: v.main!, state: v.state!, pk: home.publicKey, ...C.approveRoles(c2, 'home'), signer: home, what: 'recover' }).send();
     v = await read();
     const fresh = C.p2pkhAddress(C.publicKeyOf(new Uint8Array(32).fill(21)), 'chipnet');

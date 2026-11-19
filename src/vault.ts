@@ -14,6 +14,7 @@ import {
 } from 'cashscript';
 import { binToHex, cashAddressToLockingBytecode, hexToBin } from '@bitauth/libauth';
 import artifact from './Holdfast.artifact.js';
+import artifactV1 from './HoldfastV1.artifact.js';
 
 /** Fee for a one-coin vault spend. The contract allows at most 2,500. */
 export const VAULT_FEE = 2_000n;
@@ -24,7 +25,7 @@ export const TICKET_SATS = 1_000n;
 /** Fee rate for wallet-funded transactions, in sats per byte. */
 export const FEE_RATE = 1.1;
 /** Smallest withdrawal the contract accepts. */
-export const MIN_WITHDRAWAL = 1_000n;
+export const MIN_WITHDRAWAL = 5_000n;
 
 export const BLOCKS = { day: 144, hour: 6, week: 1008 } as const;
 
@@ -41,6 +42,11 @@ export interface VaultParams {
   fastBlocks: number;
   refillBlocks: number;
   evictBlocks: number;
+  /**
+   * Contract version. 2 (default) is the Nov 19 contract with the review fixes. 1 is the
+   * first contract, kept only so vaults made before Nov 19 still open and can be moved.
+   */
+  version?: 1 | 2;
 }
 
 export type HoldfastContract = Contract<typeof artifact>;
@@ -50,9 +56,16 @@ export function categoryForContract(categoryHex: string): Uint8Array {
   return hexToBin(categoryHex).reverse();
 }
 
+const versions = new WeakMap<object, 1 | 2>();
+/** Which contract version a vault runs (1 = before the Nov 19 fixes). */
+export function versionOf(c: HoldfastContract): 1 | 2 {
+  return versions.get(c) ?? 2;
+}
+
 export function makeVault(p: VaultParams, provider: NetworkProvider): HoldfastContract {
-  return new Contract(
-    artifact,
+  const v = p.version ?? 2;
+  const c = new Contract(
+    (v === 1 ? artifactV1 : artifact) as typeof artifact,
     [
       p.ownerPk,
       p.homePk,
@@ -67,6 +80,8 @@ export function makeVault(p: VaultParams, provider: NetworkProvider): HoldfastCo
     ],
     { provider, contractType: 'p2sh32' },
   );
+  versions.set(c, v);
+  return c;
 }
 
 // ---------------- commitments ----------------
@@ -213,10 +228,13 @@ export function buildSpend(o: {
   fresh: boolean;
   refillBlocks: number;
 }): TransactionBuilder {
-  const unlocker = o.fresh
-    ? o.contract.unlock.spendFresh(sigOf(o.owner), o.amount)
-    : o.contract.unlock.spend(sigOf(o.owner), o.amount);
-  const next = { ...o.state, spent: (o.fresh ? 0n : o.state.spent) + o.amount };
+  const legacy = versionOf(o.contract) === 1;
+  const u = o.contract.unlock as any;
+  const unlocker = legacy
+    ? (o.fresh ? u.spendFresh(sigOf(o.owner), o.amount) : u.spend(sigOf(o.owner), o.amount))
+    : o.contract.unlock.spend(sigOf(o.owner), o.amount, o.fresh);
+  // The contract counts the payment plus its fee against the allowance.
+  const next = { ...o.state, spent: (o.fresh ? 0n : o.state.spent) + o.amount + (legacy ? 0n : VAULT_FEE) };
   return new TransactionBuilder({ provider: o.contract.provider })
     .addInput(su(o.main), unlocker, o.fresh ? { sequence: o.refillBlocks } : undefined)
     .addOutput(mainOut(o.contract, o.main, next, o.main.satoshis - o.amount - VAULT_FEE))
@@ -231,11 +249,20 @@ export function buildStartWithdrawal(o: {
   amount: bigint;
   to: string;
   owner: Signer;
+  /** After a quiet day the allowance window starts over (startWithdrawalFresh). */
+  fresh?: boolean;
+  refillBlocks?: number;
 }): TransactionBuilder {
   const recipient = lockingBytecodeOf(o.to);
+  const legacy = versionOf(o.contract) === 1;
+  const unlocker = legacy
+    ? (o.contract.unlock as any).startWithdrawal(sigOf(o.owner), o.amount, recipient)
+    : o.contract.unlock.startWithdrawal(sigOf(o.owner), o.amount, recipient, !!o.fresh);
+  // The fee counts against the allowance (version 2).
+  const spent = legacy ? o.state.spent : (o.fresh ? 0n : o.state.spent) + VAULT_FEE;
   return new TransactionBuilder({ provider: o.contract.provider })
-    .addInput(su(o.main), o.contract.unlock.startWithdrawal(sigOf(o.owner), o.amount, recipient))
-    .addOutput(mainOut(o.contract, o.main, o.state, o.main.satoshis - o.amount - VAULT_FEE))
+    .addInput(su(o.main), unlocker, o.fresh && !legacy ? { sequence: o.refillBlocks } : undefined)
+    .addOutput(mainOut(o.contract, o.main, { ...o.state, spent }, o.main.satoshis - o.amount - VAULT_FEE))
     .addOutput({
       to: o.contract.tokenAddress,
       amount: o.amount,
@@ -274,12 +301,16 @@ export function buildFreeze(o: {
 }
 
 /** The state an approval leads to, mirroring the contract. */
-export function afterApprove(s: MainState, asHome: boolean, asGuardian: boolean, what: 'unfreeze' | 'recover'): MainState {
+export function afterApprove(s: MainState, asHome: boolean, asGuardian: boolean, what: 'unfreeze' | 'recover', legacy = false): MainState {
   const n = { ...s };
   if (what === 'unfreeze') {
     if (asHome) n.unfreezeHome = true;
     if (asGuardian) n.unfreezeGuardian = true;
-    if (n.unfreezeHome && n.unfreezeGuardian) return { ...n, level: 0, unfreezeHome: false, unfreezeGuardian: false };
+    // Unfreezing clears every approval, recovery ones too.
+    if (n.unfreezeHome && n.unfreezeGuardian) {
+      // Version 1 kept recovery approvals through an unfreeze; version 2 clears them.
+      return legacy ? { ...n, level: 0, unfreezeHome: false, unfreezeGuardian: false } : { ...n, level: 0, unfreezeHome: false, unfreezeGuardian: false, recoverHome: false, recoverGuardian: false };
+    }
   } else {
     if (asHome) n.recoverHome = true;
     if (asGuardian) n.recoverGuardian = true;
@@ -298,16 +329,17 @@ export function buildApprove(o: {
   signer: Signer;
   what: 'unfreeze' | 'recover';
 }): TransactionBuilder {
-  const next = afterApprove(o.state, o.asHome, o.asGuardian, o.what);
+  const next = afterApprove(o.state, o.asHome, o.asGuardian, o.what, versionOf(o.contract) === 1);
   return new TransactionBuilder({ provider: o.contract.provider })
     .addInput(su(o.main), o.contract.unlock.approve(o.pk, sigOf(o.signer), o.what === 'unfreeze' ? 0n : 1n))
     .addOutput(mainOut(o.contract, o.main, next, o.main.satoshis - VAULT_FEE));
 }
 
 /** Home code, once both approved recovery: move everything to `to`. */
-export function buildRecover(o: { contract: HoldfastContract; main: Utxo; home: Signer; to: string }): TransactionBuilder {
+export function buildRecover(o: { contract: HoldfastContract; main: Utxo; home: Signer; to: string; waitBlocks?: number }): TransactionBuilder {
+  // With no guardian the contract also needs the vault coin to be `waitBlocks` old.
   return new TransactionBuilder({ provider: o.contract.provider })
-    .addInput(su(o.main), o.contract.unlock.recover(sigOf(o.home)))
+    .addInput(su(o.main), o.contract.unlock.recover(sigOf(o.home)), o.waitBlocks ? { sequence: o.waitBlocks } : undefined)
     .addOutput({ to: o.to, amount: o.main.satoshis - VAULT_FEE });
 }
 

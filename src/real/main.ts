@@ -23,9 +23,22 @@ interface Saved {
   pinLen?: number;
   config: C.VaultConfig;
   panicKey: string;
+  /** Old PIN format (before Nov 19): salt and two labelled fast hashes. Empty once moved to slots. */
   salt: string;
   pin: string;
   duress: string;
+  /** PIN format from Nov 19: two unlabelled slow-hash slots. */
+  slots?: C.PinSlot[];
+  /** Wrong PINs in a row, and when the last one was typed. */
+  fails?: number;
+  lastFail?: number;
+}
+
+/** Which PIN was typed, from either storage format. */
+async function whichPin(entry: string, r: Saved): Promise<'pin' | 'duress' | null> {
+  if (r.slots?.length) return C.checkPinSlots(entry, r.slots);
+  const hash = await C.pinHash(entry, r.salt);
+  return hash === r.pin ? 'pin' : hash === r.duress ? 'duress' : null;
 }
 
 const NET_KEY = 'holdfast-real-net';
@@ -138,9 +151,12 @@ function setStatus(kind: 'ok' | 'err' | 'info', text: string, tx?: string) {
 }
 
 function statusBox(): string {
-  if (!status) return '<div id="status"></div>';
+  const warn = serversDisagree && !decoy
+    ? '<p class="flash flash-err" role="alert">Two Bitcoin Cash servers gave different answers about this vault. Holdfast shows everything either one lists. Refresh in a minute; if it stays, check the vault on an explorer.</p>'
+    : '';
+  if (!status) return `<div id="status">${warn}</div>`;
   const s = status;
-  return `<div id="status"><p class="flash flash-${s.kind === 'err' ? 'err' : 'ok'}" role="${s.kind === 'err' ? 'alert' : 'status'}">${esc(s.text)}${s.tx ? ` <a href="${EXPLORER[net]}${s.tx}" target="_blank" rel="noopener">View transaction</a>` : ''}</p></div>`;
+  return `<div id="status">${warn}<p class="flash flash-${s.kind === 'err' ? 'err' : 'ok'}" role="${s.kind === 'err' ? 'alert' : 'status'}">${esc(s.text)}${s.tx ? ` <a href="${EXPLORER[net]}${s.tx}" target="_blank" rel="noopener">View transaction</a>` : ''}</p></div>`;
 }
 
 function errText(e: unknown): string {
@@ -206,10 +222,25 @@ function viewFrom(c: C.VaultConfig, raw: { utxos: Utxo[]; heights: Map<string, n
   return C.readVault(c, o.utxos, raw.heights, raw.tip, o.settling);
 }
 
+/** True when the last vault read found coins on a second server that the first one didn't list. */
+let serversDisagree = false;
+
 async function readConfig(c: C.VaultConfig): Promise<C.VaultView> {
   const contract = contractFor(c);
-  const [utxos, heights, tip] = await Promise.all([contract.getUtxos(), provider.heights(contract.address), provider.getBlockHeight()]);
-  const raw = { utxos, heights, tip };
+  const [utxos, heights, tip, other] = await Promise.all([
+    contract.getUtxos(),
+    provider.heights(contract.address),
+    provider.getBlockHeight(),
+    provider.otherServerView(contract.address).catch(() => null),
+  ]);
+  // Anything a second server lists that the first one doesn't is added, so no single server can
+  // hide a waiting withdrawal from the freeze, the cancel buttons or the home code screen.
+  const seen = new Set(utxos.map((u) => `${u.txid}:${u.vout}`));
+  const extra = other ? other.utxos.filter((u) => !seen.has(`${u.txid}:${u.vout}`)) : [];
+  for (const u of extra) heights.set(`${u.txid}:${u.vout}`, other!.heights.get(`${u.txid}:${u.vout}`) ?? 0);
+  if (extra.length) log(`servers disagree: ${other!.host} lists ${extra.length} more coin(s) at the vault`);
+  serversDisagree = extra.length > 0;
+  const raw = { utxos: [...utxos, ...extra], heights, tip };
   lastRead.set(contract.address, raw);
   return viewFrom(c, raw);
 }
@@ -527,10 +558,12 @@ function screenWithdraw(): string {
 }
 
 function screenReceive(): string {
-  const addr = contractFor(saved!.config).address;
+  // Under the duress PIN the vault address would lead a robber straight to the real balance on any
+  // explorer, so the decoy shows the wallet's own receive address, like an ordinary wallet would.
+  const addr = decoy ? C.p2pkhAddress(wallet.ownerPk(), net) : contractFor(saved!.config).address;
   return `${topbar('Receive', '/vault')}
   <main class="screen" id="main">
-    <p>Send BCH to your vault address. It shows as a deposit until you add it to the vault.</p>
+    <p>${decoy ? 'Send BCH to this address.' : 'Send BCH to your vault address. It shows as a deposit until you add it to the vault.'}</p>
     <p class="addr-box"><code id="vault-addr">${addr}</code></p>
     <button class="btn btn-line" data-copy="#vault-addr">Copy address</button>
   </main>`;
@@ -553,7 +586,7 @@ function screenHome(c: C.VaultConfig, v: C.VaultView | null, back: string): stri
     <section class="balance"><p class="bal-label">In the vault</p><p class="bal">${bch(v.total)}</p>${bar(v)}</section>
     <section class="block"><h2>Waiting to leave</h2>${pendingList(v, (_p, i) => `<button class="btn btn-sm btn-dark" data-act="cancel-home" data-i="${i}" ${held()}>${busy ? 'Cancelling...' : `Cancel this ${bch(_p.sats)}`}</button>`)}</section>
     <section class="block"><h2>Vault</h2><div class="stack">
-      ${C.homeActions(s, c.hasGuardian)
+      ${C.homeActions(s, c.hasGuardian, c.v)
         .map((a) => {
           const cls = a.primary ? 'btn btn-dark' : 'btn btn-line';
           if (a.act === 'freeze') return `<button class="${cls}" data-act="freeze-home" ${held()}>${busy ? 'Working...' : esc(a.label)}</button>`;
@@ -630,7 +663,7 @@ function screenGuardian(): string {
     <section class="block"><h2>Vault</h2><div class="stack">
       ${s.level < 2 ? `<button class="btn btn-dark" data-act="freeze-guardian" ${held()}>${busy ? 'Freezing...' : 'Freeze vault'}</button>` : ''}
       ${s.level > 0 && !s.unfreezeGuardian ? `<button class="btn btn-line" data-act="approve-guardian" data-what="unfreeze" ${held()}>${busy ? 'Approving...' : 'Approve unfreeze'}</button>` : ''}
-      ${!s.recoverGuardian ? `<button class="btn btn-line" data-act="approve-guardian" data-what="recover" ${held()}>${busy ? 'Approving...' : 'Allow moving everything out (only if the owner lost their phone)'}</button>` : ''}
+      ${(s.level === 2 || guardianConfig.v === 1) && !s.recoverGuardian ? `<button class="btn btn-line" data-act="approve-guardian" data-what="recover" ${held()}>${busy ? 'Approving...' : 'Allow moving everything out (only if the owner lost their phone)'}</button>` : ''}
     </div></section>
     <nav class="links"><button class="linkish" data-act="refresh" ${held()}>${busy ? 'Checking...' : 'Refresh'}</button><button class="linkish" data-act="guardian-close">Close this vault</button></nav>
   </main>`;
@@ -789,15 +822,26 @@ app.addEventListener('click', async (e) => {
     case 'pin-ok': {
       const entry = pinEntry;
       pinEntry = '';
-      const hash = await C.pinHash(entry, saved!.salt);
-      if (hash === saved!.pin) {
+      const wait = C.lockoutMs(saved!.fails ?? 0) - (Date.now() - (saved!.lastFail ?? 0));
+      if (wait > 0) {
+        setStatus('err', `Too many wrong PINs. Try again in ${Math.ceil(wait / 1000)} seconds.`);
+        return render();
+      }
+      setStatus('info', 'Checking...');
+      render();
+      const which = await whichPin(entry, saved!);
+      if (which && saved!.fails) {
+        saved!.fails = 0;
+        save();
+      }
+      if (which === 'pin') {
         unlocked = true;
         decoy = false;
         status = null;
         refresh();
         return go('/vault');
       }
-      if (hash === saved!.duress) {
+      if (which === 'duress') {
         unlocked = true;
         decoy = true;
         status = null;
@@ -805,8 +849,11 @@ app.addEventListener('click', async (e) => {
         duressFreeze();
         return;
       }
+      saved!.fails = (saved!.fails ?? 0) + 1;
+      saved!.lastFail = Date.now();
+      save();
       const want = saved!.pinLen;
-      log(`wrong PIN: ${entry.length} digits entered${want ? `, PIN has ${want}` : ''}`);
+      log(`wrong PIN: ${entry.length} digits entered${want ? `, PIN has ${want}` : ''}, ${saved!.fails} in a row`);
       if (want && entry.length !== want) {
         setStatus('err', `That was ${entry.length} digits, but your PINs have ${want}. A tap may not have counted. Try again a little slower and watch the dots.`);
         return render();
@@ -817,6 +864,8 @@ app.addEventListener('click', async (e) => {
     case 'lock':
       unlocked = false;
       decoy = false;
+      // Whoever unlocks next must type the home code again.
+      homeKey = null;
       return render();
     case 'release':
       return act('Releasing', async () => {
@@ -980,9 +1029,10 @@ app.addEventListener('submit', async (e) => {
       const least = C.minWithdrawal(to);
       if (amount < least) return err(`The smallest withdrawal is ${bch(least)}: the release pays a ${bch(V.VAULT_FEE)} network fee out of it.`);
       if (amount > free) return err(`At most ${bch(free)} can be withdrawn right now.`);
+      if (!view!.canStartWithdrawal) return err(`Starting a withdrawal pays a ${bch(V.VAULT_FEE)} network fee out of today's allowance, and today's is used up. It refills ${view!.refillIn ? `in ${C.blocksToText(view!.refillIn)}` : 'soon'}.`);
       nextDone = `Withdrawal of ${bch(amount)} started. It waits ${C.blocksToText(c!.waitBlocks)}.`;
       return act('Starting withdrawal', async () => {
-        const tb = V.buildStartWithdrawal({ contract: contractFor(c!), main: view!.main!, state: view!.state!, amount, to, owner: 'wallet' });
+        const tb = V.buildStartWithdrawal({ contract: contractFor(c!), main: view!.main!, state: view!.state!, amount, to, owner: 'wallet', fresh: view!.fresh, refillBlocks: c!.refillBlocks });
         const txid = await walletSend(tb, [[0, 'receive', 0]], `Holdfast: start a ${bch(amount)} withdrawal`);
         go('/vault');
         return txid;
@@ -997,8 +1047,10 @@ app.addEventListener('submit', async (e) => {
         if (p === q) return err('Your duress PIN must be different from your PIN.');
         if (p.length !== q.length) return err('Make both PINs the same length.');
         saved!.pinLen = p.length;
-        saved!.pin = await C.pinHash(p, saved!.salt);
-        saved!.duress = await C.pinHash(q, saved!.salt);
+        saved!.slots = await C.makePinSlots(p, q);
+        saved!.pin = '';
+        saved!.duress = '';
+        saved!.fails = 0;
         save();
         homeKey = key;
         unlocked = true;
@@ -1028,7 +1080,9 @@ app.addEventListener('submit', async (e) => {
         const home = new SignatureTemplate(homeKey!);
         await C.lockDown({ read: () => readConfig(c!), send: sendLocal, contract: contractFor(c!), key: home, mode: 'cancel', onStep: (s) => lockStepActivity(s, 'Home code') });
         const v = await readConfig(c!);
-        return sendLocal(V.buildRecover({ contract: contractFor(c!), main: v.main!, home, to }));
+        const block = C.recoverBlocker(c!, v);
+        if (block) throw new Error(block);
+        return sendLocal(V.buildRecover({ contract: contractFor(c!), main: v.main!, home, to, waitBlocks: c!.hasGuardian || c!.v === 1 ? undefined : c!.waitBlocks }));
       });
     }
     case 'homeonly':
@@ -1069,6 +1123,8 @@ async function setupStep(f: HTMLFormElement, val: (n: string) => string) {
   status = null;
   if (d.step === 1) {
     if (sats(val('allowance')) === 0n) return err('Enter an allowance in BCH, like 0.01');
+    // Each spend and each withdrawal start pays its 0.00002 BCH fee out of the allowance.
+    if (sats(val('allowance')) < 10_000n) return err('Make the allowance at least 0.0001 BCH: every spend and withdrawal start pays a small network fee out of it.');
     d.allowance = val('allowance');
     d.waitDays = Number((f.querySelector('input[name="wait"]:checked') as HTMLInputElement)?.value ?? 3);
   } else if (d.step === 2) {
@@ -1077,6 +1133,8 @@ async function setupStep(f: HTMLFormElement, val: (n: string) => string) {
   } else if (d.step === 3) {
     const g = val('gpk').toLowerCase();
     if (g && !/^0[23][0-9a-f]{64}$/.test(g)) return err('A guardian key is 66 characters and starts with 02 or 03.');
+    // A guardian must be a different wallet: the phone's own key would let it approve its own fast withdrawals.
+    if (g && g === binToHex(wallet.ownerPk())) return err('That is this wallet\'s own key. A guardian uses their own wallet on their own phone.');
     d.guardianPk = g;
   } else if (d.step === 4) {
     const p = val('pin'), q = val('duress');
@@ -1138,7 +1196,7 @@ async function createVault(amount: bigint) {
     const panicKey = C.randomPrivateKey();
     const homePk = binToHex(C.publicKeyOf(homeKey));
     const config: C.VaultConfig = {
-      v: 1,
+      v: 2,
       net,
       ownerPk: binToHex(ownerPk),
       homePk,
@@ -1152,13 +1210,16 @@ async function createVault(amount: bigint) {
       refillBlocks: V.BLOCKS.day,
       evictBlocks: V.BLOCKS.week,
     };
+    if (config.hasGuardian && [config.ownerPk, config.homePk, config.panicPk].includes(config.guardianPk)) {
+      throw new Error('The guardian key matches one of this vault\'s own keys. Use a key from the guardian\'s own wallet.');
+    }
     const contract = contractFor(config);
     const { builder, inputs } = C.buildCreateWithFee({ provider, contract, coins, amount, net, changeAddress: change, unlocker });
     setStatus('info', `${plan.needsPrepare ? 'Step 2 of 2: ' : ''}creating the vault. Approve in Paytaca.`);
     // Keep everything needed to use this vault BEFORE asking the wallet to sign,
     // so a reload or a closed tab can never lose a vault that got created.
     const salt = binToHex(crypto.getRandomValues(new Uint8Array(8)));
-    const record: Saved = { pinLen: d.pin.length, config, panicKey: binToHex(panicKey), salt, pin: await C.pinHash(d.pin, salt), duress: await C.pinHash(d.duress, salt) };
+    const record: Saved = { pinLen: d.pin.length, config, panicKey: binToHex(panicKey), salt, pin: '', duress: '', slots: await C.makePinSlots(d.pin, d.duress) };
     localStorage.setItem(pendingKey(), JSON.stringify(record));
     log(`creating vault ${contract.address} code ${C.encodeVaultCode(config)}`);
     const txid = await walletSend(builder, inputs.map((u, i) => [i, u.path[0], u.path[1]]), `Holdfast: create your vault with ${bch(amount)}`);
@@ -1174,7 +1235,21 @@ async function createVault(amount: bigint) {
   });
 }
 
+// The home code only lives in memory while a home code screen is open.
+const HOME_SCREENS = ['/home', '/home-code'];
+function forgetHomeKeyUnlessOnHome() {
+  const h = location.hash.replace(/^#/, '') || '/';
+  if (!HOME_SCREENS.includes(h)) homeKey = null;
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') {
+    homeKey = null;
+    if (location.hash.replace(/^#/, '').startsWith('/home')) render();
+  }
+});
+
 window.addEventListener('hashchange', () => {
+  forgetHomeKeyUnlessOnHome();
   status = status?.kind === 'err' ? null : status;
   render();
 });

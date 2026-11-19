@@ -52,7 +52,8 @@ export function isAddressFor(address: string, net: Net): boolean {
 // ---------------- vault configuration ----------------
 
 export interface VaultConfig {
-  v: 1;
+  /** Contract version: 2 for vaults made from Nov 19 (review fixes), 1 for earlier vaults. */
+  v: 1 | 2;
   net: Net;
   ownerPk: string;
   homePk: string;
@@ -79,6 +80,7 @@ export function paramsOf(c: VaultConfig): V.VaultParams {
     fastBlocks: c.fastBlocks,
     refillBlocks: c.refillBlocks,
     evictBlocks: c.evictBlocks,
+    version: c.v,
   };
 }
 
@@ -107,7 +109,7 @@ const isBlocks = (n: unknown) => Number.isInteger(n) && (n as number) > 0 && (n 
 
 /** Every field a vault code must carry, in the shape the app writes. */
 function validConfig(c: VaultConfig): boolean {
-  if (!c || typeof c !== 'object' || c.v !== 1) return false;
+  if (!c || typeof c !== 'object' || (c.v !== 1 && c.v !== 2)) return false;
   if (c.net !== 'mainnet' && c.net !== 'chipnet') return false;
   if (![c.ownerPk, c.homePk, c.guardianPk, c.panicPk].every((k) => typeof k === 'string' && PK.test(k))) return false;
   if (typeof c.category !== 'string' || !/^[0-9a-f]{64}$/.test(c.category)) return false;
@@ -156,8 +158,58 @@ export function homeKeyFromWords(text: string): Uint8Array {
   return key;
 }
 
+/** Old format (before Nov 19): a fast labelled hash. Still read so saved vaults open, then replaced. */
 export async function pinHash(pin: string, salt: string): Promise<string> {
   return binToHex(sha256.hash(utf8ToBin(`holdfast-pin:${salt}:${pin}`)));
+}
+
+/**
+ * PIN storage from Nov 19. Two slots in random order, each holding its role ("pin" or "duress")
+ * encrypted with a key stretched from the PIN (PBKDF2, 310,000 rounds). Storage doesn't say which
+ * slot is the duress PIN, and each guess costs a slow key derivation.
+ */
+export interface PinSlot { salt: string; iv: string; ct: string }
+export const PIN_ROUNDS = 310_000;
+
+/** WebCrypto wants a plain ArrayBuffer-backed view. */
+const buf = (u: Uint8Array): Uint8Array<ArrayBuffer> => new Uint8Array(u);
+
+async function slotKey(pin: string, salt: Uint8Array, rounds: number): Promise<CryptoKey> {
+  const base = await crypto.subtle.importKey('raw', buf(utf8ToBin(`holdfast-pin:${pin}`)), 'PBKDF2', false, ['deriveKey']);
+  return crypto.subtle.deriveKey({ name: 'PBKDF2', hash: 'SHA-256', salt: buf(salt), iterations: rounds }, base, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+}
+
+export async function makePinSlots(pin: string, duress: string, rounds = PIN_ROUNDS): Promise<PinSlot[]> {
+  const make = async (code: string, role: 'pin' | 'duress'): Promise<PinSlot> => {
+    const salt = crypto.getRandomValues(new Uint8Array(16));
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const key = await slotKey(code, salt, rounds);
+    const ct = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, buf(utf8ToBin(role))));
+    return { salt: binToHex(salt), iv: binToHex(iv), ct: binToHex(ct) };
+  };
+  const slots = [await make(pin, 'pin'), await make(duress, 'duress')];
+  return crypto.getRandomValues(new Uint8Array(1))[0] & 1 ? slots.reverse() : slots;
+}
+
+/** Which PIN was typed: tries every slot, so a match takes as long as a miss. */
+export async function checkPinSlots(entry: string, slots: PinSlot[], rounds = PIN_ROUNDS): Promise<'pin' | 'duress' | null> {
+  let found: 'pin' | 'duress' | null = null;
+  for (const sl of slots) {
+    try {
+      const key = await slotKey(entry, buf(hexToBin(sl.salt)), rounds);
+      const out = new TextDecoder().decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: buf(hexToBin(sl.iv)) }, key, buf(hexToBin(sl.ct))));
+      if (out === 'pin' || out === 'duress') found = out;
+    } catch {
+      // wrong PIN for this slot
+    }
+  }
+  return found;
+}
+
+/** Wrong-PIN lockout: free tries, then a wait that doubles each time, up to an hour. */
+export function lockoutMs(fails: number): number {
+  if (fails < 5) return 0;
+  return Math.min(60 * 60_000, 30_000 * 2 ** (fails - 5));
 }
 
 // ---------------- reading a vault ----------------
@@ -181,7 +233,12 @@ export interface VaultView {
   total: bigint;
   waitingSats: bigint;
   depositSats: bigint;
+  /** The most the phone can send right now: today's allowance left, minus this spend's fee and one withdrawal fee kept back. */
   allowanceLeft: bigint;
+  /** Today's allowance covers the fee to start a withdrawal (the contract counts that fee too). */
+  canStartWithdrawal: boolean;
+  /** Blocks since the vault coin last changed. */
+  mainAge: number;
   /** True when the next allowance spend starts a new window (spendFresh). */
   fresh: boolean;
   /** Blocks until the allowance refills, when it isn't full. */
@@ -213,6 +270,7 @@ export function readVault(c: VaultConfig, utxos: Utxo[], heights: Map<string, nu
   const tickets = coins.filter((x) => x.kind === 'ticket').map((x) => x.utxo);
   const allowance = BigInt(c.allowance);
   let allowanceLeft = 0n;
+  let budget = 0n;
   let fresh = false;
   let refillIn: number | null = null;
   const state = mainCoin?.state ?? null;
@@ -220,11 +278,15 @@ export function readVault(c: VaultConfig, utxos: Utxo[], heights: Map<string, nu
     const mainAge = age(mainCoin.utxo);
     if (state.spent > 0n && mainAge >= c.refillBlocks) {
       fresh = true;
-      allowanceLeft = allowance;
+      budget = allowance;
     } else {
-      allowanceLeft = allowance > state.spent ? allowance - state.spent : 0n;
+      budget = allowance > state.spent ? allowance - state.spent : 0n;
       if (state.spent > 0n) refillIn = c.refillBlocks - mainAge;
     }
+    // Version 2 counts each spend's network fee against the allowance too. Hold back one more
+    // fee so a withdrawal can always still be started after sending the rest of the allowance.
+    const keep = c.v === 1 ? 0n : 2n * V.VAULT_FEE;
+    allowanceLeft = budget > keep ? budget - keep : 0n;
     const spendable = mainCoin.utxo.satoshis - V.VAULT_FEE - MAIN_MIN;
     if (allowanceLeft > spendable) allowanceLeft = spendable > 0n ? spendable : 0n;
   }
@@ -238,6 +300,8 @@ export function readVault(c: VaultConfig, utxos: Utxo[], heights: Map<string, nu
     waitingSats,
     depositSats,
     allowanceLeft,
+    canStartWithdrawal: !!state && state.level === 0 && (c.v === 1 || budget >= V.VAULT_FEE),
+    mainAge: mainCoin ? age(mainCoin.utxo) : 0,
     fresh,
     refillIn,
     pending,
@@ -342,13 +406,14 @@ export function frozenText(s: V.MainState, hasGuardian: boolean): { title: strin
 export interface HomeAction { act: 'approve-unfreeze' | 'freeze' | 'approve-recover'; label: string; primary: boolean }
 
 /** The buttons on the home code screen, most important first. Unfreeze and recovery are worded apart on purpose. */
-export function homeActions(s: V.MainState, hasGuardian: boolean): HomeAction[] {
+export function homeActions(s: V.MainState, hasGuardian: boolean, version: 1 | 2 = 2): HomeAction[] {
   const out: HomeAction[] = [];
   if (s.level > 0 && !s.unfreezeHome) {
     out.push({ act: 'approve-unfreeze', label: hasGuardian ? 'Approve unfreezing (your guardian approves too)' : 'Unfreeze the vault', primary: true });
   }
   if (s.level < 2) out.push({ act: 'freeze', label: s.level === 1 ? 'Freeze fully, allowance too' : 'Freeze vault', primary: s.level === 0 });
-  if (!s.recoverHome) out.push({ act: 'approve-recover', label: 'Allow moving everything out (only if you lost your phone)', primary: false });
+  // The contract only takes recovery approvals during a full freeze.
+  if ((s.level === 2 || version === 1) && !s.recoverHome) out.push({ act: 'approve-recover', label: 'Allow moving everything out (only if you lost your phone)', primary: false });
   return out;
 }
 
@@ -369,10 +434,12 @@ export function minPayment(address: string): bigint {
 /**
  * The smallest withdrawal that can ever be released: the release pays the
  * 2,000-sat fee out of it and the rest must still be a relayable payment.
- * The contract itself accepts down to 1,000 sats, but those could only be cancelled.
+ * The contract's floor is 5,000 sats, so a cancel can always pay its fee out of the withdrawal.
  */
 export function minWithdrawal(to: string, _net?: Net): bigint {
-  return V.VAULT_FEE + minPayment(to);
+  const releasable = V.VAULT_FEE + minPayment(to);
+  // The contract's own floor keeps every withdrawal cancellable: a cancel pays its fee out of it.
+  return releasable > V.MIN_WITHDRAWAL ? releasable : V.MIN_WITHDRAWAL;
 }
 
 /** The most a single withdrawal can take while the vault coin stays usable. */
@@ -390,6 +457,21 @@ export function mergeableDeposits(v: VaultView): Utxo[] {
 /** With no guardian, the home key stands in for the guardian too, so one approval does both halves. */
 export function approveRoles(c: Pick<VaultConfig, 'hasGuardian'>, who: 'home' | 'guardian'): { asHome: boolean; asGuardian: boolean } {
   return who === 'home' ? { asHome: true, asGuardian: !c.hasGuardian } : { asHome: false, asGuardian: true };
+}
+
+/**
+ * Why "move everything" can't run yet, or null. With no guardian the home code is alone, so the
+ * contract also wants a full freeze and the normal wait since the vault coin last changed.
+ */
+export function recoverBlocker(c: Pick<VaultConfig, 'hasGuardian' | 'waitBlocks' | 'v'>, v: Pick<VaultView, 'state' | 'mainAge' | 'main'>): string | null {
+  if (!v.main || !v.state) return 'Couldn\'t find the vault coin. Refresh.';
+  if (!v.state.recoverHome || !v.state.recoverGuardian) return 'Moving everything out needs both approvals first.';
+  if (c.v === 1) return null;
+  if (v.state.level !== 2) return 'Freeze the vault fully first. Then both of you approve moving everything out.';
+  if (c.hasGuardian) return null;
+  if (v.state.level !== 2) return 'With no guardian, freeze the vault fully first. Then wait before moving everything out.';
+  if (v.mainAge < c.waitBlocks) return `With no guardian, moving everything waits ${blocksToText(c.waitBlocks)} after the last change, so a robber with your home code would have to hold you that long. Ready in ${blocksToText(c.waitBlocks - v.mainAge)}.`;
+  return null;
 }
 
 /** What the duress view shows as the balance: only what the allowance lets out now. */
@@ -428,8 +510,12 @@ export async function lockDown(o: {
   const steps: LockStep[] = [];
   const pk = o.key.publicKey;
   let v = await o.read();
-  for (let n = 0; n < 30 && v.main && v.state; n++) {
+  // Keep going until nothing is waiting: a robber could split the vault into many withdrawals.
+  const MAX_STEPS = 500;
+  for (let n = 0; n < MAX_STEPS && v.main && v.state; n++) {
     const level = v.state.level;
+    // The panic key can't touch a fully frozen vault (version 2); the home code already cancelled.
+    if (o.mode === 'duress' && level === 2 && V.versionOf(o.contract) === 2) break;
     const wantFreeze = o.mode === 'duress' ? level === 0 : o.mode === 'home' ? level < 2 : false;
     const canFreeze = v.main.satoshis - V.VAULT_FEE >= MAIN_MIN;
     let tb: TransactionBuilder;
@@ -450,6 +536,9 @@ export async function lockDown(o: {
     steps.push(done);
     o.onStep?.(done);
     v = await waitForNewMain(o.read, before, wait, tries);
+  }
+  if (v.pending.length && !(o.mode === 'duress' && v.state?.level === 2)) {
+    throw new Error(`Stopped after ${steps.length} steps with ${v.pending.length} withdrawal(s) still waiting. Tap again to cancel the rest.`);
   }
   return steps;
 }

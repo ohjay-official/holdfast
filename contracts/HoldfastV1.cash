@@ -1,0 +1,272 @@
+pragma cashscript ^0.14.0;
+
+// Holdfast: a Bitcoin Cash vault a robber can't empty.
+//
+// Everything lives at one address. Coins there are told apart by the NFT they carry:
+//   main vault   category + minting   commitment = level(1) spent(8) uh(1) ug(1) rh(1) rg(1)
+//   withdrawal   category + mutable   commitment = 'P'(1) fast(1) recipientLockingBytecode
+//   evict ticket category (immutable) commitment = 'E'
+//   deposit      no token
+//
+// level: 0 open, 1 duress freeze (allowance still spendable), 2 full freeze.
+// uh/ug: home code / guardian approved unfreezing. rh/rg: approved recovery.
+//
+// Keys: owner = phone wallet, home = home code, guardian, panic = duress PIN key.
+// A vault without a guardian uses guardianPk = homePk.
+// Fees come out of the vault: each spend may leave at most 2,500 sats as fee (4,000 for a merge).
+contract Holdfast(
+    pubkey ownerPk,
+    pubkey homePk,
+    pubkey guardianPk,
+    pubkey panicPk,
+    bytes32 category,
+    int allowance,
+    int waitBlocks,
+    int fastBlocks,
+    int refillBlocks,
+    int evictBlocks
+) {
+    // ---------------- main vault ----------------
+
+    // Phone: spend within the allowance. Output 1 is the payment.
+    function spend(sig ownerSig, int amount) {
+        require(checkSig(ownerSig, ownerPk));
+        bytes level, bytes rest = tx.inputs[0].nftCommitment.split(1);
+        bytes spentBytes, bytes flags = rest.split(8);
+        int spent = int(spentBytes);
+        require(int(level) < 2);
+        require(amount > 0);
+        require(spent + amount <= allowance);
+        require(this.activeInputIndex == 0);
+        require(tx.inputs.length == 1);
+        require(tx.inputs[0].tokenCategory == category + 0x02);
+        require(tx.outputs[0].lockingBytecode == tx.inputs[0].lockingBytecode);
+        require(tx.outputs[0].tokenCategory == category + 0x02);
+        require(tx.outputs[0].nftCommitment == level + toPaddedBytes(spent + amount, 8) + flags);
+        require(tx.outputs[0].value >= tx.inputs[0].value - amount - 2500);
+        require(tx.outputs.length == 2);
+        require(tx.outputs[1].tokenCategory == 0x);
+    }
+
+    // Phone: spend after a quiet day. The allowance window starts over.
+    function spendFresh(sig ownerSig, int amount) {
+        require(this.age >= refillBlocks);
+        require(checkSig(ownerSig, ownerPk));
+        bytes level, bytes rest = tx.inputs[0].nftCommitment.split(1);
+        bytes flags = rest.split(8)[1];
+        require(int(level) < 2);
+        require(amount > 0);
+        require(amount <= allowance);
+        require(this.activeInputIndex == 0);
+        require(tx.inputs.length == 1);
+        require(tx.inputs[0].tokenCategory == category + 0x02);
+        require(tx.outputs[0].lockingBytecode == tx.inputs[0].lockingBytecode);
+        require(tx.outputs[0].tokenCategory == category + 0x02);
+        require(tx.outputs[0].nftCommitment == level + toPaddedBytes(amount, 8) + flags);
+        require(tx.outputs[0].value >= tx.inputs[0].value - amount - 2500);
+        require(tx.outputs.length == 2);
+        require(tx.outputs[1].tokenCategory == 0x);
+    }
+
+    // Phone: start a withdrawal. Output 1 is a waiting-withdrawal coin at this address.
+    function startWithdrawal(sig ownerSig, int amount, bytes recipient) {
+        require(checkSig(ownerSig, ownerPk));
+        require(int(tx.inputs[0].nftCommitment.split(1)[0]) == 0);
+        require(amount >= 1000);
+        require(recipient.length >= 23);
+        require(recipient.length <= 38);
+        require(this.activeInputIndex == 0);
+        require(tx.inputs.length == 1);
+        require(tx.inputs[0].tokenCategory == category + 0x02);
+        require(tx.outputs[0].lockingBytecode == tx.inputs[0].lockingBytecode);
+        require(tx.outputs[0].tokenCategory == category + 0x02);
+        require(tx.outputs[0].nftCommitment == tx.inputs[0].nftCommitment);
+        require(tx.outputs[0].value >= tx.inputs[0].value - amount - 2500);
+        require(tx.outputs[1].lockingBytecode == tx.inputs[0].lockingBytecode);
+        require(tx.outputs[1].tokenCategory == category + 0x01);
+        require(tx.outputs[1].nftCommitment == 0x5000 + recipient);
+        require(tx.outputs[1].value == amount);
+        require(tx.outputs.length == 2);
+    }
+
+    // Any vault key: pull a deposit or a cancelled withdrawal back into the vault.
+    // Input 1 must use merged(). Cancelling a withdrawal is merging it.
+    function merge(pubkey pk, sig s) {
+        require(pk == ownerPk || pk == homePk || pk == guardianPk || pk == panicPk);
+        require(checkSig(s, pk));
+        require(this.activeInputIndex == 0);
+        require(tx.inputs.length == 2);
+        require(tx.outputs.length == 1);
+        require(tx.inputs[0].tokenCategory == category + 0x02);
+        require(tx.outputs[0].lockingBytecode == tx.inputs[0].lockingBytecode);
+        require(tx.outputs[0].tokenCategory == category + 0x02);
+        require(tx.outputs[0].nftCommitment == tx.inputs[0].nftCommitment);
+        require(tx.outputs[0].value >= tx.inputs[0].value + tx.inputs[1].value - 4000);
+    }
+
+    // Home code or guardian: full freeze. Panic key: duress freeze.
+    function freeze(pubkey pk, sig s) {
+        require(checkSig(s, pk));
+        bytes level, bytes rest = tx.inputs[0].nftCommitment.split(1);
+        bytes spentBytes = rest.split(8)[0];
+        int newLevel = 2;
+        if (pk == panicPk) {
+            require(int(level) == 0);
+            newLevel = 1;
+        } else {
+            require(pk == homePk || pk == guardianPk);
+            require(int(level) < 2);
+        }
+        require(this.activeInputIndex == 0);
+        require(tx.inputs.length == 1);
+        require(tx.inputs[0].tokenCategory == category + 0x02);
+        require(tx.outputs[0].lockingBytecode == tx.inputs[0].lockingBytecode);
+        require(tx.outputs[0].tokenCategory == category + 0x02);
+        require(tx.outputs[0].nftCommitment == toPaddedBytes(newLevel, 1) + spentBytes + 0x00000000);
+        require(tx.outputs[0].value >= tx.inputs[0].value - 2500);
+        require(tx.outputs.length == 1);
+    }
+
+    // Home code or guardian: approve unfreezing (what = 0) or recovery (what = 1).
+    // When home code and guardian have both approved unfreezing, the vault opens.
+    function approve(pubkey pk, sig s, int what) {
+        require(pk == homePk || pk == guardianPk);
+        require(checkSig(s, pk));
+        bytes level, bytes rest = tx.inputs[0].nftCommitment.split(1);
+        bytes spentBytes, bytes flags = rest.split(8);
+        bytes uh, bytes f2 = flags.split(1);
+        bytes ug, bytes f3 = f2.split(1);
+        bytes rh, bytes rg = f3.split(1);
+        // With no guardian, guardianPk == homePk and one key approves both roles.
+        bool asHome = pk == homePk;
+        bool asGuardian = pk == guardianPk;
+        bytes newCommitment = tx.inputs[0].nftCommitment;
+        if (what == 0) {
+            require(int(level) > 0);
+            if (asHome) { uh = 0x01; }
+            if (asGuardian) { ug = 0x01; }
+            if (uh == 0x01 && ug == 0x01) {
+                newCommitment = 0x00 + spentBytes + 0x0000 + rh + rg;
+            } else {
+                newCommitment = level + spentBytes + uh + ug + rh + rg;
+            }
+        } else {
+            require(what == 1);
+            if (asHome) { rh = 0x01; }
+            if (asGuardian) { rg = 0x01; }
+            newCommitment = level + spentBytes + uh + ug + rh + rg;
+        }
+        require(this.activeInputIndex == 0);
+        require(tx.inputs.length == 1);
+        require(tx.inputs[0].tokenCategory == category + 0x02);
+        require(tx.outputs[0].lockingBytecode == tx.inputs[0].lockingBytecode);
+        require(tx.outputs[0].tokenCategory == category + 0x02);
+        require(tx.outputs[0].nftCommitment == newCommitment);
+        require(tx.outputs[0].value >= tx.inputs[0].value - 2500);
+        require(tx.outputs.length == 1);
+    }
+
+    // Home code, after home code and guardian both approved recovery: move everything out,
+    // normally into a new vault for a new phone.
+    function recover(sig homeSig) {
+        require(checkSig(homeSig, homePk));
+        bytes flags = tx.inputs[0].nftCommitment.split(9)[1];
+        require(flags.split(2)[1] == 0x0101);
+        require(this.activeInputIndex == 0);
+        require(tx.inputs[0].tokenCategory == category + 0x02);
+    }
+
+    // Phone and home code together: start the 7-day clock to replace the guardian.
+    // Output 1 is the ticket. Its age is the clock.
+    function startEvict(sig ownerSig, sig homeSig) {
+        require(checkSig(ownerSig, ownerPk));
+        require(checkSig(homeSig, homePk));
+        require(this.activeInputIndex == 0);
+        require(tx.inputs.length == 1);
+        require(tx.inputs[0].tokenCategory == category + 0x02);
+        require(tx.outputs[0].lockingBytecode == tx.inputs[0].lockingBytecode);
+        require(tx.outputs[0].tokenCategory == category + 0x02);
+        require(tx.outputs[0].nftCommitment == tx.inputs[0].nftCommitment);
+        require(tx.outputs[0].value >= tx.inputs[0].value - 3500);
+        require(tx.outputs[1].lockingBytecode == tx.inputs[0].lockingBytecode);
+        require(tx.outputs[1].tokenCategory == category);
+        require(tx.outputs[1].nftCommitment == 0x45);
+        require(tx.outputs.length == 2);
+    }
+
+    // Phone and home code, with a ticket at least evictBlocks old as input 1: move everything
+    // out, normally into a new vault with a new guardian. Works even while frozen, so a guardian
+    // who freezes and disappears can't lock the owner out for good.
+    function evict(sig ownerSig, sig homeSig) {
+        require(checkSig(ownerSig, ownerPk));
+        require(checkSig(homeSig, homePk));
+        require(this.activeInputIndex == 0);
+        require(tx.inputs.length == 2);
+        require(tx.inputs[0].tokenCategory == category + 0x02);
+        require(tx.inputs[1].lockingBytecode == tx.inputs[0].lockingBytecode);
+        require(tx.inputs[1].tokenCategory == category);
+        require(tx.inputs[1].nftCommitment == 0x45);
+    }
+
+    // ---------------- coins other than the main vault ----------------
+
+    // Input 1 of a merge: a deposit, a cancelled withdrawal or a ticket going back in.
+    // The main vault's merge() checks who signed and where the value goes.
+    function merged() {
+        require(this.activeInputIndex == 1);
+        require(tx.inputs[0].lockingBytecode == tx.inputs[1].lockingBytecode);
+        require(tx.inputs[0].tokenCategory == category + 0x02);
+        // Only ever back into the vault, so this can't stand in for ticket() in an evict.
+        require(tx.outputs.length == 1);
+        require(tx.outputs[0].lockingBytecode == tx.inputs[0].lockingBytecode);
+        require(tx.outputs[0].tokenCategory == category + 0x02);
+    }
+
+    // Input 1 of an evict: the ticket, old enough.
+    function ticket() {
+        require(this.age >= evictBlocks);
+        require(this.activeInputIndex == 1);
+        require(tx.inputs[0].tokenCategory == category + 0x02);
+        require(tx.inputs[1].nftCommitment == 0x45);
+    }
+
+    // Anyone: send a withdrawal to its recipient once the wait is over.
+    function release() {
+        require(this.age >= waitBlocks);
+        bytes tag, bytes recipient = tx.inputs[this.activeInputIndex].nftCommitment.split(2);
+        require(tx.inputs[this.activeInputIndex].tokenCategory == category + 0x01);
+        require(tag.split(1)[0] == 0x50);
+        require(tx.inputs.length == 1);
+        require(tx.outputs[0].lockingBytecode == recipient);
+        require(tx.outputs[0].tokenCategory == 0x);
+        require(tx.outputs[0].value >= tx.inputs[0].value - 2500);
+        require(tx.outputs.length == 1);
+    }
+
+    // Anyone: send a guardian-approved withdrawal about an hour after the approval.
+    function releaseFast() {
+        require(this.age >= fastBlocks);
+        bytes tag, bytes recipient = tx.inputs[this.activeInputIndex].nftCommitment.split(2);
+        require(tx.inputs[this.activeInputIndex].tokenCategory == category + 0x01);
+        require(tag == 0x5001);
+        require(tx.inputs.length == 1);
+        require(tx.outputs[0].lockingBytecode == recipient);
+        require(tx.outputs[0].tokenCategory == 0x);
+        require(tx.outputs[0].value >= tx.inputs[0].value - 2500);
+        require(tx.outputs.length == 1);
+    }
+
+    // Guardian: approve a waiting withdrawal for the fast lane.
+    function approveFast(sig guardianSig) {
+        require(checkSig(guardianSig, guardianPk));
+        bytes tag, bytes recipient = tx.inputs[0].nftCommitment.split(2);
+        require(tag == 0x5000);
+        require(tx.inputs.length == 1);
+        require(tx.inputs[0].tokenCategory == category + 0x01);
+        require(tx.outputs[0].lockingBytecode == tx.inputs[0].lockingBytecode);
+        require(tx.outputs[0].tokenCategory == category + 0x01);
+        require(tx.outputs[0].nftCommitment == 0x5001 + recipient);
+        require(tx.outputs[0].value >= tx.inputs[0].value - 2500);
+        require(tx.outputs.length == 1);
+    }
+}

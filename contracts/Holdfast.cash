@@ -13,7 +13,9 @@ pragma cashscript ^0.14.0;
 //
 // Keys: owner = phone wallet, home = home code, guardian, panic = duress PIN key.
 // A vault without a guardian uses guardianPk = homePk.
-// Fees come out of the vault: each spend may leave at most 2,500 sats as fee (4,000 for a merge).
+// Fees: phone spends and withdrawal starts pay their fee from the vault and it counts against
+// the daily allowance, so the phone can never move or burn more than the allowance a day.
+// Merges pay from the coin being merged. Freeze, approve and ticket fees are capped and one-off.
 contract Holdfast(
     pubkey ownerPk,
     pubkey homePk,
@@ -28,51 +30,53 @@ contract Holdfast(
 ) {
     // ---------------- main vault ----------------
 
-    // Phone: spend within the allowance. Output 1 is the payment.
-    function spend(sig ownerSig, int amount) {
+    // Phone: spend within the allowance. Output 1 is the payment, exactly `amount`.
+    // What leaves the vault (payment + fee) counts against the allowance.
+    // fresh: after a quiet day (vault coin refillBlocks old) the allowance window starts over.
+    function spend(sig ownerSig, int amount, bool fresh) {
         require(checkSig(ownerSig, ownerPk));
         bytes level, bytes rest = tx.inputs[0].nftCommitment.split(1);
         bytes spentBytes, bytes flags = rest.split(8);
         int spent = int(spentBytes);
+        if (fresh) {
+            require(this.age >= refillBlocks);
+            spent = 0;
+        }
+        int used = tx.inputs[0].value - tx.outputs[0].value;
         require(int(level) < 2);
         require(amount > 0);
-        require(spent + amount <= allowance);
+        require(used >= amount);
+        require(used <= amount + 2500);
+        require(spent + used <= allowance);
         require(this.activeInputIndex == 0);
         require(tx.inputs.length == 1);
         require(tx.inputs[0].tokenCategory == category + 0x02);
         require(tx.outputs[0].lockingBytecode == tx.inputs[0].lockingBytecode);
         require(tx.outputs[0].tokenCategory == category + 0x02);
-        require(tx.outputs[0].nftCommitment == level + toPaddedBytes(spent + amount, 8) + flags);
-        require(tx.outputs[0].value >= tx.inputs[0].value - amount - 2500);
+        require(tx.outputs[0].nftCommitment == level + toPaddedBytes(spent + used, 8) + flags);
         require(tx.outputs.length == 2);
-        require(tx.outputs[1].tokenCategory == 0x);
-    }
-
-    // Phone: spend after a quiet day. The allowance window starts over.
-    function spendFresh(sig ownerSig, int amount) {
-        require(this.age >= refillBlocks);
-        require(checkSig(ownerSig, ownerPk));
-        bytes level, bytes rest = tx.inputs[0].nftCommitment.split(1);
-        bytes flags = rest.split(8)[1];
-        require(int(level) < 2);
-        require(amount > 0);
-        require(amount <= allowance);
-        require(this.activeInputIndex == 0);
-        require(tx.inputs.length == 1);
-        require(tx.inputs[0].tokenCategory == category + 0x02);
-        require(tx.outputs[0].lockingBytecode == tx.inputs[0].lockingBytecode);
-        require(tx.outputs[0].tokenCategory == category + 0x02);
-        require(tx.outputs[0].nftCommitment == level + toPaddedBytes(amount, 8) + flags);
-        require(tx.outputs[0].value >= tx.inputs[0].value - amount - 2500);
-        require(tx.outputs.length == 2);
+        require(tx.outputs[1].value == amount);
         require(tx.outputs[1].tokenCategory == 0x);
     }
 
     // Phone: start a withdrawal. Output 1 is a waiting-withdrawal coin at this address.
-    function startWithdrawal(sig ownerSig, int amount, bytes recipient) {
+    // Its fee counts against the allowance, so starting and cancelling in a loop can't drain the vault.
+    // fresh: as for spend().
+    function startWithdrawal(sig ownerSig, int amount, bytes recipient, bool fresh) {
         require(checkSig(ownerSig, ownerPk));
-        require(int(tx.inputs[0].nftCommitment.split(1)[0]) == 0);
-        require(amount >= 1000);
+        bytes level, bytes rest = tx.inputs[0].nftCommitment.split(1);
+        bytes spentBytes, bytes flags = rest.split(8);
+        int spent = int(spentBytes);
+        if (fresh) {
+            require(this.age >= refillBlocks);
+            spent = 0;
+        }
+        int fee = tx.inputs[0].value - tx.outputs[0].value - amount;
+        require(int(level) == 0);
+        require(fee >= 0);
+        require(fee <= 2500);
+        require(spent + fee <= allowance);
+        require(amount >= 5000);
         require(recipient.length >= 23);
         require(recipient.length <= 38);
         require(this.activeInputIndex == 0);
@@ -80,8 +84,7 @@ contract Holdfast(
         require(tx.inputs[0].tokenCategory == category + 0x02);
         require(tx.outputs[0].lockingBytecode == tx.inputs[0].lockingBytecode);
         require(tx.outputs[0].tokenCategory == category + 0x02);
-        require(tx.outputs[0].nftCommitment == tx.inputs[0].nftCommitment);
-        require(tx.outputs[0].value >= tx.inputs[0].value - amount - 2500);
+        require(tx.outputs[0].nftCommitment == level + toPaddedBytes(spent + fee, 8) + flags);
         require(tx.outputs[1].lockingBytecode == tx.inputs[0].lockingBytecode);
         require(tx.outputs[1].tokenCategory == category + 0x01);
         require(tx.outputs[1].nftCommitment == 0x5000 + recipient);
@@ -90,7 +93,10 @@ contract Holdfast(
     }
 
     // Any vault key: pull a deposit or a cancelled withdrawal back into the vault.
-    // Input 1 must use merged(). Cancelling a withdrawal is merging it.
+    // Input 1 must be a coin at this address (it uses merged()). Cancelling a withdrawal is merging it.
+    // The fee comes out of the merged coin, never the vault, so merges can't burn the vault.
+    // Only the home code may merge a guardian-replacement ticket (destroying it), and the phone and
+    // panic key can't touch a fully frozen vault, so nobody but the owner side can reset its clock.
     function merge(pubkey pk, sig s) {
         require(pk == ownerPk || pk == homePk || pk == guardianPk || pk == panicPk);
         require(checkSig(s, pk));
@@ -98,10 +104,19 @@ contract Holdfast(
         require(tx.inputs.length == 2);
         require(tx.outputs.length == 1);
         require(tx.inputs[0].tokenCategory == category + 0x02);
+        require(tx.inputs[1].lockingBytecode == tx.inputs[0].lockingBytecode);
         require(tx.outputs[0].lockingBytecode == tx.inputs[0].lockingBytecode);
         require(tx.outputs[0].tokenCategory == category + 0x02);
         require(tx.outputs[0].nftCommitment == tx.inputs[0].nftCommitment);
         require(tx.outputs[0].value >= tx.inputs[0].value + tx.inputs[1].value - 4000);
+        if (pk != homePk && pk != guardianPk) {
+            require(int(tx.inputs[0].nftCommitment.split(1)[0]) < 2);
+        }
+        if (tx.inputs[1].tokenCategory == category) {
+            require(pk == homePk);
+        } else {
+            require(tx.outputs[0].value >= tx.inputs[0].value);
+        }
     }
 
     // Home code or guardian: full freeze. Panic key: duress freeze.
@@ -146,16 +161,19 @@ contract Holdfast(
             if (asHome) { uh = 0x01; }
             if (asGuardian) { ug = 0x01; }
             if (uh == 0x01 && ug == 0x01) {
-                newCommitment = 0x00 + spentBytes + 0x0000 + rh + rg;
+                newCommitment = 0x00 + spentBytes + 0x00000000;
             } else {
                 newCommitment = level + spentBytes + uh + ug + rh + rg;
             }
         } else {
+            // Recovery approvals only count during a full freeze; freezing and unfreezing clear them.
             require(what == 1);
+            require(int(level) == 2);
             if (asHome) { rh = 0x01; }
             if (asGuardian) { rg = 0x01; }
             newCommitment = level + spentBytes + uh + ug + rh + rg;
         }
+        require(newCommitment != tx.inputs[0].nftCommitment);
         require(this.activeInputIndex == 0);
         require(tx.inputs.length == 1);
         require(tx.inputs[0].tokenCategory == category + 0x02);
@@ -167,11 +185,18 @@ contract Holdfast(
     }
 
     // Home code, after home code and guardian both approved recovery: move everything out,
-    // normally into a new vault for a new phone.
+    // normally into a new vault for a new phone. With no guardian the home code is alone, so it
+    // also needs a full freeze and the normal wait since its last change: a robber who forces
+    // the home code out of you still has to hold you for days.
     function recover(sig homeSig) {
         require(checkSig(homeSig, homePk));
-        bytes flags = tx.inputs[0].nftCommitment.split(9)[1];
+        bytes level, bytes rest = tx.inputs[0].nftCommitment.split(1);
+        bytes flags = rest.split(8)[1];
         require(flags.split(2)[1] == 0x0101);
+        require(int(level) == 2);
+        if (guardianPk == homePk) {
+            require(this.age >= waitBlocks);
+        }
         require(this.activeInputIndex == 0);
         require(tx.inputs[0].tokenCategory == category + 0x02);
     }
@@ -220,6 +245,9 @@ contract Holdfast(
         require(tx.outputs.length == 1);
         require(tx.outputs[0].lockingBytecode == tx.inputs[0].lockingBytecode);
         require(tx.outputs[0].tokenCategory == category + 0x02);
+        // And it keeps the vault's state, so a merge can never rewrite it.
+        require(tx.outputs[0].nftCommitment == tx.inputs[0].nftCommitment);
+        require(tx.outputs[0].value >= tx.inputs[0].value + tx.inputs[1].value - 4000);
     }
 
     // Input 1 of an evict: the ticket, old enough.
@@ -239,7 +267,7 @@ contract Holdfast(
         require(tx.inputs.length == 1);
         require(tx.outputs[0].lockingBytecode == recipient);
         require(tx.outputs[0].tokenCategory == 0x);
-        require(tx.outputs[0].value >= tx.inputs[0].value - 2500);
+        require(tx.outputs[0].value >= tx.inputs[0].value - 2000);
         require(tx.outputs.length == 1);
     }
 
@@ -252,7 +280,7 @@ contract Holdfast(
         require(tx.inputs.length == 1);
         require(tx.outputs[0].lockingBytecode == recipient);
         require(tx.outputs[0].tokenCategory == 0x);
-        require(tx.outputs[0].value >= tx.inputs[0].value - 2500);
+        require(tx.outputs[0].value >= tx.inputs[0].value - 2000);
         require(tx.outputs.length == 1);
     }
 

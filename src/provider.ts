@@ -106,6 +106,35 @@ export class FallbackNetworkProvider implements NetworkProvider {
     }
   }
 
+  /**
+   * A second opinion: the coins at an address and their heights, from a different server than the
+   * one in use. One dishonest server could otherwise hide a waiting withdrawal. Null if no other
+   * server answers in time.
+   */
+  async otherServerView(address: string): Promise<{ host: string; utxos: SpendableUtxo[]; heights: Map<string, number> } | null> {
+    for (let i = 1; i < this.providers.length; i++) {
+      const { host, p } = this.providers[(this.current + i) % this.providers.length];
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      try {
+        const timeout = new Promise<never>((_, rej) => {
+          timer = setTimeout(() => rej(new Error(`${host} timed out`)), this.timeoutMs);
+        });
+        const [utxos, rows] = await Promise.race([
+          Promise.all([p.getUtxos(address), p.performRequest('blockchain.address.listunspent', address, 'include_tokens') as Promise<{ tx_hash: string; tx_pos: number; height: number }[]>]),
+          timeout,
+        ]);
+        const heights = new Map<string, number>();
+        for (const r of rows ?? []) heights.set(`${r.tx_hash}:${r.tx_pos}`, r.height > 0 ? r.height : 0);
+        return { host, utxos, heights };
+      } catch {
+        // try the next one
+      } finally {
+        clearTimeout(timer);
+      }
+    }
+    return null;
+  }
+
   /** Confirmation height of each unspent coin at an address ("txid:vout" to height, 0 if unconfirmed). */
   async heights(address: string): Promise<Map<string, number>> {
     const rows = (await this.attempt((p) =>

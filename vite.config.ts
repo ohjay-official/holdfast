@@ -18,21 +18,8 @@ function findPages(dir: string, out: Record<string, string> = {}): Record<string
   return out;
 }
 
-// Judge-bar copy on the apps, which do not load the marketing runtime.
-const appCopy = `<script>
-document.addEventListener('DOMContentLoaded',function(){
-  var btn=document.querySelector('.judge-bar button[data-copy]');
-  if(!btn)return;
-  var label=btn.textContent||'Copy';
-  btn.addEventListener('click',async function(){
-    var src=document.querySelector(btn.getAttribute('data-copy'));
-    var text=(src&&src.textContent||'').trim();
-    try{await navigator.clipboard.writeText(text);btn.textContent='Copied';}
-    catch{if(src){var r=document.createRange();r.selectNodeContents(src);var s=getSelection();if(s){s.removeAllRanges();s.addRange(r);}}btn.textContent='Selected, copy it';}
-    setTimeout(function(){btn.textContent=label;},2200);
-  });
-});
-</script>`;
+// The apps load the judge banner without the site header, so they load the boot script here.
+const appCopy = `<script src="/boot.js"></script>`;
 
 // Shared partials, inlined at build time. Marks the current nav link.
 function partials(): Plugin {

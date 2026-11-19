@@ -60,12 +60,13 @@ describe('vault contract', () => {
     let m = await main(contract, params.category);
     await V.buildSpend({ contract, main: m.utxo, state: m.state, amount: 30_000n, to: robber, owner, fresh: false, refillBlocks: REFILL }).send();
     m = await main(contract, params.category);
-    expect(m.state.spent).toBe(30_000n);
+    // The fee counts against the allowance too.
+    expect(m.state.spent).toBe(30_000n + V.VAULT_FEE);
     await expect(
       V.buildSpend({ contract, main: m.utxo, state: m.state, amount: 30_000n, to: robber, owner, fresh: false, refillBlocks: REFILL }).send(),
     ).rejects.toThrow();
     // After a quiet day the window starts over.
-    await V.buildSpend({ contract, main: m.utxo, state: m.state, amount: 50_000n, to: robber, owner, fresh: true, refillBlocks: REFILL }).send();
+    await V.buildSpend({ contract, main: m.utxo, state: m.state, amount: 50_000n - V.VAULT_FEE, to: robber, owner, fresh: true, refillBlocks: REFILL }).send();
     expect((await main(contract, params.category)).state.spent).toBe(50_000n);
   });
 
@@ -134,7 +135,7 @@ describe('vault contract', () => {
     await V.buildFreeze({ contract, main: m.utxo, state: m.state, pk: panic.publicKey, signer: panic, duress: true }).send();
     m = await main(contract, params.category);
     expect(m.state.level).toBe(1);
-    await V.buildSpend({ contract, main: m.utxo, state: m.state, amount: ALLOW, to: robber, owner, fresh: false, refillBlocks: REFILL }).send();
+    await V.buildSpend({ contract, main: m.utxo, state: m.state, amount: ALLOW - V.VAULT_FEE, to: robber, owner, fresh: false, refillBlocks: REFILL }).send();
     m = await main(contract, params.category);
     await expect(V.buildStartWithdrawal({ contract, main: m.utxo, state: m.state, amount: 10_000n, to: robber, owner }).send()).rejects.toThrow();
     // Guardian upgrades it to a full freeze.
@@ -174,6 +175,9 @@ describe('vault contract', () => {
     const newPhone = addr(key(5));
     let m = await main(contract, params.category);
     await expect(V.buildRecover({ contract, main: m.utxo, home, to: newPhone }).send()).rejects.toThrow();
+    // Recovery approvals only count during a full freeze.
+    await V.buildFreeze({ contract, main: m.utxo, state: m.state, pk: home.publicKey, signer: home, duress: false }).send();
+    m = await main(contract, params.category);
     await V.buildApprove({ contract, main: m.utxo, state: m.state, pk: home.publicKey, asHome: true, asGuardian: false, signer: home, what: 'recover' }).send();
     m = await main(contract, params.category);
     await expect(V.buildRecover({ contract, main: m.utxo, home, to: newPhone }).send()).rejects.toThrow();
