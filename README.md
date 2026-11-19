@@ -8,7 +8,7 @@
 
 Whoever has your phone can make you send what the phone can spend, and a Bitcoin Cash payment cannot be reversed. Holdfast is a vault contract: the phone can spend only a small daily allowance, and anything more waits in public so a home code or a guardian can cancel it.
 
-**For judges:** open the [demo](https://holdfast-bch.vercel.app/app/), tap **Start the demo**, then **Send**, **Use a sample address**, **Send all: 1.00 BCH**, **Review**, and **Send 1.00 BCH**. Then tap **Home code** and **Cancel withdrawal**. You should see **0.05 BCH** leave now and **0.95 BCH** come back.
+**For judges:** open the [demo](https://hodlfast.vercel.app/app/), tap **Start the demo**, then **Send**, **Use a sample address**, **Send all: 1.00 BCH**, **Review**, and **Send 1.00 BCH**. Then tap **Home code** and **Cancel withdrawal**. You should see **0.05 BCH** leave now and **0.95 BCH** come back.
 
 ## Quick Links
 
@@ -22,7 +22,7 @@ Whoever has your phone can make you send what the phone can spend, and a Bitcoin
 
 ## Try It in 5 Steps
 
-The [demo](https://holdfast-bch.vercel.app/app/) uses pretend money. No wallet and no signup.
+The [demo](https://hodlfast.vercel.app/app/) uses pretend money. No wallet and no signup.
 
 1. Open the demo and tap **Start the demo**. You see **In your vault**, **1.00 BCH**, and **Demo vault ready: 1 BCH, 0.05 BCH a day, 3-day wait, Ada as guardian.**
 2. Tap **Send**, then **Use a sample address**, then **Send all: 1.00 BCH**, then **Review**. You see **0.05 BCH leaves now** and **0.95 BCH waits 3 days**.
@@ -37,7 +37,7 @@ The words in bold are the words on the screen. The sample address is a demo addr
 - The rules are the contract [`contracts/Holdfast.cash`](contracts/Holdfast.cash) (`pragma cashscript ^0.14.0`).
 - [`test/vault.test.ts`](test/vault.test.ts) runs 18 contract tests through the Bitcoin Cash VM, including three attacks named in that file.
 - `npm test` passes 101 tests (counted 18 Nov 2026 on this commit).
-- The site is live: [holdfast-bch.vercel.app](https://holdfast-bch.vercel.app). The same proof list is on [Security](https://holdfast-bch.vercel.app/security/#proof).
+- The site is live: [hodlfast.vercel.app](https://hodlfast.vercel.app). The same proof list is on [Security](https://hodlfast.vercel.app/security/#proof).
 - A real vault was created from Paytaca on mainnet on 16 Nov 2026, and the later steps below were broadcast on 16 and 17 Nov 2026. There has been no outside audit.
 
 | Step | Transaction |
@@ -61,14 +61,14 @@ The words in bold are the words on the screen. The sample address is a demo addr
 - **A home code or a guardian can cancel. Neither can take the money alone.** Cancel is `merge`. Moving the whole vault is `recover`, and that needs both recovery flags. With no guardian, the contract sets both flags from the home code alone (`guardianPk == homePk`).
 - **A duress key can freeze without blocking the allowance.** `freeze` with the panic key sets level 1. Level 2, from the home code or a guardian, blocks spends and new withdrawals. Level 2 does not stop `release` on a withdrawal whose wait is already over.
 
-People already lose money this way. The [Why](https://holdfast-bch.vercel.app/why/) page states two sourced figures. One is ₦2.6 million from a bank app after a robbery at gunpoint in September 2025 ([WeeTracker](https://weetracker.com/2025/10/07/panic-mode-banking-nigeria-duress-features); the link path is dated 7 Oct 2025). The other is 72 verified "wrench attacks" in 2025, up 75% on 2024 ([Decrypt](https://decrypt.co/356604/41m-in-losses-as-crypto-wrench-attacks-hit-record-high-in-2025)). A day-level date for the Decrypt piece is not in this repo.
+People already lose money this way. The [Why](https://hodlfast.vercel.app/why/) page states two sourced figures. One is ₦2.6 million from a bank app after a robbery at gunpoint in September 2025 ([WeeTracker](https://weetracker.com/2025/10/07/panic-mode-banking-nigeria-duress-features); the link path is dated 7 Oct 2025). The other is 72 verified "wrench attacks" in 2025, up 75% on 2024 ([Decrypt](https://decrypt.co/356604/41m-in-losses-as-crypto-wrench-attacks-hit-record-high-in-2025)). A day-level date for the Decrypt piece is not in this repo.
 
 ## How Bitcoin Cash Is Used
 
 - **CashScript 0.14 covenants.** [`contracts/Holdfast.cash`](contracts/Holdfast.cash) checks signatures, fixes its own outputs, and carries state in CashToken NFT commitments. Waits use `this.age` (a relative time lock), not a timestamp the spender picks. The contract allows at most 2,500 sats of fee on a spend, and 4,000 on a merge.
 - **libauth 3.1.0-next.8.** The real vault and the signing test use it for addresses, hashes, and transaction bytes (`src/vault.ts`, `src/real/core.ts`, `src/main.ts`).
 - **WizardConnect 0.2 and Paytaca.** [`src/real/wallet.ts`](src/real/wallet.ts) connects the real vault to Paytaca. The same path is what the pre-kickoff signing test used.
-- **In the repo, not in the vault app.** `contracts/SignTest.cash` and `contracts/CoSignTest.cash` are the chipnet signing tests, reached from [/signing-test/](https://holdfast-bch.vercel.app/signing-test/). Telegram alerts and a guardian-for-hire service are named on the [Why](https://holdfast-bch.vercel.app/why/) and [Privacy](https://holdfast-bch.vercel.app/privacy/) pages as later work. There is no code that sends those alerts.
+- **In the repo, not in the vault app.** `contracts/SignTest.cash` and `contracts/CoSignTest.cash` are the chipnet signing tests, reached from [/signing-test/](https://hodlfast.vercel.app/signing-test/). Telegram alerts and a guardian-for-hire service are named on the [Why](https://hodlfast.vercel.app/why/) and [Privacy](https://hodlfast.vercel.app/privacy/) pages as later work. There is no code that sends those alerts.
 
 The app's builders use 144 blocks for about a day, 6 blocks for about an hour, and 1,008 blocks for about a week (`src/vault.ts`). The contract checks whatever block counts were set when the vault was created. The demo uses a 0.05 BCH allowance and a 3-day wait. A real vault can use 1 to 7 days. The site says 3 is the default.
 
@@ -83,17 +83,17 @@ Our row is first. A cell says Not stated when this repo does not give the date o
 | Discovery Bank panic PIN | Not stated here. The Why page says a panic PIN alerts its fraud team. | [TechCentral](https://techcentral.co.za/discovery-bank-panic-code-app-kidnappings/261422/) | Not stated |
 | Deus Wallet duress mode | Not stated here. The Why page says duress mode opens a decoy account. | [Decrypt](https://decrypt.co/297742/deus-wallet-introduces-duress-mode-the-revolutionary-solution-for-cryptocurrency-security) | Not stated |
 
-A bank can call a fraud team. Holdfast cannot. Bitcoin Cash that has already left, including the allowance, is gone. The [Security](https://holdfast-bch.vercel.app/security/) page says that in those words.
+A bank can call a fraud team. Holdfast cannot. Bitcoin Cash that has already left, including the allowance, is gone. The [Security](https://hodlfast.vercel.app/security/) page says that in those words.
 
 ## What Works Today
 
 | Piece | State |
 | --- | --- |
 | Vault contract | In the repo. 18 contract tests. No outside audit. |
-| Demo | Live at [/app/](https://holdfast-bch.vercel.app/app/). Pretend BCH in the browser. |
-| Real vault | Live at [/real/](https://holdfast-bch.vercel.app/real/). Paytaca on mainnet or chipnet. Mainnet steps in the table above. |
-| Signing test | Live at [/signing-test/](https://holdfast-bch.vercel.app/signing-test/). Five chipnet tests from before kickoff are listed on the [Security](https://holdfast-bch.vercel.app/security/#proof) page. |
-| Website | Live at [holdfast-bch.vercel.app](https://holdfast-bch.vercel.app). |
+| Demo | Live at [/app/](https://hodlfast.vercel.app/app/). Pretend BCH in the browser. |
+| Real vault | Live at [/real/](https://hodlfast.vercel.app/real/). Paytaca on mainnet or chipnet. Mainnet steps in the table above. |
+| Signing test | Live at [/signing-test/](https://hodlfast.vercel.app/signing-test/). Five chipnet tests from before kickoff are listed on the [Security](https://hodlfast.vercel.app/security/#proof) page. |
+| Website | Live at [hodlfast.vercel.app](https://hodlfast.vercel.app). |
 | Telegram alerts | Not built. The Privacy page says "once they're available". |
 | Guardian-for-hire | Not built. The Why page lists it under "Later". |
 
@@ -140,7 +140,7 @@ Vite prints a local address. Its usual default is http://localhost:5173 . Open `
 <details>
 <summary><strong>Mainnet run (Paytaca and a small amount of BCH)</strong></summary>
 
-Open [the real vault](https://holdfast-bch.vercel.app/real/). The screen says **Mainnet** or **Chipnet (test)**. The app charges a one-time 0.0001 BCH Holdfast fee when you create a vault (`CREATE_FEE` in `src/real/core.ts`). That fee is not a line in the contract. Until there is an outside audit, the site says to start with a small amount.
+Open [the real vault](https://hodlfast.vercel.app/real/). The screen says **Mainnet** or **Chipnet (test)**. The app charges a one-time 0.0001 BCH Holdfast fee when you create a vault (`CREATE_FEE` in `src/real/core.ts`). That fee is not a line in the contract. Until there is an outside audit, the site says to start with a small amount.
 
 </details>
 
@@ -179,13 +179,13 @@ What it cannot promise:
 
 ## Security and What It Doesn't Promise
 
-There is no `docs/SECURITY` file in this repo. The write-up is the live page: [Security](https://holdfast-bch.vercel.app/security/).
+There is no `docs/SECURITY` file in this repo. The write-up is the live page: [Security](https://hodlfast.vercel.app/security/).
 
 The short version is the list in [What It Does](#what-it-does). Read that page before you put in more than a small amount.
 
 ## Privacy
 
-The live [Privacy](https://holdfast-bch.vercel.app/privacy/) page is the current note (last updated 17 Nov 2026 on that page).
+The live [Privacy](https://hodlfast.vercel.app/privacy/) page is the current note (last updated 17 Nov 2026 on that page).
 
 The app keeps vault settings in the browser. Vault actions are public Bitcoin Cash transactions. The real app reads public Electrum servers named on that page. WizardConnect uses public Nostr relays. The site is hosted on Vercel. Fonts are files from this site.
 
@@ -210,7 +210,7 @@ No environment variables are required for the demo. The real vault talks to publ
 | Code | https://github.com/ohjay-official/holdfast |
 | License | [MIT](LICENSE) |
 | Issues | https://github.com/ohjay-official/holdfast/issues |
-| Live site | https://holdfast-bch.vercel.app |
+| Live site | https://hodlfast.vercel.app |
 | Kickoff snapshot | [`nov14-start`](https://github.com/ohjay-official/holdfast/tree/nov14-start) (`03f53db`, 11 Nov 2026) and https://holdfast-kickoff.vercel.app |
 | Hackathon | [BCH BLAZE 2026](https://dorahacks.io/hackathon/bchblaze2026) |
 

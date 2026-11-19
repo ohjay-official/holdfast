@@ -63,14 +63,16 @@ function partials(): Plugin {
     <link rel="icon" href="/favicon-16.png" sizes="16x16" type="image/png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
+    <link rel="canonical" href="https://hodlfast.vercel.app${route}" />
+    <meta property="og:url" content="https://hodlfast.vercel.app${route}" />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Holdfast" />
-    <meta property="og:image" content="https://holdfast-bch.vercel.app/og.png" />
+    <meta property="og:image" content="https://hodlfast.vercel.app/og.png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta property="og:image:alt" content="Holdfast: a vault a robber can't empty." />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:image" content="https://holdfast-bch.vercel.app/og.png" />
+    <meta name="twitter:image" content="https://hodlfast.vercel.app/og.png" />
     <script defer src="/_vercel/insights/script.js"></script>
   </head>`;
           out = out.replace(/\s*<link rel="icon" href="\/favicon.svg" type="image\/svg\+xml" \/>/, '');

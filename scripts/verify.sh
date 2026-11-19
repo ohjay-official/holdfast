@@ -3,7 +3,7 @@
 # pages answer, and the payout address on the site is the one the code pays.
 # Usage: bash scripts/verify.sh [site-url]
 set -euo pipefail
-SITE="${1:-https://holdfast-bch.vercel.app}"
+SITE="${1:-https://hodlfast.vercel.app}"
 cd "$(dirname "$0")/.."
 fail=0
 

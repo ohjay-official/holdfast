@@ -2,4 +2,4 @@ User-agent: *
 Allow: /
 Disallow: /signing-test/
 
-Sitemap: https://holdfast-bch.vercel.app/sitemap.xml
+Sitemap: https://hodlfast.vercel.app/sitemap.xml

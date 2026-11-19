@@ -49,6 +49,7 @@ let unlocked = false;
 let decoy = false;
 let pinEntry = '';
 let busy = false;
+const held = () => (busy ? 'disabled aria-busy="true"' : '');
 let status: { kind: 'ok' | 'err' | 'info'; text: string; tx?: string } | null = null;
 let view: C.VaultView | null = null;
 let qr: { uri: string; img: string } | null = null;
@@ -167,6 +168,7 @@ async function act(label: string, fn: () => Promise<string | void>, done?: strin
   if (busy) return;
   busy = true;
   setStatus('info', `${label}...`);
+  render();
   try {
     const txid = await fn();
     const text = done ?? nextDone ?? DONE[label] ?? `${label}: done.`;
@@ -372,7 +374,7 @@ function screenStart(): string {
     <p class="small ${netCheck?.ok === false ? 'flash flash-err' : 'muted'}">${netCheck ? esc(netCheck.text) : 'Checking the network...'}</p>
     <p class="small muted">${net === 'mainnet' ? 'Real BCH. Start with a small amount: this contract hasn\'t had an outside audit.' : 'Test coins only. In Paytaca: Apps, Settings, turn on Use Chipnet Network.'}</p>
     <div class="stack stack-end">
-      <button class="btn btn-dark" data-act="connect">${saved ? 'Open my vault' : 'Connect Paytaca'}</button>
+      <button class="btn btn-dark" data-act="connect" ${held()}>${busy ? 'Connecting...' : saved ? 'Open my vault' : 'Connect Paytaca'}</button>
       <a class="btn btn-line" href="#/guardian">I'm someone's guardian</a>
       <a class="btn btn-line" href="#/home-code">Lost your phone? Use your home code</a>
       <a class="btn btn-line" href="/app/#/quick">Try the demo instead</a>
@@ -433,7 +435,7 @@ function screenSetup(): string {
   return `${topbar('New vault', d.step > 1 ? '/setup/back' : '/')}
   <main class="screen" id="main">${statusBox()}
     <form data-form="setup" novalidate>${body}
-      <div class="stack stack-end"><button class="btn btn-dark" type="submit" ${busy ? 'disabled' : ''}>${d.step === 5 ? 'Create vault' : 'Continue'}</button></div>
+      <div class="stack stack-end"><button class="btn btn-dark" type="submit" ${busy || (d.step === 5 && walletSats === null) ? 'disabled aria-busy="true"' : ''}>${busy ? 'Working...' : d.step === 5 && walletSats === null ? 'Checking balance...' : d.step === 5 ? 'Create vault' : 'Continue'}</button></div>
     </form></main>`;
 }
 
@@ -484,9 +486,9 @@ function screenVault(): string {
     <div class="actions2"><a class="btn btn-dark" href="#/send" ${s.level === 2 ? 'aria-disabled="true"' : ''}>Send</a><a class="btn btn-line" href="#/receive">Receive</a></div>
     ${s.level === 0 ? `<p class="small"><a href="#/withdraw">Withdraw more than the allowance</a></p>` : ''}
     ${depositNotice(v)}
-    <section class="block"><h2>Waiting to leave</h2>${pendingList(v, (p, i) => `${p.ready && s.level === 0 ? `<button class="btn btn-sm btn-dark" data-act="release" data-i="${i}">Release ${bch(p.sats)}</button>` : ''}<button class="btn btn-sm btn-line" data-act="cancel-owner" data-i="${i}">Cancel</button>`)}</section>
+    <section class="block"><h2>Waiting to leave</h2>${pendingList(v, (p, i) => `${p.ready && s.level === 0 ? `<button class="btn btn-sm btn-dark" data-act="release" data-i="${i}" ${held()}>${busy ? 'Releasing...' : `Release ${bch(p.sats)}`}</button>` : ''}<button class="btn btn-sm btn-line" data-act="cancel-owner" data-i="${i}" ${held()}>${busy ? 'Cancelling...' : 'Cancel'}</button>`)}</section>
     ${activityList()}
-    <nav class="links"><a href="#/home">Home code</a><a href="#/settings">Settings</a><button class="linkish" data-act="refresh">Refresh</button><button class="linkish" data-act="lock">Lock</button></nav>
+    <nav class="links"><a href="#/home">Home code</a><a href="#/settings">Settings</a><button class="linkish" data-act="refresh" ${held()}>${busy ? 'Checking...' : 'Refresh'}</button><button class="linkish" data-act="lock">Lock</button></nav>
   </main>`;
 }
 
@@ -495,7 +497,7 @@ function depositNotice(v: C.VaultView): string {
   const worth = C.mergeableDeposits(v);
   const small = v.deposits.length - worth.length;
   const smallText = small ? `<p class="small muted">${small === 1 ? 'One deposit is' : `${small} deposits are`} smaller than the ${bch(V.MERGE_FEE)} network fee to add ${small === 1 ? 'it' : 'them'}, so ${small === 1 ? 'it stays' : 'they stay'} as a deposit.</p>` : '';
-  return `<div class="notice"><h2>${bch(v.depositSats)} deposited</h2><p>Deposits join the vault when you add them.${worth.length > 1 ? ` Paytaca asks once per deposit (${worth.length}).` : ''}</p>${worth.length ? '<button class="btn btn-sm btn-dark" data-act="absorb">Add to vault</button>' : ''}${smallText}</div>`;
+  return `<div class="notice"><h2>${bch(v.depositSats)} deposited</h2><p>Deposits join the vault when you add them.${worth.length > 1 ? ` Paytaca asks once per deposit (${worth.length}).` : ''}</p>${worth.length ? `<button class="btn btn-sm btn-dark" data-act="absorb" ${held()}>${busy ? 'Adding...' : 'Add to vault'}</button>` : ''}${smallText}</div>`;
 }
 
 function screenSend(): string {
@@ -507,7 +509,7 @@ function screenSend(): string {
       <p>You can send up to <b>${bch(left)}</b> right away.${decoy ? '' : ' For more, use a withdrawal, which waits.'}</p>
       <label class="field"><span>To</span><input name="to" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="${C.PREFIX[net]}:..."></label>
       <label class="field"><span>Amount in BCH</span><input name="amount" inputmode="decimal"></label>
-      <div class="stack stack-end"><button class="btn btn-dark" type="submit" ${busy || left === 0n ? 'disabled' : ''}>Send</button></div>
+      <div class="stack stack-end"><button class="btn btn-dark" type="submit" ${busy || left === 0n ? 'disabled aria-busy="true"' : ''}>${busy ? 'Sending...' : 'Send'}</button></div>
     </form></main>`;
 }
 
@@ -520,7 +522,7 @@ function screenWithdraw(): string {
       <p>A withdrawal waits <b>about ${days} ${days === 1 ? 'day' : 'days'}</b> before it can leave. Until then, you, your home code${c.hasGuardian ? ' or your guardian' : ''} can cancel it.</p>
       <label class="field"><span>To</span><input name="to" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="${C.PREFIX[net]}:..."></label>
       <label class="field"><span>Amount in BCH</span><input name="amount" inputmode="decimal"></label>
-      <div class="stack stack-end"><button class="btn btn-dark" type="submit" ${busy ? 'disabled' : ''}>Start withdrawal</button></div>
+      <div class="stack stack-end"><button class="btn btn-dark" type="submit" ${held()}>${busy ? 'Starting...' : 'Start withdrawal'}</button></div>
     </form></main>`;
 }
 
@@ -549,18 +551,18 @@ function screenHome(c: C.VaultConfig, v: C.VaultView | null, back: string): stri
   return `${topbar('Home code', back)}
   <main class="screen" id="main"><p class="who">Home code entered. Nothing here asks Paytaca: this page signs with your home code.</p>${statusBox()}${frozenBox(v, c)}
     <section class="balance"><p class="bal-label">In the vault</p><p class="bal">${bch(v.total)}</p>${bar(v)}</section>
-    <section class="block"><h2>Waiting to leave</h2>${pendingList(v, (_p, i) => `<button class="btn btn-sm btn-dark" data-act="cancel-home" data-i="${i}">Cancel this ${bch(_p.sats)}</button>`)}</section>
+    <section class="block"><h2>Waiting to leave</h2>${pendingList(v, (_p, i) => `<button class="btn btn-sm btn-dark" data-act="cancel-home" data-i="${i}" ${held()}>${busy ? 'Cancelling...' : `Cancel this ${bch(_p.sats)}`}</button>`)}</section>
     <section class="block"><h2>Vault</h2><div class="stack">
       ${C.homeActions(s, c.hasGuardian)
         .map((a) => {
           const cls = a.primary ? 'btn btn-dark' : 'btn btn-line';
-          if (a.act === 'freeze') return `<button class="${cls}" data-act="freeze-home">${esc(a.label)}</button>`;
+          if (a.act === 'freeze') return `<button class="${cls}" data-act="freeze-home" ${held()}>${busy ? 'Working...' : esc(a.label)}</button>`;
           const what = a.act === 'approve-unfreeze' ? 'unfreeze' : 'recover';
           const hint = what === 'recover' ? '<p class="small muted">This does not unfreeze. It lets you send everything to a new address, for when this phone is lost.</p>' : '';
-          return `<button class="${cls}" data-act="approve-home" data-what="${what}">${esc(a.label)}</button>${hint}`;
+          return `<button class="${cls}" data-act="approve-home" data-what="${what}" ${held()}>${busy ? 'Working...' : esc(a.label)}</button>${hint}`;
         })
         .join('')}
-      ${s.recoverHome && (s.recoverGuardian || !c.hasGuardian) ? `<form data-form="recover" class="stack"><label class="field"><span>Move everything to</span><input name="to" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="${C.PREFIX[net]}:..."></label><button class="btn btn-dark" type="submit">Move everything</button></form>` : ''}
+      ${s.recoverHome && (s.recoverGuardian || !c.hasGuardian) ? `<form data-form="recover" class="stack"><label class="field"><span>Move everything to</span><input name="to" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="${C.PREFIX[net]}:..."></label><button class="btn btn-dark" type="submit" ${held()}>${busy ? 'Moving...' : 'Move everything'}</button></form>` : ''}
       ${s.recoverHome && c.hasGuardian && !s.recoverGuardian ? '<p class="muted">You allowed moving everything out. Your guardian needs to allow it too.</p>' : ''}
     </div></section>
     <button class="btn btn-line" data-act="forget-home">Forget the home code on this page</button>
@@ -604,7 +606,7 @@ function screenGuardian(): string {
     return `${topbar('Guardian', '/')}
     <main class="screen" id="main">${statusBox()}
       <p>As a guardian you can cancel withdrawals, freeze a vault and approve unfreezing. You can never send its money anywhere.</p>
-      <div class="stack"><button class="btn btn-dark" data-act="connect-guardian">Connect my wallet</button></div></main>`;
+      <div class="stack"><button class="btn btn-dark" data-act="connect-guardian" ${held()}>${busy ? 'Connecting...' : 'Connect my wallet'}</button></div></main>`;
   }
   const gpk = binToHex(wallet.ownerPk());
   if (!guardianConfig) {
@@ -623,14 +625,14 @@ function screenGuardian(): string {
   return `${topbar('Guardian', '/')}
   <main class="screen" id="main"><p class="who">You're this vault's guardian. You can stop things, never send.</p>${statusBox()}${frozenBox(v, guardianConfig)}
     <section class="balance"><p class="bal-label">In the vault</p><p class="bal">${bch(v.total)}</p>${bar(v)}</section>
-    <section class="block"><h2>Waiting to leave</h2>${pendingList(v, (p, i) => `<button class="btn btn-sm btn-dark" data-act="cancel-guardian" data-i="${i}">Cancel</button>${!p.fast && s.level === 0 ? `<button class="btn btn-sm btn-line" data-act="fast" data-i="${i}">Approve fast</button>` : ''}`)}
+    <section class="block"><h2>Waiting to leave</h2>${pendingList(v, (p, i) => `<button class="btn btn-sm btn-dark" data-act="cancel-guardian" data-i="${i}" ${held()}>${busy ? 'Cancelling...' : 'Cancel'}</button>${!p.fast && s.level === 0 ? `<button class="btn btn-sm btn-line" data-act="fast" data-i="${i}" ${held()}>${busy ? 'Approving...' : 'Approve fast'}</button>` : ''}`)}
       <p class="small muted">Only approve fast if the owner asked you, in a way you trust. Call them first.</p></section>
     <section class="block"><h2>Vault</h2><div class="stack">
-      ${s.level < 2 ? `<button class="btn btn-dark" data-act="freeze-guardian">Freeze vault</button>` : ''}
-      ${s.level > 0 && !s.unfreezeGuardian ? `<button class="btn btn-line" data-act="approve-guardian" data-what="unfreeze">Approve unfreeze</button>` : ''}
-      ${!s.recoverGuardian ? `<button class="btn btn-line" data-act="approve-guardian" data-what="recover">Allow moving everything out (only if the owner lost their phone)</button>` : ''}
+      ${s.level < 2 ? `<button class="btn btn-dark" data-act="freeze-guardian" ${held()}>${busy ? 'Freezing...' : 'Freeze vault'}</button>` : ''}
+      ${s.level > 0 && !s.unfreezeGuardian ? `<button class="btn btn-line" data-act="approve-guardian" data-what="unfreeze" ${held()}>${busy ? 'Approving...' : 'Approve unfreeze'}</button>` : ''}
+      ${!s.recoverGuardian ? `<button class="btn btn-line" data-act="approve-guardian" data-what="recover" ${held()}>${busy ? 'Approving...' : 'Allow moving everything out (only if the owner lost their phone)'}</button>` : ''}
     </div></section>
-    <nav class="links"><button class="linkish" data-act="refresh">Refresh</button><button class="linkish" data-act="guardian-close">Close this vault</button></nav>
+    <nav class="links"><button class="linkish" data-act="refresh" ${held()}>${busy ? 'Checking...' : 'Refresh'}</button><button class="linkish" data-act="guardian-close">Close this vault</button></nav>
   </main>`;
 }
 
@@ -664,12 +666,15 @@ function render() {
 
 function startWallet(next: string) {
   wallet.onQr = async (uri, qrUri) => {
-    qr = { uri, img: await QRCode.toDataURL(qrUri, { margin: 1, width: 440 }) };
+    const img = await QRCode.toDataURL(qrUri, { margin: 1, width: 440 });
+    busy = false;
+    qr = { uri, img };
     go('/connect');
   };
   wallet.onStatus = (t) => setStatus('info', t);
   wallet.onReady = () => {
     log(`wallet ready: ${wallet.name}, owner ${binToHex(wallet.ownerPk()).slice(0, 12)}`);
+    busy = false;
     qr = null;
     status = null;
     if (next === '/guardian') return go('/guardian');
@@ -684,6 +689,9 @@ function startWallet(next: string) {
     go('/setup');
   };
   if (wallet.ready) return wallet.onReady();
+  busy = true;
+  setStatus('info', 'Connecting to Paytaca...');
+  render();
   wallet.connect(Wallet.hasSavedSession());
 }
 
@@ -760,10 +768,18 @@ app.addEventListener('click', async (e) => {
     case 'connect-guardian':
       return startWallet('/guardian');
     case 'refresh':
+      if (busy) return;
+      busy = true;
       setStatus('info', 'Refreshing...');
-      await refresh();
-      status = null;
-      return render();
+      render();
+      try {
+        await refresh();
+        status = null;
+      } finally {
+        busy = false;
+        render();
+      }
+      return;
     case 'pin':
       if (pinEntry.length < 6) pinEntry += el.dataset.d;
       return render();

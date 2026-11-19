@@ -27,7 +27,7 @@ body[data-role='guardian'] .topbar { box-shadow: inset 0 3px 0 var(--ink); }
 
 /* Buttons */
 .btn { width: 100%; text-align: center; font-family: var(--sans); cursor: pointer; }
-.btn[disabled] { opacity: 0.45; cursor: not-allowed; }
+.btn[disabled], button[disabled] { opacity: 0.45; cursor: not-allowed; }
 .btn-sm { width: auto; padding: 0.45rem 0.8rem; font-size: 0.9rem; }
 .stack { display: grid; gap: 0.6rem; }
 .stack-end { margin-top: 1.5rem; }
