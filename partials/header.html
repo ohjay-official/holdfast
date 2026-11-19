@@ -15,21 +15,27 @@
       <a href="/guardians/" data-nav>Guardians</a>
       <a href="/demo/" data-nav>Demo</a>
       <a href="/faq/" data-nav>FAQ</a>
+      <a class="btn btn-primary btn-sm nav-app" href="/real/" data-nav>Open app</a>
     </nav>
-    <a class="btn btn-primary btn-sm nav-app" href="/real/" data-nav>Open app</a>
-    <button class="menu-btn" type="button" aria-expanded="false" aria-controls="mobile-menu" aria-label="Open menu">
+    <button class="menu-btn" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu">
       <span></span><span></span>
     </button>
   </div>
-  <div class="mobile-menu" id="mobile-menu" hidden>
-    <nav aria-label="Mobile">
-      <a href="/how-it-works/" data-nav style="--i:0">How it works</a>
-      <a href="/why/" data-nav style="--i:1">Why</a>
-      <a href="/security/" data-nav style="--i:2">Security</a>
-      <a href="/guardians/" data-nav style="--i:3">Guardians</a>
-      <a href="/demo/" data-nav style="--i:4">Demo</a>
-      <a href="/faq/" data-nav style="--i:5">FAQ</a>
-      <a class="btn btn-primary" href="/real/" data-nav style="--i:6">Open app</a>
+  <div class="menu-card" id="site-menu" role="dialog" aria-modal="true" aria-label="Menu" aria-hidden="true" inert>
+    <nav aria-label="Pages">
+      <a class="menu-row" href="/how-it-works/" data-nav><span class="menu-num" data-n></span><span class="menu-copy"><span class="menu-label">How it works</span><span class="menu-note">How the allowance, the wait and a cancel fit together.</span></span></a>
+      <a class="menu-row" href="/why/" data-nav><span class="menu-num" data-n></span><span class="menu-copy"><span class="menu-label">Why</span><span class="menu-note">Why the phone should not hold the whole balance.</span></span></a>
+      <a class="menu-row" href="/security/" data-nav><span class="menu-num" data-n></span><span class="menu-copy"><span class="menu-label">Security</span><span class="menu-note">What the vault stops, and what it cannot stop.</span></span></a>
+      <a class="menu-row" href="/guardians/" data-nav><span class="menu-num" data-n></span><span class="menu-copy"><span class="menu-label">Guardians</span><span class="menu-note">What a second person can and cannot do.</span></span></a>
+      <a class="menu-row" href="/demo/" data-nav><span class="menu-num" data-n></span><span class="menu-copy"><span class="menu-label">Demo</span><span class="menu-note">A guided look at the pretend-money demo.</span></span></a>
+      <a class="menu-row" href="/faq/" data-nav><span class="menu-num" data-n></span><span class="menu-copy"><span class="menu-label">FAQ</span><span class="menu-note">Short answers on cost, loss and duress.</span></span></a>
+      <a class="menu-row" href="/real/" data-nav><span class="menu-num" data-n></span><span class="menu-copy"><span class="menu-label">Open app</span><span class="menu-note">The real vault on mainnet or chipnet.</span></span></a>
     </nav>
+    <div class="menu-foot">
+      <a class="menu-chip" href="https://github.com/ohjay-official/holdfast" target="_blank" rel="noopener">GitHub<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 12L12 4M6 4h6v6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="sr">(opens in a new tab)</span></a>
+      <a class="menu-chip" href="https://x.com/Oh_Jay0" target="_blank" rel="noopener">X<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 12L12 4M6 4h6v6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="sr">(opens in a new tab)</span></a>
+      <a class="menu-chip" href="https://dorahacks.io/hackathon/bchblaze2026" target="_blank" rel="noopener">DoraHacks<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 12L12 4M6 4h6v6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="sr">(opens in a new tab)</span></a>
+    </div>
+    <a class="menu-cta" href="/app/" data-nav>Try the demo</a>
   </div>
 </header>
