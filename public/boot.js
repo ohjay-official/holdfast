@@ -11,7 +11,7 @@
     var bar = btn.closest('.judge-bar');
     var open = bar.classList.toggle('open');
     btn.setAttribute('aria-expanded', String(open));
-    btn.textContent = open ? 'Less' : 'More';
+    btn.textContent = open ? 'Less' : 'Before and after';
   });
   // Copy button in the judge banner on the apps (the marketing pages handle it in their own script).
   document.addEventListener('DOMContentLoaded', function () {

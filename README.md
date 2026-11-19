@@ -17,7 +17,7 @@ Whoever has your phone can make you send what the phone can spend, and a Bitcoin
 | [Demo](#try-it-in-5-steps) | 5 steps, pretend money, no wallet |
 | [Live site](#proof-its-real) | A browser |
 | [Real vault](#what-works-today) | Paytaca, and a little BCH or chipnet |
-| [Tests](#more-ways-to-test) | Node and npm, 115 tests |
+| [Tests](#more-ways-to-test) | Node and npm, 118 tests |
 | [How it was built](#built-during-bch-blaze-2026) | `git log --reverse` |
 
 ## Try It in 5 Steps
@@ -36,8 +36,8 @@ The words in bold are the words on the screen. The sample address is a demo addr
 
 - The rules are the contract [`contracts/Holdfast.cash`](contracts/Holdfast.cash) (`pragma cashscript ^0.14.0`).
 - [`test/vault.test.ts`](test/vault.test.ts) runs 17 contract tests through the Bitcoin Cash VM, plus one state-encoding test.
-- [`test/attacks.test.ts`](test/attacks.test.ts) replays every exploit from the 19 Nov security review as a test that must fail. The raw reviews are in [`docs/reviews/judges/`](docs/reviews/judges/).
-- `npm test` passes 115 tests (counted 19 Nov 2026).
+- [`test/attacks.test.ts`](test/attacks.test.ts) replays every contract exploit from the 19 Nov reviews as a test that must fail. The raw reviews are in [`docs/reviews/judges/`](docs/reviews/judges/).
+- `npm test` passes 118 tests (counted 19 Nov 2026).
 - The site is live: [hodlfast.vercel.app](https://hodlfast.vercel.app). The same proof list is on [Security](https://hodlfast.vercel.app/security/#proof).
 - A real vault was created from Paytaca on mainnet on 16 Nov 2026, and the later steps below were broadcast on 16 and 17 Nov 2026. These ran on **contract version 1** ([`contracts/HoldfastV1.cash`](contracts/HoldfastV1.cash)). The 19 Nov review found holes in it, so new vaults use **version 2** ([`contracts/Holdfast.cash`](contracts/Holdfast.cash)); the app still opens version 1 vaults. There has been no outside audit.
 
@@ -67,7 +67,7 @@ People already lose money this way. The [Why](https://hodlfast.vercel.app/why/) 
 
 ## How Bitcoin Cash Is Used
 
-- **CashScript 0.14 covenants.** [`contracts/Holdfast.cash`](contracts/Holdfast.cash) checks signatures, fixes its own outputs, and carries state in CashToken NFT commitments. Waits use `this.age` (a relative time lock), not a timestamp the spender picks. Phone spends and withdrawal starts count their fee (at most 2,500 sats) against the allowance; merges pay up to 4,000 from the coin merged in; release pays at most 2,000. `recover` and `evict` move everything and have no fee cap.
+- **CashScript 0.14 covenants.** [`contracts/Holdfast.cash`](contracts/Holdfast.cash) checks signatures, fixes its own outputs, and carries state in CashToken NFT commitments. Waits use `this.age` (a relative time lock), not a timestamp the spender picks. Phone spends, withdrawal starts, freezes, approvals and guardian-replacement starts all record their fee against the allowance (each capped, 2,500 or 3,500 sats); merges pay up to 4,000 from the coin merged in; release pays at most 2,000. `recover` and `evict` move everything and have no fee cap. With no guardian, `approveFast` is refused.
 - **libauth 3.1.0-next.8.** The real vault and the signing test use it for addresses, hashes, and transaction bytes (`src/vault.ts`, `src/real/core.ts`, `src/main.ts`).
 - **WizardConnect 0.2 and Paytaca.** [`src/real/wallet.ts`](src/real/wallet.ts) connects the real vault to Paytaca. The same path is what the pre-kickoff signing test used.
 - **In the repo, not in the vault app.** `contracts/SignTest.cash` and `contracts/CoSignTest.cash` are the chipnet signing tests, reached from [/signing-test/](https://hodlfast.vercel.app/signing-test/). Telegram alerts and a guardian-for-hire service are named on the [Why](https://hodlfast.vercel.app/why/) page as later work. There is no code that sends those alerts.
@@ -91,7 +91,7 @@ A bank can call a fraud team. Holdfast cannot. Bitcoin Cash that has already lef
 
 | Piece | State |
 | --- | --- |
-| Vault contract | Version 2 in the repo, with 17 VM contract tests and 11 attack tests. Version 1 kept for older vaults. No outside audit. |
+| Vault contract | Version 2 in the repo, with 17 VM contract tests and 14 attack tests. Version 1 kept for older vaults. No outside audit. |
 | Demo | Live at [/app/](https://hodlfast.vercel.app/app/). Pretend BCH in the browser. |
 | Real vault | Live at [/real/](https://hodlfast.vercel.app/real/). Paytaca on mainnet or chipnet. Mainnet steps in the table above. |
 | Signing test | Live at [/signing-test/](https://hodlfast.vercel.app/signing-test/). Five chipnet tests from before kickoff are listed on the [Security](https://hodlfast.vercel.app/security/#proof) page. |
@@ -102,14 +102,14 @@ A bank can call a fraud team. Holdfast cannot. Bitcoin Cash that has already lef
 ## More Ways to Test
 
 <details>
-<summary><strong>Run the tests (101 tests, Node and npm)</strong></summary>
+<summary><strong>Run the tests (118 tests, Node and npm)</strong></summary>
 
 ```bash
 npm install
 npm test
 ```
 
-Vitest should report `Tests  101 passed`.
+Vitest should report `Tests  118 passed`.
 
 </details>
 
@@ -178,6 +178,9 @@ What it cannot promise:
 - A freeze never stops `release`: a waiting withdrawal still leaves when its wait ends unless it's cancelled with `merge`. The real app's home-code and duress flows cancel every waiting withdrawal (`lockDown` in `src/real/core.ts`); after a guardian freeze, the guardian has to tap Cancel on each one.
 - If someone has both the phone and the home code, the contract cannot tell them from you. With a guardian they still need the guardian, or a week to replace them; with no guardian they need a full freeze and your normal wait.
 - The page you type your home code into is this website. Check the code, or run it yourself.
+- Starting and cancelling withdrawals in a loop can still burn a few times the daily allowance in network fees. It can't move money out.
+- The PIN protects the screen, not the money. With the browser's storage in hand, a 4 to 6 digit PIN can be guessed offline. The contract limits still hold.
+- Version 1 vaults (before 19 Nov) still have the holes the review found. The app tells their owners to move out.
 - There has been no outside audit.
 
 ## Security and What It Doesn't Promise

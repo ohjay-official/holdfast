@@ -401,10 +401,10 @@ function screenReceive(): string {
   return `${topbar('Receive', '/vault')}
   <main class="screen" id="main">
     ${flashBox()}
-    <p>Send BCH to this vault address. Deposits join the vault on its next action.</p>
-    <p class="addr-box"><code id="vault-addr">${S.VAULT_ADDRESS}</code></p>
+    <p>${decoy ? 'Send BCH to this address.' : 'Send BCH to this vault address. It shows as a deposit until you add it to the vault.'}</p>
+    <p class="addr-box"><code id="vault-addr">${decoy ? S.WALLET_ADDRESS : S.VAULT_ADDRESS}</code></p>
     <div class="stack"><button class="btn btn-line" data-copy="#vault-addr">Copy address</button>
-    <button class="btn btn-dark" data-act="deposit">Add 0.50 pretend BCH</button></div>
+    ${decoy ? '' : '<button class="btn btn-dark" data-act="deposit">Add 0.50 pretend BCH</button>'}</div>
     <p class="small muted">Demo address. Don't send real BCH to it.</p>
   </main>`;
 }

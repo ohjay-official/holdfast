@@ -247,11 +247,8 @@ td:first-child { font-family: var(--sans); font-weight: 600; }
 /* Judge bar inside the app: one compact row, the rest behind More */
 .judge-more { display: none; }
 .app-body .judge-bar { font-size: 0.8rem; }
-.app-body .judge-row { padding-top: 0.45rem; padding-bottom: 0.45rem; gap: 0.25rem 1rem; max-width: 30rem; }
-.app-body .judge-title { display: flex; align-items: center; gap: 0.6rem; width: 100%; }
-.app-body .judge-more { display: inline-block; margin-left: auto; font: 600 0.75rem var(--sans); background: transparent; color: #fff; border: 1px solid #56625c; border-radius: 3px; padding: 0.1rem 0.5rem; cursor: pointer; }
-.app-body .judge-grid > div:nth-child(3), .app-body .judge-vote { display: none; }
-.app-body .judge-bar.open .judge-grid > div:nth-child(3), .app-body .judge-bar.open .judge-vote { display: flex; }
+.app-body .judge-row { padding-top: 0.45rem; padding-bottom: 0.45rem; gap: 0.25rem 1rem; }
+.app-body .judge-title { display: flex; align-items: center; gap: 0.6rem; }
 
 /* ---------------- Dark pages (FAQ) ---------------- */
 .page-dark { background: var(--night); color: #eef1ec; }

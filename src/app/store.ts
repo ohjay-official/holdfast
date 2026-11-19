@@ -49,3 +49,5 @@ export function demoWords(): string[] {
 
 export const SAMPLE_ADDRESS = 'bitcoincash:qz8f3k4m9p2x7w6y5t0r3e2w1q9s8d7f6g5h4j3k2l';
 export const VAULT_ADDRESS = 'bitcoincash:pvh0ldf4st6demo0vau1t8x3k9m2p7q4w5e6r7t8y9';
+/** What the duress view shows under Receive: the phone wallet's own address, like an ordinary wallet. */
+export const WALLET_ADDRESS = 'bitcoincash:qr7demo0wa11et8x3k9m2p7q4w5e6r7t8y9u0i1o';
