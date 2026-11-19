@@ -25,11 +25,10 @@ table{border-collapse:collapse;width:100%}
 .lede{font-size:clamp(1.125rem,1.5vw,1.3125rem);line-height:1.6;color:var(--text-2);max-width:var(--measure)}
 .muted{color:var(--text-3)}
 .small{font-size:.875rem}
-.eyebrow{font-family:var(--mono);font-size:11.5px;font-weight:500;letter-spacing:.2em;text-transform:uppercase;color:var(--text-3);
+.eyebrow{font-family:var(--sans);font-size:.95rem;font-weight:600;letter-spacing:0;text-transform:none;color:var(--text-2);
   display:inline-flex;align-items:center;gap:.75rem;margin:0 0 1.5rem}
-.eyebrow::before{content:"";width:28px;height:1px;background:currentColor;opacity:.6}
 .eyebrow b{color:var(--green-glow);font-weight:600}
-em.accent,.accent{font-family:var(--serif);font-style:italic;font-weight:400;letter-spacing:-.02em;color:var(--green-glow)}
+em.accent,.accent{font-family:var(--sans);font-style:normal;font-weight:650;letter-spacing:-.02em;color:var(--green-glow)}
 .split{display:grid;gap:clamp(2rem,5vw,5rem);grid-template-columns:1fr}
 @media (min-width:980px){.split{grid-template-columns:minmax(0,5fr) minmax(0,7fr);align-items:start}}
 .prose{max-width:var(--measure);color:var(--text-2);font-size:1.125rem}

@@ -16,7 +16,6 @@ export function initNav() {
     el.style.setProperty('--i', String(i));
   });
 
-  const wide = () => matchMedia('(min-width: 1100px)').matches;
   let prevOverflow = '';
 
   const shut = () => {
@@ -36,7 +35,7 @@ export function initNav() {
   };
 
   const open = () => {
-    if (wide() || btn.getAttribute('aria-expanded') === 'true') return;
+    if (btn.getAttribute('aria-expanded') === 'true') return;
     prevOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     menu.removeAttribute('inert');
@@ -79,7 +78,4 @@ export function initNav() {
 
   menu.querySelectorAll('a').forEach((a) => a.addEventListener('click', () => close(false)));
   addEventListener('hashchange', () => close(false));
-  matchMedia('(min-width: 1100px)').addEventListener('change', (ev) => {
-    if (ev.matches) close(false);
-  });
 }
