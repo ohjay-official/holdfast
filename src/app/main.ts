@@ -101,17 +101,28 @@ function flashBox(): string {
   return `<p class="flash flash-${f.kind}" role="${f.kind === 'err' ? 'alert' : 'status'}">${esc(f.text)}</p>`;
 }
 
+/** One plain sentence on who still has to approve an unfreeze. */
+function unfreezeLine(need: string[], done: string[]): string {
+  const left = need.filter((n) => !done.includes(n));
+  const list = (xs: string[]) => (xs.length > 1 ? `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}` : xs[0]);
+  if (!left.length) return 'Everyone has approved.';
+  if (need.length === 1) return `To unfreeze, ${list(need)} approves.`;
+  if (!done.length) return `To unfreeze, ${list(need)} each approve.`;
+  const d = list(done);
+  return `${d[0].toUpperCase()}${d.slice(1)} approved. Waiting for ${list(left)}.`;
+}
+
 function frozenBox(v: M.VaultState, forRole: Role): string {
   if (!v.frozen) return '';
   void forRole;
   const by = { home: 'your home code', guardian: 'your guardian', panic: 'your duress PIN', phone: 'your phone' }[v.frozenBy ?? 'home'];
   const needs = M.unfreezeNeeds(v);
   const got = v.unfreezeBy;
-  const names = { home: 'Home code', guardian: 'Guardian', phone: 'Phone', panic: 'Panic key' };
+  const names = { home: 'your home code', guardian: 'your guardian', phone: 'your phone', panic: 'the panic key' };
   return `<div class="notice notice-frozen">
     <h2>Vault frozen</h2>
     <p>Frozen by ${by}. Nothing can leave until it's unfrozen${v.frozenBy === 'panic' ? ', except the daily allowance' : ''}.</p>
-    <p class="small">To unfreeze: ${needs.map((r) => `${names[r]} ${got.includes(r) ? '<b>approved</b>' : 'not yet'}`).join(', ')}.</p>
+    <p class="small">${unfreezeLine(needs.map((r) => names[r]), needs.filter((r) => got.includes(r)).map((r) => names[r]))}</p>
   </div>`;
 }
 
