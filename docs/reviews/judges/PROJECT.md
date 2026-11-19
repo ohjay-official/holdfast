@@ -3,14 +3,14 @@
 - **Name:** Holdfast
 - **One line: what it does and for whom:** A Bitcoin Cash vault a robber can't empty, for people whose phone can be taken by force. The phone can only spend a small daily allowance; anything bigger waits days in the open and can be cancelled with a 12-word home code kept off the phone, a duress PIN quietly freezes the vault, and an optional guardian can stop things but never send.
 - **Public repo:** https://github.com/ohjay-official/holdfast
-- **Commit under review:** 156e015 (branch main)
+- **Commit under review:** 50d2e2d (branch main)
 - **Live app or demo:**
   - Site: https://hodlfast.vercel.app (also https://holdfast-bch.vercel.app, same deployment)
   - No-wallet demo: https://hodlfast.vercel.app/app/#/quick (demo PINs 1234 normal, 9999 duress)
   - Real vault (mainnet, Paytaca over WizardConnect): https://hodlfast.vercel.app/real/
   - Kickoff snapshot: code at branch `nov14-start` (commit 03f53db), demo at https://holdfast-kickoff.vercel.app
   - Pitch deck: https://hodlfast.vercel.app/holdfast-deck.pdf
-- **Onchain or backend addresses:** Bitcoin Cash mainnet. Contract `contracts/Holdfast.cash` (CashScript 0.14); each vault is its own P2SH32 address. Mainnet transactions are listed in the README "Proof It's Real" section and on https://hodlfast.vercel.app/security/. Project fee / CashTokens payout address: bitcoincash:zrnwss6g79malz4lqtwf84ha5y3utm3t9uyhqakcg6. No backend: fully static site; the browser talks to public Electrum servers (bch.imaginary.cash, electrum.imaginary.cash, bch.loping.net, electroncash.de) and Nostr relays for WizardConnect.
+- **Onchain or backend addresses:** Bitcoin Cash mainnet. Contract `contracts/Holdfast.cash` (CashScript 0.14, version 2, from Nov 19); `contracts/HoldfastV1.cash` is version 1, kept so vaults made before Nov 19 still open. Each vault is its own P2SH32 address. The listed mainnet transactions (README "Proof It's Real", https://hodlfast.vercel.app/security/) ran on version 1; a version 2 mainnet run has not happened yet. Project fee / CashTokens payout address: bitcoincash:zrnwss6g79malz4lqtwf84ha5y3utm3t9uyhqakcg6. No backend: fully static site; the browser talks to public Electrum servers (bch.imaginary.cash, electrum.imaginary.cash, bch.loping.net, electroncash.de) and Nostr relays for WizardConnect.
 - **How a newcomer tries it:** README "Try It in 5 Steps" and "For judges" line at the top.
 - **Test access reviewers may use:** the no-wallet demo only. Do not create vaults or send anything on /real/.
 - **Where the public claims live:** README.md; every page of the live site (/, /how-it-works/, /why/, /security/, /guardians/, /demo/, /faq/, /under-the-hood/, /privacy/, /terms/, /app/, /real/, /signing-test/, 404); the judge banner on every page (partials/judge-bar.html); the pitch deck PDF; the demo video script (not public yet; video not recorded).

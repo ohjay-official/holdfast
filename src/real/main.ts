@@ -55,6 +55,20 @@ let saved = load();
 const pendingKey = () => `holdfast-real-pending-${net}`;
 const save = () => (saved ? localStorage.setItem(savedKey(), JSON.stringify(saved)) : localStorage.removeItem(savedKey()));
 
+// Vaults set aside on this phone (never deleted: the record holds the duress key and PINs).
+const shelfKey = () => `holdfast-real-shelf-${net}`;
+function shelf(): Saved[] {
+  try {
+    return JSON.parse(localStorage.getItem(shelfKey()) || '[]');
+  } catch {
+    return [];
+  }
+}
+function setShelf(list: Saved[]) {
+  localStorage.setItem(shelfKey(), JSON.stringify(list));
+}
+const vaultLabel = (r: Saved) => `${r.config.v === 1 ? 'Version 1' : 'Version 2'} vault, ${contractFor(r.config).address.slice(-8)}`;
+
 let provider = new FallbackNetworkProvider(net, HOSTS[net]);
 const wallet = new Wallet();
 
@@ -94,7 +108,8 @@ function addActivity(text: string, tx?: string) {
   }
 }
 
-const draft = { step: 1, allowance: '0.001', waitDays: 3, words: C.newHomeWords(), check: 4, guardianPk: '', pin: '', duress: '', amount: '' };
+const freshDraft = () => ({ step: 1, allowance: '0.001', waitDays: 3, words: C.newHomeWords(), check: 4, guardianPk: '', pin: '', duress: '', amount: '' });
+const draft = freshDraft();
 
 const app = document.getElementById('app')!;
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
@@ -619,6 +634,10 @@ function screenSettings(): string {
     <button class="btn btn-line" data-copy="#vault-code">Copy vault code</button>
     <h2 class="h-sm">This phone</h2>
     <div class="stack"><button class="btn btn-line" data-act="copy-log">Copy log for support</button><button class="btn btn-line" data-act="disconnect">Disconnect Paytaca</button></div>
+    <h2 class="h-sm">Vaults on this phone</h2>
+    <p class="small">This one is <b>${esc(vaultLabel(saved!))}</b>${c.v === 1 ? ', made before the Nov 19 contract fixes' : ''}. Starting a new vault sets this one aside on this phone. Nothing is deleted, and you can switch back here.</p>
+    <div class="stack">${shelf().map((r, i) => `<button class="btn btn-line" data-act="switch-vault" data-i="${i}">Switch to ${esc(vaultLabel(r))}</button>`).join('')}
+      <button class="btn btn-line" data-act="new-vault">Start a new vault</button></div>
   </main>`;
 }
 
@@ -860,6 +879,38 @@ app.addEventListener('click', async (e) => {
       }
       setStatus('err', 'Wrong PIN. Try again.');
       return render();
+    }
+    case 'new-vault': {
+      if (!saved) return;
+      setShelf([...shelf(), saved]);
+      log(`set aside ${vaultLabel(saved)}`);
+      saved = null;
+      save();
+      view = null;
+      unlocked = false;
+      decoy = false;
+      homeKey = null;
+      // A new vault gets new home words, never the last vault's.
+      Object.assign(draft, freshDraft());
+      setStatus('info', 'Your previous vault is set aside on this phone. Set up the new one.');
+      return go('/setup');
+    }
+    case 'switch-vault': {
+      const list = shelf();
+      const i = Number(el.dataset.i);
+      const next = list[i];
+      if (!next) return;
+      list.splice(i, 1);
+      if (saved) list.push(saved);
+      setShelf(list);
+      saved = next;
+      save();
+      view = null;
+      unlocked = false;
+      decoy = false;
+      homeKey = null;
+      log(`switched to ${vaultLabel(next)}`);
+      return go('/');
     }
     case 'lock':
       unlocked = false;
