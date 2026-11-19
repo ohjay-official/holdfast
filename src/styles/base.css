@@ -50,3 +50,4 @@ em.accent,.accent{font-family:var(--sans);font-style:normal;font-weight:650;lett
 .skip{position:absolute;left:1rem;top:-100px;z-index:100;background:var(--text);color:var(--bg);padding:.6rem 1rem;border-radius:var(--r-pill);
   font-family:var(--sans);font-weight:600;text-decoration:none}
 .skip:focus{top:1rem}
+html,body{overflow-x:clip}

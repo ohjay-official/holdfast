@@ -456,7 +456,7 @@ function screenSetup(): string {
   } else {
     body = `${head('Fund the vault', 'Paytaca will ask you to approve. If your coins are spread out, it asks twice: once to gather them, once to create the vault.')}
       <label class="field"><span>BCH to put in</span><input name="amount" inputmode="decimal" placeholder="0.001" value="${esc(d.amount)}"></label>
-      <p class="small">${walletSats === null ? 'Checking your Paytaca balance...' : `In Paytaca: <b>${bch(walletSats)}</b>. ${walletSats > C.CREATE_FEE + 20_000n ? `<button type="button" class="linkish" data-act="use-all">Use all I can</button>` : 'That is not enough yet: you need a little more than 0.0002 BCH.'}`}</p>
+      <p class="small">${walletSats === null ? 'Checking your Paytaca balance...' : `In Paytaca: <b>${bch(walletSats)}</b>. ${walletSats > C.CREATE_FEE + 20_000n ? `<button type="button" class="linkish" data-act="use-all">Use all I can</button>` : 'That is not enough yet: you need a little more than 0.0003 BCH.'}`}</p>
       <ul class="review">
         <li>Allowance <b>${esc(d.allowance)} BCH</b> a day, wait <b>${d.waitDays} ${d.waitDays === 1 ? 'day' : 'days'}</b>.</li>
         <li>${d.guardianPk ? 'Guardian key added.' : 'No guardian.'}</li>
@@ -614,7 +614,7 @@ function screenSettings(): string {
       <div><dt>Vault address</dt><dd class="addr">${contractFor(c).address}</dd></div>
     </dl>
     <h2 class="h-sm">Vault code</h2>
-    <p class="small">Your guardian needs this to act on your vault. With your home code, it also lets you cancel, freeze and move the vault from another phone if you lose this one. It contains no keys. Keep a copy with your home code.</p>
+    <p class="small">Your guardian needs this to act on your vault. With your home code, it also lets you cancel, freeze and move the vault from another phone if you lose this one. It contains no private keys. Keep a copy with your home code.</p>
     <p class="addr-box"><code id="vault-code">${code}</code></p>
     <button class="btn btn-line" data-copy="#vault-code">Copy vault code</button>
     <h2 class="h-sm">This phone</h2>

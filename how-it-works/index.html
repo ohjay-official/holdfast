@@ -112,8 +112,8 @@
       <li data-reveal><h3>Connect your wallet</h3><p>Open Holdfast and connect Paytaca with WizardConnect. Your wallet keeps its keys; Holdfast only asks it to sign.</p></li>
       <li data-reveal><h3>Choose an allowance</h3><p>The most anyone can spend from your phone in a day. Pick what you'd hand over without a fight.</p></li>
       <li data-reveal><h3>Choose the wait</h3><p>How long bigger withdrawals take: 1 to 7 days, 3 by default. Longer is safer, shorter is handier.</p></li>
-      <li data-reveal><h3>Write down your home code</h3><p>A second key, shown once as words to write on paper. Keep it at home, never on the phone.</p></li>
-      <li data-reveal><h3>Invite a guardian</h3><p>Optional but recommended. Send them a link; they connect their own wallet.</p></li>
+      <li data-reveal><h3>Write down your home code</h3><p>A second key, shown once as 12 words to write on paper. Keep the paper at home. It never goes into your wallet, and you type it in only when you need it.</p></li>
+      <li data-reveal><h3>Invite a guardian</h3><p>Optional but recommended. They open Holdfast, tap I'm someone's guardian, connect their own wallet and send you their guardian key.</p></li>
       <li data-reveal><h3>Set a duress PIN, then fund the vault</h3><p>Review the rules in plain words, then send BCH in. From here the contract enforces everything.</p></li>
     </ol>
   </div>
@@ -146,9 +146,9 @@
     <div class="sec-head"><h2 class="mask">The keys, and why there are several</h2></div>
     <div class="key-grid" data-stagger>
       <article class="key-card glass" data-reveal><div class="key-ico" aria-hidden="true"><svg viewBox="0 0 160 120" fill="none" stroke="#8fdcbb" stroke-width="1.6" aria-hidden="true"><rect x="58" y="14" width="44" height="88" rx="9"/><path d="M74 22h12"/><circle cx="80" cy="58" r="13"/><path d="M78 50v16M82 50v16"/><path d="M108 44a20 20 0 0 1 0 28"/><path d="M116 38a30 30 0 0 1 0 40"/><circle cx="124" cy="58" r="2.5" fill="#cf9136" stroke="none"/></svg></div><h3>Phone key</h3><p>Lives in your wallet. It's the key a robber gets, so the rules give it the least power: the allowance now, everything else only after the wait.</p></article>
-      <article class="key-card glass" data-reveal><div class="key-ico" aria-hidden="true"><svg viewBox="0 0 160 120" fill="none" stroke="#8fdcbb" stroke-width="1.6" aria-hidden="true"><path d="M48 18h50l14 14v70H48z"/><path d="M98 18v14h14"/><path d="M58 44h36M58 54h44M58 64h30M58 74h40M58 84h26"/><circle cx="118" cy="92" r="7"/><path d="M125 92h14M134 92v6"/></svg></div><h3>Home code</h3><p>A key that never touches the phone. It can stop anything the phone starts. Holdfast asks you to check it every 30 days, so you find out it's lost before you need it.</p></article>
+      <article class="key-card glass" data-reveal><div class="key-ico" aria-hidden="true"><svg viewBox="0 0 160 120" fill="none" stroke="#8fdcbb" stroke-width="1.6" aria-hidden="true"><path d="M48 18h50l14 14v70H48z"/><path d="M98 18v14h14"/><path d="M58 44h36M58 54h44M58 64h30M58 74h40M58 84h26"/><circle cx="118" cy="92" r="7"/><path d="M125 92h14M134 92v6"/></svg></div><h3>Home code</h3><p>A key you keep on paper, off your wallet. It can stop any withdrawal the phone starts and freeze the vault. The demo reminds you every 30 days to check your paper; the real vault doesn't yet.</p></article>
       <article class="key-card glass" data-reveal><div class="key-ico" aria-hidden="true"><svg viewBox="0 0 160 120" fill="none" stroke="#8fdcbb" stroke-width="1.6" aria-hidden="true"><circle cx="80" cy="40" r="12"/><path d="M56 92c0-16 11-26 24-26s24 10 24 26"/><path d="M112 50l12 5v8c0 8-5 13-12 16-7-3-12-8-12-16v-8z"/><path d="M107 62l4 4 7-8"/></svg></div><h3>Guardian</h3><p>A person with a key that can stop and approve, but never send money anywhere on their own. <a href="/guardians/">More on guardians</a>.</p></article>
-      <article class="key-card glass" data-reveal><div class="key-ico" aria-hidden="true"><svg viewBox="0 0 64 64" fill="none" stroke="#8fdcbb" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="32" cy="32" r="20"/><path d="M14 32h36M23 16.4l18 31.2M41 16.4l-18 31.2"/><path d="M14 32l4-3M14 32l4 3M50 32l-4-3M50 32l-4 3"/><path d="M23 16.4l4 2M23 16.4l1 4.5M41 47.6l-4-2M41 47.6l-1-4.5"/><path d="M41 16.4l-4 2M41 16.4l-1 4.5M23 47.6l4-2M23 47.6l1-4.5"/></svg></div><h3>Panic key and duress PIN</h3><p>The duress PIN opens a normal-looking vault and freezes the real one in the background. The panic key is the freeze it uses: it can freeze and nothing else.</p></article>
+      <article class="key-card glass" data-reveal><div class="key-ico" aria-hidden="true"><svg viewBox="0 0 64 64" fill="none" stroke="#8fdcbb" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="32" cy="32" r="20"/><path d="M14 32h36M23 16.4l18 31.2M41 16.4l-18 31.2"/><path d="M14 32l4-3M14 32l4 3M50 32l-4-3M50 32l-4 3"/><path d="M23 16.4l4 2M23 16.4l1 4.5M41 47.6l-4-2M41 47.6l-1-4.5"/><path d="M41 16.4l-4 2M41 16.4l-1 4.5M23 47.6l4-2M23 47.6l1-4.5"/></svg></div><h3>Panic key and duress PIN</h3><p>The duress PIN opens a normal-looking vault and freezes the real one in the background. The panic key is what it uses: it can freeze at duress level and pull waiting money back into the vault. It can't send anything out.</p></article>
     </div>
   </div>
 </section>
@@ -156,7 +156,7 @@
   <div class="wrap">
     <h2 class="mask">What Holdfast never does</h2>
     <p class="never-big" data-inview>It <span class="strike">never holds your keys</span>, <span class="strike">never runs a server that can move your money</span>, and <span class="strike">has no admin switch</span>.</p>
-    <p class="never-rest" data-reveal>If this website disappeared, the contract would still follow its rules, and your home code and guardian could still recover your BCH.</p>
+    <p class="never-rest" data-reveal>If this website disappeared, the contract would still follow its rules. With your vault code, home code and wallet, you can run the open-source app from GitHub and still cancel, freeze and recover.</p>
     <p data-reveal><a class="btn btn-ghost" href="/security/">Read the security page</a></p>
   </div>
 </section>

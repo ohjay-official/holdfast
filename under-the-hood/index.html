@@ -91,8 +91,8 @@
     <div class="key-grid" data-stagger>
       <article class="key-card glass" data-reveal><p class="card-idx mono">A</p><h3>Approvals one signer at a time</h3><p>Unfreezing needs two people, but they never have to sign the same transaction. Each approval is its own spend that flips one flag. Your guardian approves from their own phone, whenever they're free.</p></article>
       <article class="key-card glass" data-reveal><p class="card-idx mono">B</p><h3>Time from coin age, not the clock</h3><p>Waits use relative time locks on each withdrawal coin. Nothing depends on a timestamp the spender could choose.</p></article>
-      <article class="key-card glass" data-reveal><p class="card-idx mono">C</p><h3>No admin key</h3><p>No function lets Holdfast, or anyone outside your keys, move or freeze your coins. If this site disappears, the contract still works with your wallet.</p></article>
-      <article class="key-card glass" data-reveal><p class="card-idx mono">D</p><h3>Fees come from the vault</h3><p>Every spend caps its own fee (2,500 sats, or 4,000 for a two-coin merge), so your wallet only ever signs. It never has to add coins to pay.</p></article>
+      <article class="key-card glass" data-reveal><p class="card-idx mono">C</p><h3>No admin key</h3><p>No function lets Holdfast, or anyone outside your keys, move or freeze your coins. If this site disappears, the open-source app from GitHub can still drive the contract with your vault code, home code and wallet.</p></article>
+      <article class="key-card glass" data-reveal><p class="card-idx mono">D</p><h3>Fees come from the vault</h3><p>Your wallet only ever signs; it never adds coins to pay. Phone spends and withdrawal starts count their fee against the daily allowance. Merges pay from the coin being merged. Freeze and approve fees are capped at 2,500 sats, release at 2,000, and starting a guardian replacement at 3,500. Recovery and guardian removal move everything, so they have no cap.</p></article>
     </div>
   </div>
 </section>
@@ -100,15 +100,19 @@
   <div class="wrap">
     <div class="sec-head">
       <h2 class="mask">Tests that try to break it</h2>
-      <p class="lede" data-reveal><span data-count="18">18</span> contract tests run every function through the Bitcoin Cash VM on CashScript's mock network, including the wrong keys, the wrong amounts and the wrong timing. Three are attacks found while reviewing the design:</p>
+      <p class="lede" data-reveal>Contract tests run every function through the Bitcoin Cash VM on CashScript's mock network, including the wrong keys, the wrong amounts and the wrong timing. Three attacks were found while reviewing the design; an independent security review on Nov 19 found more in that first contract, and version 2 blocks every one of them. Each is a test that must fail:</p>
     </div>
     <ul class="attacks" data-stagger>
-      <li class="glass glass--taken" data-reveal data-inview><span class="atk mono" aria-hidden="true">Attack</span><span class="blk mono" aria-hidden="true">Blocked</span><p>Minting a second, fake vault coin during an allowance spend. Blocked: every spend fixes its outputs exactly.</p></li>
+      <li class="glass glass--taken" data-reveal data-inview><span class="atk mono" aria-hidden="true">Attack</span><span class="blk mono" aria-hidden="true">Blocked</span><p>Minting a second, fake vault coin during an allowance spend. Blocked: an allowance spend must have exactly two outputs, the payment must equal the amount, and it can't carry a token.</p></li>
       <li class="glass glass--taken" data-reveal data-inview><span class="atk mono" aria-hidden="true">Attack</span><span class="blk mono" aria-hidden="true">Blocked</span><p>Keeping a released withdrawal's NFT alive to fake a fast withdrawal. Blocked: release burns it.</p></li>
-      <li class="glass glass--taken" data-reveal data-inview><span class="atk mono" aria-hidden="true">Attack</span><span class="blk mono" aria-hidden="true">Blocked</span><p>Skipping the 7-day ticket check by spending the ticket as a merge. Blocked: a merge can only go back into the vault.</p></li>
+      <li class="glass glass--taken" data-reveal data-inview><span class="atk mono" aria-hidden="true">Attack</span><span class="blk mono" aria-hidden="true">Blocked</span><p>Skipping the 7-day ticket check by spending the ticket as a merge. Blocked: a merge can only go back into the vault, with the vault's state and value unchanged.</p></li>
+      <li class="glass glass--taken" data-reveal data-inview><span class="atk mono" aria-hidden="true">Attack</span><span class="blk mono" aria-hidden="true">Blocked</span><p>Paying out more than the allowance by hiding it in the fee. Blocked (Nov 19 review): the payment must equal the amount, and the payment plus its fee count against the allowance.</p></li>
+      <li class="glass glass--taken" data-reveal data-inview><span class="atk mono" aria-hidden="true">Attack</span><span class="blk mono" aria-hidden="true">Blocked</span><p>Burning a frozen vault to fees with merges or repeated approvals. Blocked (Nov 19 review): merges pay from the coin merged in, the phone can't touch a fully frozen vault, and every approval must change something.</p></li>
+      <li class="glass glass--taken" data-reveal data-inview><span class="atk mono" aria-hidden="true">Attack</span><span class="blk mono" aria-hidden="true">Blocked</span><p>A guardian destroying the replacement ticket so they can never be removed. Blocked (Nov 19 review): only the home code can merge a ticket.</p></li>
+      <li class="glass glass--taken" data-reveal data-inview><span class="atk mono" aria-hidden="true">Attack</span><span class="blk mono" aria-hidden="true">Blocked</span><p>Emptying a no-guardian vault on the spot with a forced home code. Blocked (Nov 19 review): it needs a full freeze and the normal wait first.</p></li>
     </ul>
     <p data-reveal style="margin-top:2rem"><span class="pill pill-held">Not yet done</span> <span class="muted">Not yet done: an outside audit.</span></p>
-    <p data-reveal>Read <a href="https://github.com/ohjay-official/holdfast/blob/main/contracts/Holdfast.cash" rel="noopener">the contract</a>, read <a href="https://github.com/ohjay-official/holdfast/blob/main/test/vault.test.ts" rel="noopener">the tests</a>.</p>
+    <p data-reveal>Read <a href="https://github.com/ohjay-official/holdfast/blob/main/contracts/Holdfast.cash" rel="noopener">the contract</a>, read <a href="https://github.com/ohjay-official/holdfast/blob/main/test/vault.test.ts" rel="noopener">the tests</a> and <a href="https://github.com/ohjay-official/holdfast/blob/main/test/attacks.test.ts" rel="noopener">the attack tests</a>, and <a href="https://github.com/ohjay-official/holdfast/tree/main/docs/reviews/judges" rel="noopener">the Nov 19 review</a>.</p>
   </div>
 </section>
     </main>

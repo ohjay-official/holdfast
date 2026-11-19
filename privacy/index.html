@@ -43,11 +43,11 @@
     <li><a href="#reading-the-blockchain">Reading the blockchain</a></li><li><a href="#wallet-connection">Wallet connection</a></li>
     <li><a href="#hosting">Hosting</a></li><li><a href="#visitor-counts">Visitor counts</a></li><li><a href="#questions">Questions</a></li></ol></nav>
   <article class="doc" data-reveal="fade">
-    <p class="updated">Last updated Nov 17, 2026.</p>
+    <p class="updated">Last updated Nov 19, 2026.</p>
     <h2 id="on-your-device">On your device</h2>
-    <p>The app keeps its working data in your browser's local storage: your vault's settings, its recent activity and a support log, and on the signing test page, your test results and a log. It never leaves your device unless you send it. Clearing your browser data removes it.</p>
+    <p>The app keeps its working data in your browser's local storage: your vault's settings and public keys, the duress key it freezes with, your two PINs stored as slow-hashed slots, your wallet connection, recent activity and a support log. The signing test page also keeps a throwaway chipnet test key and your results. None of it leaves your device unless you send it, but anyone who can open this browser's storage can read it. Clearing your browser data removes it.</p>
     <h2 id="on-bitcoin-cash">On Bitcoin Cash</h2>
-    <p>Every vault action is a transaction on a public blockchain. Anyone can see the vault's address, its balance and its history. That's how Bitcoin Cash works, and nobody, including us, can hide or remove it.</p>
+    <p>Every vault action is a transaction on a public blockchain. Anyone can see the vault's address, its balance and its history. Every vault pays its creation fee to the same project address, so anyone can list Holdfast vaults and their balances. Once a vault has been spent from, its contract shows all its public keys, including the guardian's, which is the guardian wallet's first receive key. That's how Bitcoin Cash works, and nobody, including us, can hide or remove it.</p>
     <h2 id="reading-the-blockchain">Reading the blockchain</h2>
     <p>To show balances and waits, the app asks public Bitcoin Cash servers (on mainnet bch.imaginary.cash, electrum.imaginary.cash, bch.loping.net and electroncash.de; on chipnet chipnet.bch.ninja and chipnet.imaginary.cash) about your vault's address and your wallet's addresses. Like any website, they see your IP address and which addresses you asked about. We don't run them.</p>
     <h2 id="wallet-connection">Wallet connection</h2>

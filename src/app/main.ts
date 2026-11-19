@@ -244,7 +244,7 @@ function screenNew(): string {
     body = `${head('Add a guardian', 'Someone you trust to cancel and freeze. They can never send your money anywhere. In the demo, you play them too.')}
       <label class="field"><span>Guardian's name</span>
         <input name="guardian" autocomplete="off" value="${esc(d.guardian)}" maxlength="24"></label>
-      <p class="small muted">In the real app they get an invite link and connect their own wallet.</p>`;
+      <p class="small muted">In the real app they open Holdfast, tap I'm someone's guardian, connect their own wallet and send you their guardian key.</p>`;
   } else if (d.step === 5) {
     body = `${head('Set your PINs', 'Your PIN opens the app. Your duress PIN opens a version that shows only the allowance, and quietly freezes everything else.')}
       <label class="field"><span>PIN</span><input name="pin" inputmode="numeric" pattern="[0-9]{4,6}" autocomplete="off" value="${esc(d.pin)}" required></label>

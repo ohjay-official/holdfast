@@ -17,7 +17,7 @@ Whoever has your phone can make you send what the phone can spend, and a Bitcoin
 | [Demo](#try-it-in-5-steps) | 5 steps, pretend money, no wallet |
 | [Live site](#proof-its-real) | A browser |
 | [Real vault](#what-works-today) | Paytaca, and a little BCH or chipnet |
-| [Tests](#more-ways-to-test) | Node and npm, 101 tests |
+| [Tests](#more-ways-to-test) | Node and npm, 115 tests |
 | [How it was built](#built-during-bch-blaze-2026) | `git log --reverse` |
 
 ## Try It in 5 Steps
@@ -35,16 +35,18 @@ The words in bold are the words on the screen. The sample address is a demo addr
 ## Proof It's Real
 
 - The rules are the contract [`contracts/Holdfast.cash`](contracts/Holdfast.cash) (`pragma cashscript ^0.14.0`).
-- [`test/vault.test.ts`](test/vault.test.ts) runs 18 contract tests through the Bitcoin Cash VM, including three attacks named in that file.
-- `npm test` passes 101 tests (counted 18 Nov 2026 on this commit).
+- [`test/vault.test.ts`](test/vault.test.ts) runs 17 contract tests through the Bitcoin Cash VM, plus one state-encoding test.
+- [`test/attacks.test.ts`](test/attacks.test.ts) replays every exploit from the 19 Nov security review as a test that must fail. The raw reviews are in [`docs/reviews/judges/`](docs/reviews/judges/).
+- `npm test` passes 115 tests (counted 19 Nov 2026).
 - The site is live: [hodlfast.vercel.app](https://hodlfast.vercel.app). The same proof list is on [Security](https://hodlfast.vercel.app/security/#proof).
-- A real vault was created from Paytaca on mainnet on 16 Nov 2026, and the later steps below were broadcast on 16 and 17 Nov 2026. There has been no outside audit.
+- A real vault was created from Paytaca on mainnet on 16 Nov 2026, and the later steps below were broadcast on 16 and 17 Nov 2026. These ran on **contract version 1** ([`contracts/HoldfastV1.cash`](contracts/HoldfastV1.cash)). The 19 Nov review found holes in it, so new vaults use **version 2** ([`contracts/Holdfast.cash`](contracts/Holdfast.cash)); the app still opens version 1 vaults. There has been no outside audit.
 
 | Step | Transaction |
 | --- | --- |
 | Vault created from Paytaca over WizardConnect (0.003 BCH in, 0.0001 fee) | [5d4e7cac](https://blockchair.com/bitcoin-cash/transaction/5d4e7cac3a9beca6235ef74a7bae37f239b78980a4b0d6b4f77f207cf329d519) |
 | Phone spends within the allowance (0.0001), signed in Paytaca | [1243b504](https://blockchair.com/bitcoin-cash/transaction/1243b5043acc0dd0e8fb191c1af48e3fd3bdba25e840b8dc32d9f6c603686105) |
 | Phone starts a bigger withdrawal (0.001): it must wait 1 day | [af31478b](https://blockchair.com/bitcoin-cash/transaction/af31478b5f9e91733e2684687f6d8fc51bb413a9c4d9d371b908aace1004fd2c) |
+| Phone starts a second withdrawal (0.0005), the one cancelled below | [08f8538e](https://blockchair.com/bitcoin-cash/transaction/08f8538e8661d8af2598b6a8373f7203940fe65be1ff4a982f0c8350f8c49926) |
 | Home code cancels a waiting withdrawal (0.0005) with no wallet involved | [fdec605d](https://blockchair.com/bitcoin-cash/transaction/fdec605dc778aa35902fcd7f60fc7b7e94e4bee79012ab3a742445a9f710741b) |
 | After the wait, the withdrawal is released (0.00098 to the recipient, 2,000 sat fee), no wallet signature needed | [ba9ee1e9](https://blockchair.com/bitcoin-cash/transaction/ba9ee1e9121da03a31e2b8e5b35ddc5c8da00129272893437cd61886a0fe2495) |
 | Home code freezes the vault | [4acd7c88](https://blockchair.com/bitcoin-cash/transaction/4acd7c88e0eb056e54733920a75f2c397fe42ad2a10876379f87ace0c404c15b) |
@@ -56,16 +58,16 @@ The words in bold are the words on the screen. The sample address is a demo addr
 
 **A real PIN does not let the phone empty the vault.**
 
-- **The phone can spend only the allowance in the current window.** `spend` in the contract requires `spent + amount <= allowance`, and `int(level) < 2`.
-- **Anything bigger becomes a waiting withdrawal on the same address.** `startWithdrawal` mints that coin. `release` pays only the recorded recipient, and only after `this.age >= waitBlocks`.
-- **A home code or a guardian can cancel. Neither can take the money alone.** Cancel is `merge`. Moving the whole vault is `recover`, and that needs both recovery flags. With no guardian, the contract sets both flags from the home code alone (`guardianPk == homePk`).
-- **A duress key can freeze without blocking the allowance.** `freeze` with the panic key sets level 1. Level 2, from the home code or a guardian, blocks spends and new withdrawals. Level 2 does not stop `release` on a withdrawal whose wait is already over.
+- **The phone can spend only the allowance in the current window, fees included.** `spend` requires the payment to equal `amount`, and counts what leaves the vault (payment plus fee) against the allowance: `spent + used <= allowance`, with `int(level) < 2`.
+- **Anything bigger becomes a waiting withdrawal on the same address.** `startWithdrawal` mints that coin and counts its fee against the allowance. `release` pays only the recorded recipient, and only after `this.age >= waitBlocks`.
+- **A home code or a guardian can cancel. Neither can quietly take the money.** Cancel is `merge`. Moving the whole vault is `recover`: it needs a full freeze and both recovery flags. With no guardian (`guardianPk == homePk`) the home code sets both flags alone, so `recover` also needs the vault coin to be `waitBlocks` old.
+- **A duress key can freeze without blocking the allowance.** `freeze` with the panic key sets level 1. Level 2, from the home code or a guardian, blocks spends, new withdrawals and phone or panic merges. No freeze stops `release` on a withdrawal whose wait is over, so the app's home-code and duress flows cancel every waiting withdrawal.
 
-People already lose money this way. The [Why](https://hodlfast.vercel.app/why/) page states two sourced figures. One is ₦2.6 million from a bank app after a robbery at gunpoint in September 2025 ([WeeTracker](https://weetracker.com/2025/10/07/panic-mode-banking-nigeria-duress-features); the link path is dated 7 Oct 2025). The other is 72 verified "wrench attacks" in 2025, up 75% on 2024 ([Decrypt](https://decrypt.co/356604/41m-in-losses-as-crypto-wrench-attacks-hit-record-high-in-2025)). A day-level date for the Decrypt piece is not in this repo.
+People already lose money this way. The [Why](https://hodlfast.vercel.app/why/) page states two sourced figures. One is ₦2.6 million from a bank app after a robbery at gunpoint in September 2025 ([WeeTracker](https://weetracker.com/2025/10/07/panic-mode-banking-nigeria-duress-features); the link path is dated 7 Oct 2025). The other is 72 verified "wrench attacks" in 2025, up 75% on 2024 ([Decrypt](https://decrypt.co/356604/41m-in-losses-as-crypto-wrench-attacks-hit-record-high-in-2025), 2 Feb 2026).
 
 ## How Bitcoin Cash Is Used
 
-- **CashScript 0.14 covenants.** [`contracts/Holdfast.cash`](contracts/Holdfast.cash) checks signatures, fixes its own outputs, and carries state in CashToken NFT commitments. Waits use `this.age` (a relative time lock), not a timestamp the spender picks. The contract allows at most 2,500 sats of fee on a spend, and 4,000 on a merge.
+- **CashScript 0.14 covenants.** [`contracts/Holdfast.cash`](contracts/Holdfast.cash) checks signatures, fixes its own outputs, and carries state in CashToken NFT commitments. Waits use `this.age` (a relative time lock), not a timestamp the spender picks. Phone spends and withdrawal starts count their fee (at most 2,500 sats) against the allowance; merges pay up to 4,000 from the coin merged in; release pays at most 2,000. `recover` and `evict` move everything and have no fee cap.
 - **libauth 3.1.0-next.8.** The real vault and the signing test use it for addresses, hashes, and transaction bytes (`src/vault.ts`, `src/real/core.ts`, `src/main.ts`).
 - **WizardConnect 0.2 and Paytaca.** [`src/real/wallet.ts`](src/real/wallet.ts) connects the real vault to Paytaca. The same path is what the pre-kickoff signing test used.
 - **In the repo, not in the vault app.** `contracts/SignTest.cash` and `contracts/CoSignTest.cash` are the chipnet signing tests, reached from [/signing-test/](https://hodlfast.vercel.app/signing-test/). Telegram alerts and a guardian-for-hire service are named on the [Why](https://hodlfast.vercel.app/why/) page as later work. There is no code that sends those alerts.
@@ -80,8 +82,8 @@ Our row is first. A cell says Not stated when this repo does not give the date o
 | --- | --- | --- | --- |
 | Holdfast | The daily allowance now. The rest waits and can be cancelled. | [Contract](contracts/Holdfast.cash) and the [mainnet list](#proof-its-real) | 16 and 17 Nov 2026 |
 | Kuda Panic Balance | Not stated here. The Why page says it shows a lower balance when you shake the phone, and that money still moves if they make you send it. | [Kuda help](https://help.kuda.com/en/articles/8943120-use-private-mode) | Not stated |
-| Discovery Bank panic PIN | Not stated here. The Why page says a panic PIN alerts its fraud team. | [TechCentral](https://techcentral.co.za/discovery-bank-panic-code-app-kidnappings/261422/) | Not stated |
-| Deus Wallet duress mode | Not stated here. The Why page says duress mode opens a decoy account. | [Decrypt](https://decrypt.co/297742/deus-wallet-introduces-duress-mode-the-revolutionary-solution-for-cryptocurrency-security) | Not stated |
+| Discovery Bank panic PIN | Not stated here. The Why page says a panic PIN alerts its fraud team. | [TechCentral](https://techcentral.co.za/discovery-bank-panic-code-app-kidnappings/261422/) | 27 Mar 2025 |
+| Deus Wallet duress mode | Not stated here. The Why page says duress mode opens a decoy account. | [Chainwire press release on Decrypt](https://decrypt.co/297742/deus-wallet-introduces-duress-mode-the-revolutionary-solution-for-cryptocurrency-security) | 19 Dec 2024 |
 
 A bank can call a fraud team. Holdfast cannot. Bitcoin Cash that has already left, including the allowance, is gone. The [Security](https://hodlfast.vercel.app/security/) page says that in those words.
 
@@ -89,7 +91,7 @@ A bank can call a fraud team. Holdfast cannot. Bitcoin Cash that has already lef
 
 | Piece | State |
 | --- | --- |
-| Vault contract | In the repo. 18 contract tests. No outside audit. |
+| Vault contract | Version 2 in the repo, with 17 VM contract tests and 11 attack tests. Version 1 kept for older vaults. No outside audit. |
 | Demo | Live at [/app/](https://hodlfast.vercel.app/app/). Pretend BCH in the browser. |
 | Real vault | Live at [/real/](https://hodlfast.vercel.app/real/). Paytaca on mainnet or chipnet. Mainnet steps in the table above. |
 | Signing test | Live at [/signing-test/](https://hodlfast.vercel.app/signing-test/). Five chipnet tests from before kickoff are listed on the [Security](https://hodlfast.vercel.app/security/#proof) page. |
@@ -165,16 +167,17 @@ Shots of the live site on 18 Nov 2026. The in-app shots are the demo, which uses
 1. You open the demo, or you connect Paytaca and create a real vault.
 2. You pick a daily allowance and a wait from 1 to 7 days.
 3. You write down a 12-word home code. A guardian is optional. With no guardian, the home code fills the guardian's role.
-4. The phone spends up to the allowance immediately (`spend`, or `spendFresh` after the refill age).
+4. The phone spends up to the allowance immediately (`spend`, with `fresh` after the refill age). Each spend's fee counts against the allowance.
 5. A larger send starts a waiting withdrawal. When the wait is over, anyone can release it to the saved recipient. No new signature is required for `release`.
 6. The home code or a guardian can cancel that withdrawal (`merge`) or freeze the vault coin.
-7. Unfreezing or moving everything needs the home code and the guardian. One home-code approval does both jobs when there is no guardian.
+7. Unfreezing needs the home code and the guardian. Moving everything also needs a full freeze. With no guardian one home-code approval does both jobs, and moving everything also waits the normal wait.
 
 What it cannot promise:
 
 - It cannot reverse Bitcoin Cash that has already left, including the allowance.
-- A freeze of the vault coin does not, by itself, stop `release` on a withdrawal whose wait is already over. The real app's home-code and duress flows also cancel waiting withdrawals (`lockDown` in `src/real/core.ts`). A guardian-only freeze is the freeze function, not that whole flow.
-- If someone has both the phone and the home code, the contract cannot tell them from you.
+- A freeze never stops `release`: a waiting withdrawal still leaves when its wait ends unless it's cancelled with `merge`. The real app's home-code and duress flows cancel every waiting withdrawal (`lockDown` in `src/real/core.ts`); after a guardian freeze, the guardian has to tap Cancel on each one.
+- If someone has both the phone and the home code, the contract cannot tell them from you. With a guardian they still need the guardian, or a week to replace them; with no guardian they need a full freeze and your normal wait.
+- The page you type your home code into is this website. Check the code, or run it yourself.
 - There has been no outside audit.
 
 ## Security and What It Doesn't Promise
@@ -185,9 +188,9 @@ The short version is the list in [What It Does](#what-it-does). Read that page b
 
 ## Privacy
 
-The live [Privacy](https://hodlfast.vercel.app/privacy/) page is the current note (last updated 17 Nov 2026 on that page).
+The live [Privacy](https://hodlfast.vercel.app/privacy/) page is the current note (last updated 19 Nov 2026 on that page).
 
-The app keeps vault settings in the browser. Vault actions are public Bitcoin Cash transactions. The real app reads public Electrum servers named on that page. WizardConnect uses public Nostr relays. The site is hosted on Vercel. Fonts are files from this site.
+The app keeps vault settings, the duress key and slow-hashed PINs in the browser. Vault actions are public Bitcoin Cash transactions, and every vault pays its creation fee to one project address, so vaults can be listed. The real app reads public Electrum servers named on that page. WizardConnect uses public Nostr relays. The site is hosted on Vercel, and Vercel Web Analytics counts page views without cookies. Fonts are files from this site.
 
 ## Run Your Own
 
@@ -225,7 +228,7 @@ git log --reverse --format='%h %ad %s' --date=format:'%Y-%m-%d %H:%M %z'
 ```
 
 <details>
-<summary><strong>What landed each day (42 commits, Lagos dates)</strong></summary>
+<summary><strong>What landed each day (Lagos dates)</strong></summary>
 
 - **11 Nov:** WizardConnect signing test on chipnet, including a two-signer spend.
 - **14 Nov:** Public site, demo app, and the vault contract with its first 18 tests.
@@ -233,10 +236,11 @@ git log --reverse --format='%h %ad %s' --date=format:'%Y-%m-%d %H:%M %z'
 - **16 Nov:** First mainnet vault, the allowance spend, a waiting withdrawal, a home-code cancel, and PIN-length fixes.
 - **17 Nov:** More tests, docs aligned with the contract, home code on a new phone with the vault code, and the PIN redraw fix.
 - **18 Nov:** Repeated-digit PIN fix, the Nov 17 mainnet transactions written into the docs, and the Night Vault site.
+- **19 Nov:** Three independent reviews (cold judge, security, claims). Contract version 2 closes every contract hole they found, with an attack test for each; app fixes for the duress view, server checks, PIN storage and security headers; public wording matched to the code.
 
 </details>
 
-Code, tests, and docs were written with AI (Claude and Grok Bot), directed by Oh-Jay. Oh-Jay made the product decisions and did every wallet step and every real-money test.
+Code, tests and docs were written with AI tools (Claude, Grok Bot and Cursor Agent), directed by Oh-Jay. Oh-Jay made the product decisions and did every wallet step and every real-money test.
 
 Libraries from `package-lock.json` on this commit:
 

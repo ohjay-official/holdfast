@@ -61,10 +61,10 @@
           <tr><td>You're robbed and forced to send</td><td data-label="What they can take"><span class="pill pill-taken">The allowance</span></td><td data-label="What you do">Cancel the withdrawal from home, or have your guardian cancel it. Then freeze.</td></tr>
           <tr><td>They make you open the app</td><td data-label="What they can take"><span class="pill pill-taken">The allowance</span></td><td data-label="What you do">Type your duress PIN. The vault freezes quietly while the screen looks normal.</td></tr>
           <tr><td>Your phone is stolen</td><td data-label="What they can take"><span class="pill pill-taken">The allowance, if they get past your lock</span></td><td data-label="What you do">Freeze with your home code or guardian, then recover to a new phone.</td></tr>
-          <tr><td>You lose your phone</td><td data-label="What they can take"><span class="pill pill-safe">Nothing</span></td><td data-label="What you do">On the real vault page, tap "Lost your phone? Use your home code" and enter your vault code and home code. Recover with your home code and guardian, or the home code alone if you have no guardian.</td></tr>
-          <tr><td>You lose your home code</td><td data-label="What they can take"><span class="pill pill-safe">Nothing</span></td><td data-label="What you do">Your phone can still withdraw with the normal wait. Withdraw everything into a new vault.</td></tr>
+          <tr><td>You lose your phone</td><td data-label="What they can take"><span class="pill pill-safe">Nothing</span></td><td data-label="What you do">On the real vault page, tap "Lost your phone? Use your home code" and enter your vault code and home code. Freeze fully, then recover with your home code and guardian. With no guardian, the home code alone recovers once the vault has been fully frozen for your normal wait.</td></tr>
+          <tr><td>You lose your home code</td><td data-label="What they can take"><span class="pill pill-safe">Nothing</span></td><td data-label="What you do">If the vault isn't frozen, your phone can still withdraw with the normal wait: move everything into a new vault. If it is frozen when you lose the home code, the BCH stays locked.</td></tr>
           <tr><td>A guardian turns on you</td><td data-label="What they can take"><span class="pill pill-safe">Nothing</span></td><td data-label="What you do">They can freeze or cancel, but not send. Remove them with phone and home code.</td></tr>
-          <tr><td>This website goes away</td><td data-label="What they can take"><span class="pill pill-safe">Nothing</span></td><td data-label="What you do">The contract is on Bitcoin Cash. Your wallet and keys still work with it.</td></tr>
+          <tr><td>This website goes away</td><td data-label="What they can take"><span class="pill pill-safe">Nothing</span></td><td data-label="What you do">The contract keeps its rules on Bitcoin Cash. With your vault code, home code and wallet, run the open-source app from GitHub to cancel, freeze and recover.</td></tr>
         </tbody>
       </table>
     </div>
@@ -110,7 +110,7 @@
     </div>
 
     <h3 class="ledger-h" data-reveal><span class="pill pill-safe">Mainnet</span> After kickoff: live on mainnet</h3>
-    <p class="muted" data-reveal>The real vault contract, run on Bitcoin Cash mainnet on Nov 16 and 17 with Paytaca on one phone.</p>
+    <p class="muted" data-reveal>The real vault, run on Bitcoin Cash mainnet on Nov 16 and 17 with Paytaca on one phone. These ran on contract version 1. A security review on Nov 19 found holes in it, so new vaults use the fixed version 2; this phone run is being repeated on it.</p>
     <div class="table ledger" data-reveal>
       <table>
         <thead><tr><th>Step</th><th>Transaction</th></tr></thead>
@@ -118,6 +118,7 @@
           <tr><td>Vault created from Paytaca over WizardConnect (0.003 BCH in, 0.0001 fee)</td><td data-label="Transaction"><a class="hash" href="https://blockchair.com/bitcoin-cash/transaction/5d4e7cac3a9beca6235ef74a7bae37f239b78980a4b0d6b4f77f207cf329d519" rel="noopener">5d4e7cac</a></td></tr>
           <tr><td>Phone spends within the allowance (0.0001), signed in Paytaca</td><td data-label="Transaction"><a class="hash" href="https://blockchair.com/bitcoin-cash/transaction/1243b5043acc0dd0e8fb191c1af48e3fd3bdba25e840b8dc32d9f6c603686105" rel="noopener">1243b504</a></td></tr>
           <tr><td>Phone starts a bigger withdrawal (0.001): it must wait 1 day</td><td data-label="Transaction"><a class="hash" href="https://blockchair.com/bitcoin-cash/transaction/af31478b5f9e91733e2684687f6d8fc51bb413a9c4d9d371b908aace1004fd2c" rel="noopener">af31478b</a></td></tr>
+          <tr><td>Phone starts a second withdrawal (0.0005), the one cancelled below</td><td data-label="Transaction"><a class="hash" href="https://blockchair.com/bitcoin-cash/transaction/08f8538e8661d8af2598b6a8373f7203940fe65be1ff4a982f0c8350f8c49926" rel="noopener">08f8538e</a></td></tr>
           <tr><td>Home code cancels a waiting withdrawal (0.0005) with no wallet involved</td><td data-label="Transaction"><a class="hash" href="https://blockchair.com/bitcoin-cash/transaction/fdec605dc778aa35902fcd7f60fc7b7e94e4bee79012ab3a742445a9f710741b" rel="noopener">fdec605d</a></td></tr>
           <tr><td>After the wait, the withdrawal is released (0.00098 to the recipient, 2,000 sat fee), no wallet signature needed</td><td data-label="Transaction"><a class="hash" href="https://blockchair.com/bitcoin-cash/transaction/ba9ee1e9121da03a31e2b8e5b35ddc5c8da00129272893437cd61886a0fe2495" rel="noopener">ba9ee1e9</a></td></tr>
           <tr><td>Home code freezes the vault</td><td data-label="Transaction"><a class="hash" href="https://blockchair.com/bitcoin-cash/transaction/4acd7c88e0eb056e54733920a75f2c397fe42ad2a10876379f87ace0c404c15b" rel="noopener">4acd7c88</a></td></tr>
