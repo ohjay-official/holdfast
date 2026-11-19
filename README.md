@@ -68,7 +68,7 @@ People already lose money this way. The [Why](https://hodlfast.vercel.app/why/) 
 - **CashScript 0.14 covenants.** [`contracts/Holdfast.cash`](contracts/Holdfast.cash) checks signatures, fixes its own outputs, and carries state in CashToken NFT commitments. Waits use `this.age` (a relative time lock), not a timestamp the spender picks. The contract allows at most 2,500 sats of fee on a spend, and 4,000 on a merge.
 - **libauth 3.1.0-next.8.** The real vault and the signing test use it for addresses, hashes, and transaction bytes (`src/vault.ts`, `src/real/core.ts`, `src/main.ts`).
 - **WizardConnect 0.2 and Paytaca.** [`src/real/wallet.ts`](src/real/wallet.ts) connects the real vault to Paytaca. The same path is what the pre-kickoff signing test used.
-- **In the repo, not in the vault app.** `contracts/SignTest.cash` and `contracts/CoSignTest.cash` are the chipnet signing tests, reached from [/signing-test/](https://hodlfast.vercel.app/signing-test/). Telegram alerts and a guardian-for-hire service are named on the [Why](https://hodlfast.vercel.app/why/) and [Privacy](https://hodlfast.vercel.app/privacy/) pages as later work. There is no code that sends those alerts.
+- **In the repo, not in the vault app.** `contracts/SignTest.cash` and `contracts/CoSignTest.cash` are the chipnet signing tests, reached from [/signing-test/](https://hodlfast.vercel.app/signing-test/). Telegram alerts and a guardian-for-hire service are named on the [Why](https://hodlfast.vercel.app/why/) page as later work. There is no code that sends those alerts.
 
 The app's builders use 144 blocks for about a day, 6 blocks for about an hour, and 1,008 blocks for about a week (`src/vault.ts`). The contract checks whatever block counts were set when the vault was created. The demo uses a 0.05 BCH allowance and a 3-day wait. A real vault can use 1 to 7 days. The site says 3 is the default.
 
@@ -94,7 +94,7 @@ A bank can call a fraud team. Holdfast cannot. Bitcoin Cash that has already lef
 | Real vault | Live at [/real/](https://hodlfast.vercel.app/real/). Paytaca on mainnet or chipnet. Mainnet steps in the table above. |
 | Signing test | Live at [/signing-test/](https://hodlfast.vercel.app/signing-test/). Five chipnet tests from before kickoff are listed on the [Security](https://hodlfast.vercel.app/security/#proof) page. |
 | Website | Live at [hodlfast.vercel.app](https://hodlfast.vercel.app). |
-| Telegram alerts | Not built. The Privacy page says "once they're available". |
+| Telegram alerts | Not built. Listed on the Why page as later work. |
 | Guardian-for-hire | Not built. The Why page lists it under "Later". |
 
 ## More Ways to Test
