@@ -1,0 +1,33 @@
+# Project card
+
+- **Name:** Holdfast
+- **One line: what it does and for whom:** A Bitcoin Cash vault a robber can't empty, for people whose phone can be taken by force. The phone can only spend a small daily allowance; anything bigger waits days in the open and can be cancelled with a 12-word home code kept off the phone, a duress PIN quietly freezes the vault, and an optional guardian can stop things but never send.
+- **Public repo:** https://github.com/ohjay-official/holdfast
+- **Commit under review:** 156e015 (branch main)
+- **Live app or demo:**
+  - Site: https://hodlfast.vercel.app (also https://holdfast-bch.vercel.app, same deployment)
+  - No-wallet demo: https://hodlfast.vercel.app/app/#/quick (demo PINs 1234 normal, 9999 duress)
+  - Real vault (mainnet, Paytaca over WizardConnect): https://hodlfast.vercel.app/real/
+  - Kickoff snapshot: code at branch `nov14-start` (commit 03f53db), demo at https://holdfast-kickoff.vercel.app
+  - Pitch deck: https://hodlfast.vercel.app/holdfast-deck.pdf
+- **Onchain or backend addresses:** Bitcoin Cash mainnet. Contract `contracts/Holdfast.cash` (CashScript 0.14); each vault is its own P2SH32 address. Mainnet transactions are listed in the README "Proof It's Real" section and on https://hodlfast.vercel.app/security/. Project fee / CashTokens payout address: bitcoincash:zrnwss6g79malz4lqtwf84ha5y3utm3t9uyhqakcg6. No backend: fully static site; the browser talks to public Electrum servers (bch.imaginary.cash, electrum.imaginary.cash, bch.loping.net, electroncash.de) and Nostr relays for WizardConnect.
+- **How a newcomer tries it:** README "Try It in 5 Steps" and "For judges" line at the top.
+- **Test access reviewers may use:** the no-wallet demo only. Do not create vaults or send anything on /real/.
+- **Where the public claims live:** README.md; every page of the live site (/, /how-it-works/, /why/, /security/, /guardians/, /demo/, /faq/, /under-the-hood/, /privacy/, /terms/, /app/, /real/, /signing-test/, 404); the judge banner on every page (partials/judge-bar.html); the pitch deck PDF; the demo video script (not public yet; video not recorded).
+- **Event (if any):** BCH BLAZE 2026 on DoraHacks, https://dorahacks.io/hackathon/bchblaze2026/detail. Submissions close Sun 22 Nov 2026, 14:00 UTC (15:00 Lagos). Build window: kickoff Sat 14 Nov 2026 about 14:13 UTC to the deadline.
+- **Tracks, bounties or prizes entered:** Main BCH BLAZE 2026 prizes (mainnet). Ember 2026 community choice. No bounties entered.
+- **Judging criteria:** No weighted rubric was found publicly. From the kickoff stream (judges Elliot Price, Kallisti, Sayoshi Nakamario): one clear sentence of what the app does, the main button works immediately, tight scope, real people have clicked through it; utility, business viability and polish matter; a messy page with too many features loses on first impression. Judges score only work done from kickoff to the deadline.
+- **Rules that matter (from the kickoff stream and DoraHacks page):**
+  - Register and submit on DoraHacks.
+  - Someone using the app must be able to make a BCH **mainnet** transaction (chipnet fine for testing).
+  - WizardConnect or an XO template integration, or both. Missing both is instant disqualification.
+  - A banner at the top of the app with: a completed Widget Factory template (the deck), a GitHub/GitLab repo link, a CashTokens donation address, and the before/after: starting code, starting demo, final code, final demo. Undeclared or unclear pre-existing work is disqualification.
+  - Builder must have done at least one roll call and spoken in the BLAZE Telegram (done Nov 14, per the builder).
+  - Pre-kickoff work allowed but not scored.
+- **Known limitations already admitted:** README "Security and What It Doesn't Promise" and "What Works Today"; /security/ page; no outside audit (stated on site and README).
+- **Accounts reviewers must not touch:** the builder's Paytaca wallet, the real mainnet vault, the payout address, the Vercel project and the GitHub repo (read only).
+- **Reviewer environment:**
+  - Shell can clone the repo (verified), run `npm install`, `npm test`, `npm run build`.
+  - Live site reachable over HTTPS (verified).
+  - Browser: installed Chrome at /usr/bin/google-chrome via Playwright (`executable_path='/usr/bin/google-chrome'`); WebGL needs `--enable-unsafe-swiftshader --use-angle=swiftshader`.
+  - Blocked here: Electrum websockets (wss://bch.imaginary.cash:50004 resets), so /real/ cannot read the chain from this environment. Nostr relay for WizardConnect does connect. dorahacks.io returns 405 to curl. blockchair.com web and api.blockchair.com return 200, use them for tx checks.
