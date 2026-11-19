@@ -474,6 +474,17 @@ export function recoverBlocker(c: Pick<VaultConfig, 'hasGuardian' | 'waitBlocks'
   return null;
 }
 
+/**
+ * Version 2 counts an approval's network fee against the allowance. After a quiet day the window
+ * restarts (fresh). Returns the options for buildApprove, or an error to show.
+ */
+export function approveOptions(c: Pick<VaultConfig, 'allowance' | 'refillBlocks' | 'v'>, v: Pick<VaultView, 'state' | 'mainAge'>): { fresh: boolean; refillBlocks: number } | { error: string } {
+  if (c.v === 1 || !v.state) return { fresh: false, refillBlocks: c.refillBlocks };
+  if (v.mainAge >= c.refillBlocks) return { fresh: true, refillBlocks: c.refillBlocks };
+  if (v.state.spent + V.VAULT_FEE <= BigInt(c.allowance)) return { fresh: false, refillBlocks: c.refillBlocks };
+  return { error: `Each approval pays a ${V.VAULT_FEE} sat network fee out of the daily allowance, and today's is used up. It refills ${blocksToText(c.refillBlocks - v.mainAge)} after the vault's last change.` };
+}
+
 /** What the duress view shows as the balance: only what the allowance lets out now. */
 export function duressBalance(v: VaultView): bigint {
   return v.allowanceLeft;
@@ -488,6 +499,8 @@ export interface LockStep {
 }
 
 const outpoint = (u: Utxo | null) => (u ? `${u.txid}:${u.vout}` : '');
+/** The network refused a cancel because its coin doesn't exist or is already gone. */
+const MISSING = /missing|inputs|already spent|spent|conflict|bad-txns-inputs|not found|unknown/i;
 
 /**
  * Freeze (home code or duress) and pull every waiting withdrawal back, one
@@ -508,6 +521,7 @@ export async function lockDown(o: {
   const wait = o.wait ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
   const tries = o.tries ?? 10;
   const steps: LockStep[] = [];
+  const bad = new Set<string>();
   const pk = o.key.publicKey;
   let v = await o.read();
   // Keep going until nothing is waiting: a robber could split the vault into many withdrawals.
@@ -524,21 +538,33 @@ export async function lockDown(o: {
       if (!canFreeze) throw new Error('The vault holds too little to pay the network fee for a freeze.');
       tb = V.buildFreeze({ contract: o.contract, main: v.main, state: v.state, pk, signer: o.key, duress: o.mode === 'duress' });
       step = { what: 'freeze', sats: 0n };
-    } else if (v.pending.length) {
+    } else if (v.pending.some((p) => !bad.has(outpoint(p.utxo)))) {
       // Cancelling first also tops up a vault coin too small to pay for the freeze.
-      const p = v.pending[0];
+      // Coins a server listed but the network refused (missing or already spent) are skipped,
+      // so one dishonest server can't block the cancels behind a made-up coin.
+      const p = v.pending.find((q) => !bad.has(outpoint(q.utxo)))!;
       tb = V.buildMerge({ contract: o.contract, main: v.main, state: v.state, other: p.utxo, pk, signer: o.key });
       step = { what: 'cancel', sats: p.sats };
     } else break;
     const before = outpoint(v.main);
-    const txid = await o.send(tb);
+    let txid: string;
+    try {
+      txid = await o.send(tb);
+    } catch (e) {
+      if (step.what === 'cancel' && MISSING.test(String((e as Error)?.message ?? e))) {
+        bad.add(outpoint(v.pending.find((q) => !bad.has(outpoint(q.utxo)))!.utxo));
+        continue;
+      }
+      throw e;
+    }
     const done = { ...step, txid };
     steps.push(done);
     o.onStep?.(done);
     v = await waitForNewMain(o.read, before, wait, tries);
   }
-  if (v.pending.length && !(o.mode === 'duress' && v.state?.level === 2)) {
-    throw new Error(`Stopped after ${steps.length} steps with ${v.pending.length} withdrawal(s) still waiting. Tap again to cancel the rest.`);
+  const real = v.pending.filter((p) => !bad.has(outpoint(p.utxo)));
+  if (real.length && !(o.mode === 'duress' && v.state?.level === 2)) {
+    throw new Error(`Stopped after ${steps.length} steps with ${real.length} withdrawal(s) still waiting. Tap again to cancel the rest.`);
   }
   return steps;
 }

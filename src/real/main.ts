@@ -525,12 +525,12 @@ function screenVault(): string {
   }
   const s = v.state!;
   return `${topbar()}
-  <main class="screen" id="main">${statusBox()}${frozenBox(v, c)}
+  <main class="screen" id="main">${statusBox()}${c.v === 1 ? legacyBox() : ''}${frozenBox(v, c)}
     <section class="balance"><p class="bal-label">In your vault</p><p class="bal">${bch(v.total)}</p>${bar(v)}
       ${walletSats !== null ? `<p class="small muted">In Paytaca, outside the vault: ${bch(walletSats)}</p>` : ''}
       ${v.refillIn && v.refillIn > 0 ? `<p class="small muted">Allowance full again in ${C.blocksToText(v.refillIn)}.</p>` : ''}</section>
-    <div class="actions2"><a class="btn btn-dark" href="#/send" ${s.level === 2 ? 'aria-disabled="true"' : ''}>Send</a><a class="btn btn-line" href="#/receive">Receive</a></div>
-    ${s.level === 0 ? `<p class="small"><a href="#/withdraw">Withdraw more than the allowance</a></p>` : ''}
+    ${c.v === 1 ? '' : `<div class="actions2"><a class="btn btn-dark" href="#/send" ${s.level === 2 ? 'aria-disabled="true"' : ''}>Send</a><a class="btn btn-line" href="#/receive">Receive</a></div>
+    ${s.level === 0 ? `<p class="small"><a href="#/withdraw">Withdraw more than the allowance</a></p>` : ''}`}
     ${depositNotice(v)}
     <section class="block"><h2>Waiting to leave</h2>${pendingList(v, (p, i) => `${p.ready && s.level === 0 ? `<button class="btn btn-sm btn-dark" data-act="release" data-i="${i}" ${held()}>${busy ? 'Releasing...' : `Release ${bch(p.sats)}`}</button>` : ''}<button class="btn btn-sm btn-line" data-act="cancel-owner" data-i="${i}" ${held()}>${busy ? 'Cancelling...' : 'Cancel'}</button>`)}</section>
     ${activityList()}
@@ -544,6 +544,13 @@ function depositNotice(v: C.VaultView): string {
   const small = v.deposits.length - worth.length;
   const smallText = small ? `<p class="small muted">${small === 1 ? 'One deposit is' : `${small} deposits are`} smaller than the ${bch(V.MERGE_FEE)} network fee to add ${small === 1 ? 'it' : 'them'}, so ${small === 1 ? 'it stays' : 'they stay'} as a deposit.</p>` : '';
   return `<div class="notice"><h2>${bch(v.depositSats)} deposited</h2><p>Deposits join the vault when you add them.${worth.length > 1 ? ` Paytaca asks once per deposit (${worth.length}).` : ''}</p>${worth.length ? `<button class="btn btn-sm btn-dark" data-act="absorb" ${held()}>${busy ? 'Adding...' : 'Add to vault'}</button>` : ''}${smallText}</div>`;
+}
+
+/** Vaults made before Nov 19 run contract version 1, which has known holes. Say so, and say how to leave. */
+function legacyBox(): string {
+  return `<div class="notice notice-frozen" role="alert"><p><b>Move this vault</b></p>
+    <p>It uses the first Holdfast contract. A security review on Nov 19 found holes in it that let someone with your phone take more than the allowance. New vaults use the fixed contract.</p>
+    <p class="small">To move it: tap <b>Home code</b>, type your words, tap <b>Allow moving everything out</b>, then <b>Move everything</b> to your Paytaca address. Then start a new vault in <b>Settings</b>.</p></div>`;
 }
 
 function screenSend(): string {
@@ -705,8 +712,8 @@ function render() {
   else if (!saved || !wallet.ready) html = screenStart();
   else if (!unlocked && h === '/forgot') html = screenForgot();
   else if (!unlocked) html = screenLock();
-  else if (h === '/send') html = screenSend();
-  else if (h === '/withdraw' && !decoy) html = screenWithdraw();
+  else if (h === '/send' && (decoy || saved.config.v !== 1)) html = screenSend();
+  else if (h === '/withdraw' && !decoy && saved.config.v !== 1) html = screenWithdraw();
   else if (h === '/receive') html = screenReceive();
   else if (h === '/home' && !decoy) html = screenHome(saved.config, view, '/vault');
   else if (h === '/settings' && !decoy) html = screenSettings();
@@ -765,8 +772,10 @@ const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
 /** Record each step of a freeze-and-cancel run in the activity list. */
 function lockStepActivity(s: C.LockStep, who: string) {
-  if (s.what === 'cancel') addActivity(`${who} cancelled a ${bch(s.sats)} withdrawal. The BCH is back in the vault.`, s.txid);
-  else if (who === 'Duress PIN') addActivity('Duress PIN froze the vault. Only the allowance can leave.', s.txid);
+  // The duress run writes neutral entries: this storage is on the phone the robber holds.
+  const quiet = who === 'Duress PIN';
+  if (s.what === 'cancel') addActivity(quiet ? `A ${bch(s.sats)} withdrawal was cancelled. The BCH is back in the vault.` : `${who} cancelled a ${bch(s.sats)} withdrawal. The BCH is back in the vault.`, s.txid);
+  else if (quiet) addActivity('Vault frozen. Only the allowance can leave.', s.txid);
 }
 
 app.addEventListener('click', async (e) => {
@@ -974,8 +983,10 @@ app.addEventListener('click', async (e) => {
         const home = new SignatureTemplate(homeKey!);
         const what = el.dataset.what as 'unfreeze' | 'recover';
         const v = await readConfig(c!);
-        if (!c!.hasGuardian) nextDone = what === 'unfreeze' ? 'Vault unfrozen.' : 'Approved. You can now move everything out.';
-        return sendLocal(V.buildApprove({ contract: contractFor(c!), main: v.main!, state: v.state!, pk: home.publicKey, ...C.approveRoles(c!, 'home'), signer: home, what }));
+        if (!c!.hasGuardian) nextDone = what === 'unfreeze' ? 'Vault unfrozen.' : c!.v === 1 ? 'Approved. You can now move everything out.' : `Approved. Moving everything out opens ${C.blocksToText(c!.waitBlocks)} after the vault's last change.`;
+        const opt = C.approveOptions(c!, v);
+        if ('error' in opt) throw new Error(opt.error);
+        return sendLocal(V.buildApprove({ contract: contractFor(c!), main: v.main!, state: v.state!, pk: home.publicKey, ...C.approveRoles(c!, 'home'), signer: home, what, ...opt }));
       });
     case 'forget-home':
       homeKey = null;
@@ -1016,7 +1027,9 @@ app.addEventListener('click', async (e) => {
       return act('Approving', async () => {
         const gc = guardianConfig!;
         const v = await readConfig(gc);
-        const tb = V.buildApprove({ contract: contractFor(gc), main: v.main!, state: v.state!, pk: hexToBin(gc.guardianPk), ...C.approveRoles(gc, 'guardian'), signer: 'wallet', what: el.dataset.what as 'unfreeze' | 'recover' });
+        const opt = C.approveOptions(gc, v);
+        if ('error' in opt) throw new Error(opt.error);
+        const tb = V.buildApprove({ contract: contractFor(gc), main: v.main!, state: v.state!, pk: hexToBin(gc.guardianPk), ...C.approveRoles(gc, 'guardian'), signer: 'wallet', what: el.dataset.what as 'unfreeze' | 'recover', ...opt });
         return walletSend(tb, [[0, 'receive', 0]], 'Holdfast guardian: approve');
       });
     case 'guardian-close':
@@ -1043,7 +1056,7 @@ async function duressFreeze() {
     });
   } catch (e) {
     /* Stay silent on screen: the robber is watching. The owner sees it in the log later. */
-    log(`duress run stopped: ${(e as Error).message}`);
+    log(`background step stopped: ${(e as Error).message}`);
   }
   await refresh();
 }

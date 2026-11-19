@@ -15,7 +15,8 @@ pragma cashscript ^0.14.0;
 // A vault without a guardian uses guardianPk = homePk.
 // Fees: phone spends and withdrawal starts pay their fee from the vault and it counts against
 // the daily allowance, so the phone can never move or burn more than the allowance a day.
-// Merges pay from the coin being merged. Freeze, approve and ticket fees are capped and one-off.
+// Merges pay from the coin being merged. Freeze, approval and guardian-replacement fees are
+// recorded against the allowance too, so no loop can burn much more than a day's allowance.
 contract Holdfast(
     pubkey ownerPk,
     pubkey homePk,
@@ -114,16 +115,16 @@ contract Holdfast(
         }
         if (tx.inputs[1].tokenCategory == category) {
             require(pk == homePk);
-        } else {
-            require(tx.outputs[0].value >= tx.inputs[0].value);
         }
+        require(tx.outputs[0].value >= tx.inputs[0].value);
     }
 
     // Home code or guardian: full freeze. Panic key: duress freeze.
     function freeze(pubkey pk, sig s) {
         require(checkSig(s, pk));
         bytes level, bytes rest = tx.inputs[0].nftCommitment.split(1);
-        bytes spentBytes = rest.split(8)[0];
+        int spent = int(rest.split(8)[0]);
+        int fee = tx.inputs[0].value - tx.outputs[0].value;
         int newLevel = 2;
         if (pk == panicPk) {
             require(int(level) == 0);
@@ -137,18 +138,32 @@ contract Holdfast(
         require(tx.inputs[0].tokenCategory == category + 0x02);
         require(tx.outputs[0].lockingBytecode == tx.inputs[0].lockingBytecode);
         require(tx.outputs[0].tokenCategory == category + 0x02);
-        require(tx.outputs[0].nftCommitment == toPaddedBytes(newLevel, 1) + spentBytes + 0x00000000);
-        require(tx.outputs[0].value >= tx.inputs[0].value - 2500);
+        // Always allowed, but its fee is recorded against the allowance.
+        require(fee >= 0);
+        require(fee <= 2500);
+        require(tx.outputs[0].nftCommitment == toPaddedBytes(newLevel, 1) + toPaddedBytes(spent + fee, 8) + 0x00000000);
         require(tx.outputs.length == 1);
     }
 
     // Home code or guardian: approve unfreezing (what = 0) or recovery (what = 1).
     // When home code and guardian have both approved unfreezing, the vault opens.
-    function approve(pubkey pk, sig s, int what) {
+    // Its fee counts against the allowance (fresh: after a quiet day the window restarts), so
+    // freeze and unfreeze in a loop can't burn more than about a day's allowance.
+    function approve(pubkey pk, sig s, int what, bool fresh) {
         require(pk == homePk || pk == guardianPk);
         require(checkSig(s, pk));
         bytes level, bytes rest = tx.inputs[0].nftCommitment.split(1);
-        bytes spentBytes, bytes flags = rest.split(8);
+        bytes oldSpent, bytes flags = rest.split(8);
+        int spent = int(oldSpent);
+        if (fresh) {
+            require(this.age >= refillBlocks);
+            spent = 0;
+        }
+        int fee = tx.inputs[0].value - tx.outputs[0].value;
+        require(fee >= 0);
+        require(fee <= 2500);
+        require(spent + fee <= allowance);
+        bytes spentBytes = toPaddedBytes(spent + fee, 8);
         bytes uh, bytes f2 = flags.split(1);
         bytes ug, bytes f3 = f2.split(1);
         bytes rh, bytes rg = f3.split(1);
@@ -173,14 +188,15 @@ contract Holdfast(
             if (asGuardian) { rg = 0x01; }
             newCommitment = level + spentBytes + uh + ug + rh + rg;
         }
-        require(newCommitment != tx.inputs[0].nftCommitment);
+        // The level or a flag must change; the spent counter alone doesn't count.
+        bytes newLevel, bytes newRest = newCommitment.split(1);
+        require(newLevel + newRest.split(8)[1] != level + flags);
         require(this.activeInputIndex == 0);
         require(tx.inputs.length == 1);
         require(tx.inputs[0].tokenCategory == category + 0x02);
         require(tx.outputs[0].lockingBytecode == tx.inputs[0].lockingBytecode);
         require(tx.outputs[0].tokenCategory == category + 0x02);
         require(tx.outputs[0].nftCommitment == newCommitment);
-        require(tx.outputs[0].value >= tx.inputs[0].value - 2500);
         require(tx.outputs.length == 1);
     }
 
@@ -203,16 +219,23 @@ contract Holdfast(
 
     // Phone and home code together: start the 7-day clock to replace the guardian.
     // Output 1 is the ticket. Its age is the clock.
+    // Its fee counts against the allowance too, and the ticket carries its own merge fee.
     function startEvict(sig ownerSig, sig homeSig) {
         require(checkSig(ownerSig, ownerPk));
         require(checkSig(homeSig, homePk));
+        bytes level, bytes rest = tx.inputs[0].nftCommitment.split(1);
+        bytes oldSpent, bytes flags = rest.split(8);
+        int fee = tx.inputs[0].value - tx.outputs[0].value - tx.outputs[1].value;
+        require(fee >= 0);
+        require(fee <= 3500);
+        require(int(oldSpent) + fee <= allowance);
+        require(tx.outputs[1].value >= 5000);
         require(this.activeInputIndex == 0);
         require(tx.inputs.length == 1);
         require(tx.inputs[0].tokenCategory == category + 0x02);
         require(tx.outputs[0].lockingBytecode == tx.inputs[0].lockingBytecode);
         require(tx.outputs[0].tokenCategory == category + 0x02);
-        require(tx.outputs[0].nftCommitment == tx.inputs[0].nftCommitment);
-        require(tx.outputs[0].value >= tx.inputs[0].value - 3500);
+        require(tx.outputs[0].nftCommitment == level + toPaddedBytes(int(oldSpent) + fee, 8) + flags);
         require(tx.outputs[1].lockingBytecode == tx.inputs[0].lockingBytecode);
         require(tx.outputs[1].tokenCategory == category);
         require(tx.outputs[1].nftCommitment == 0x45);
@@ -285,7 +308,9 @@ contract Holdfast(
     }
 
     // Guardian: approve a waiting withdrawal for the fast lane.
+    // Only a real guardian: with no guardian the home key would otherwise pass here too.
     function approveFast(sig guardianSig) {
+        require(guardianPk != homePk);
         require(checkSig(guardianSig, guardianPk));
         bytes tag, bytes recipient = tx.inputs[0].nftCommitment.split(2);
         require(tag == 0x5000);

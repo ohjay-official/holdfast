@@ -21,7 +21,8 @@ export const VAULT_FEE = 2_000n;
 /** Fee for a two-coin vault spend (merge, evict). The contract allows at most 4,000 for a merge. */
 export const MERGE_FEE = 3_600n;
 /** Sats kept on an evict ticket. */
-export const TICKET_SATS = 1_000n;
+// Version 2: the ticket carries its own merge fee, so destroying it never costs the vault.
+export const TICKET_SATS = 5_000n;
 /** Fee rate for wallet-funded transactions, in sats per byte. */
 export const FEE_RATE = 1.1;
 /** Smallest withdrawal the contract accepts. */
@@ -294,7 +295,9 @@ export function buildFreeze(o: {
   signer: Signer;
   duress: boolean;
 }): TransactionBuilder {
-  const next: MainState = { ...OPEN, level: o.duress ? 1 : 2, spent: o.state.spent };
+  // Version 2 records the freeze fee against the allowance.
+  const legacy = versionOf(o.contract) === 1;
+  const next: MainState = { ...OPEN, level: o.duress ? 1 : 2, spent: o.state.spent + (legacy ? 0n : VAULT_FEE) };
   return new TransactionBuilder({ provider: o.contract.provider })
     .addInput(su(o.main), o.contract.unlock.freeze(o.pk, sigOf(o.signer)))
     .addOutput(mainOut(o.contract, o.main, next, o.main.satoshis - VAULT_FEE));
@@ -328,10 +331,18 @@ export function buildApprove(o: {
   asGuardian: boolean;
   signer: Signer;
   what: 'unfreeze' | 'recover';
+  /** Version 2: after a quiet day the allowance window restarts with this approval's fee. */
+  fresh?: boolean;
+  refillBlocks?: number;
 }): TransactionBuilder {
-  const next = afterApprove(o.state, o.asHome, o.asGuardian, o.what, versionOf(o.contract) === 1);
+  const legacy = versionOf(o.contract) === 1;
+  const after = afterApprove(o.state, o.asHome, o.asGuardian, o.what, legacy);
+  // Version 2 counts the approval's fee against the allowance.
+  const next = legacy ? after : { ...after, spent: (o.fresh ? 0n : o.state.spent) + VAULT_FEE };
+  const what = o.what === 'unfreeze' ? 0n : 1n;
+  const unlocker = legacy ? (o.contract.unlock as any).approve(o.pk, sigOf(o.signer), what) : o.contract.unlock.approve(o.pk, sigOf(o.signer), what, !!o.fresh);
   return new TransactionBuilder({ provider: o.contract.provider })
-    .addInput(su(o.main), o.contract.unlock.approve(o.pk, sigOf(o.signer), o.what === 'unfreeze' ? 0n : 1n))
+    .addInput(su(o.main), unlocker, o.fresh && !legacy ? { sequence: o.refillBlocks } : undefined)
     .addOutput(mainOut(o.contract, o.main, next, o.main.satoshis - VAULT_FEE));
 }
 
@@ -370,13 +381,16 @@ export function buildApproveFast(o: { contract: HoldfastContract; pending: Utxo;
 }
 
 /** Phone and home code: start the clock to replace the guardian. */
+const ticketSats = (c: HoldfastContract) => (versionOf(c) === 1 ? 1_000n : TICKET_SATS);
+
 export function buildStartEvict(o: { contract: HoldfastContract; main: Utxo; state: MainState; owner: Signer; home: Signer }): TransactionBuilder {
   return new TransactionBuilder({ provider: o.contract.provider })
     .addInput(su(o.main), o.contract.unlock.startEvict(sigOf(o.owner), sigOf(o.home)))
-    .addOutput(mainOut(o.contract, o.main, o.state, o.main.satoshis - TICKET_SATS - VAULT_FEE))
+    // Version 2 counts the fee against the allowance.
+    .addOutput(mainOut(o.contract, o.main, versionOf(o.contract) === 1 ? o.state : { ...o.state, spent: o.state.spent + VAULT_FEE }, o.main.satoshis - ticketSats(o.contract) - VAULT_FEE))
     .addOutput({
       to: o.contract.tokenAddress,
-      amount: TICKET_SATS,
+      amount: ticketSats(o.contract),
       token: { category: o.main.token!.category, amount: 0n, nft: { capability: 'none', commitment: '45' } },
     });
 }

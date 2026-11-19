@@ -135,7 +135,8 @@ describe('vault contract', () => {
     await V.buildFreeze({ contract, main: m.utxo, state: m.state, pk: panic.publicKey, signer: panic, duress: true }).send();
     m = await main(contract, params.category);
     expect(m.state.level).toBe(1);
-    await V.buildSpend({ contract, main: m.utxo, state: m.state, amount: ALLOW - V.VAULT_FEE, to: robber, owner, fresh: false, refillBlocks: REFILL }).send();
+    // The duress freeze's fee was recorded against the allowance, so the rest is what the phone can send.
+    await V.buildSpend({ contract, main: m.utxo, state: m.state, amount: ALLOW - 2n * V.VAULT_FEE, to: robber, owner, fresh: false, refillBlocks: REFILL }).send();
     m = await main(contract, params.category);
     await expect(V.buildStartWithdrawal({ contract, main: m.utxo, state: m.state, amount: 10_000n, to: robber, owner }).send()).rejects.toThrow();
     // Guardian upgrades it to a full freeze.
@@ -158,7 +159,8 @@ describe('vault contract', () => {
     ).rejects.toThrow();
     await V.buildApprove({ contract, main: m.utxo, state: m.state, pk: guardian.publicKey, asHome: false, asGuardian: true, signer: guardian, what: 'unfreeze' }).send();
     m = await main(contract, params.category);
-    expect(m.state).toEqual({ ...V.OPEN, spent: 0n });
+    // The freeze and both approvals recorded their fees against the allowance.
+    expect(m.state).toEqual({ ...V.OPEN, spent: 3n * V.VAULT_FEE });
   });
 
   it('without a guardian, the home code unfreezes alone', async () => {

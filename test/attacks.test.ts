@@ -213,4 +213,47 @@ describe('Nov 19 security review: every exploit is now refused', () => {
     ).rejects.toThrow();
     await V.buildRelease({ contract, pending: p.utxo, to: robber, fast: false, waitBlocks: WAIT, fastBlocks: FAST }).send();
   });
+  it('round 2: with no guardian the home key cannot fast-approve a withdrawal', async () => {
+    const { contract, params } = await setup(false);
+    const m = await main(contract, params.category);
+    await V.buildStartWithdrawal({ contract, main: m.utxo, state: m.state, amount: 900_000n, to: robber, owner }).send();
+    const p = (await coins(contract, params.category)).find((c) => c.kind === 'pending')!;
+    await expect(V.buildApproveFast({ contract, pending: p.utxo, to: robber, guardian: home }).send()).rejects.toThrow();
+  });
+
+  it('round 2: freeze and unfreeze in a loop burns at most about a day of allowance', async () => {
+    const { contract, params } = await setup(false);
+    let cycles = 0;
+    for (; cycles < 40; cycles++) {
+      let m = await main(contract, params.category);
+      try {
+        await V.buildFreeze({ contract, main: m.utxo, state: m.state, pk: home.publicKey, signer: home, duress: false }).send();
+        m = await main(contract, params.category);
+        await V.buildApprove({ contract, main: m.utxo, state: m.state, pk: home.publicKey, asHome: true, asGuardian: true, signer: home, what: 'unfreeze' }).send();
+      } catch { break; }
+    }
+    const lost = 1_000_000n - (await main(contract, params.category)).utxo.satoshis;
+    expect(cycles).toBeLessThan(40);
+    expect(lost).toBeLessThanOrEqual(ALLOW + V.VAULT_FEE);
+  }, 200_000);
+
+  it('round 2: guardian-replacement tickets cannot be looped to burn the vault', async () => {
+    const { contract, params } = await setup();
+    let loops = 0;
+    for (; loops < 40; loops++) {
+      let m = await main(contract, params.category);
+      try {
+        await V.buildStartEvict({ contract, main: m.utxo, state: m.state, owner, home }).send();
+      } catch { break; }
+      const t = (await coins(contract, params.category)).find((c) => c.kind === 'ticket')!;
+      m = await main(contract, params.category);
+      // Merging the ticket back pays its fee from the ticket, never from the vault coin.
+      const before = m.utxo.satoshis;
+      await V.buildMerge({ contract, main: m.utxo, state: m.state, other: t.utxo, pk: home.publicKey, signer: home }).send();
+      expect((await main(contract, params.category)).utxo.satoshis).toBeGreaterThanOrEqual(before);
+    }
+    const m = await main(contract, params.category);
+    expect(loops).toBeLessThan(40);
+    expect(m.state.spent).toBeLessThanOrEqual(ALLOW);
+  }, 200_000);
 });

@@ -105,8 +105,9 @@ describe('real vault flows', () => {
     v = await read();
     expect(v.state!.level).toBe(1);
     expect(v.pending).toHaveLength(0);
-    // Starting the withdrawal used one fee of the allowance.
-    expect(v.allowanceLeft).toBe(50_000n - 3n * V.VAULT_FEE);
+    // Starting the withdrawal and the duress freeze each recorded a fee against the allowance.
+    expect(v.allowanceLeft).toBe(50_000n - v.state!.spent - 2n * V.VAULT_FEE);
+    expect(v.state!.spent).toBe(2n * V.VAULT_FEE);
   });
 
   it('allowance refill shows as fresh once the vault coin is a day old', async () => {
@@ -181,9 +182,16 @@ describe('real vault flows', () => {
     const words = C.newHomeWords();
     const k = C.homeKeyFromWords(words.join(' '));
     expect(C.homeKeyFromWords('  ' + words.join('  ').toUpperCase())).toEqual(k);
+    // A word that isn't on the list is always caught.
+    const typo = [...words];
+    typo[3] = 'notaword';
+    expect(() => C.homeKeyFromWords(typo.join(' '))).toThrow();
+    // A swapped list word fails the checksum 15 times in 16; when it passes, it is a different key.
     const bad = [...words];
     bad[3] = bad[3] === 'abandon' ? 'ability' : 'abandon';
-    expect(() => C.homeKeyFromWords(bad.join(' '))).toThrow();
+    let other: Uint8Array | null = null;
+    try { other = C.homeKeyFromWords(bad.join(' ')); } catch { other = null; }
+    if (other) expect(other).not.toEqual(k);
     expect(() => C.homeKeyFromWords(words.slice(0, 11).join(' '))).toThrow(/12/);
   });
 
@@ -249,7 +257,9 @@ describe('backend flows proven on the mock network', () => {
     await tb.send();
     v = await read();
     expect(v.state).toEqual({ ...V.OPEN, spent: v.state!.spent });
-    expect(v.allowanceLeft).toBe(50_000n - 2n * V.VAULT_FEE);
+    // The freeze and the unfreeze each recorded their fee against the allowance.
+    expect(v.state!.spent).toBe(2n * V.VAULT_FEE);
+    expect(v.allowanceLeft).toBe(50_000n - v.state!.spent - 2n * V.VAULT_FEE);
     // With a guardian, the home code alone only records its half.
     expect(C.approveRoles({ ...config, hasGuardian: true }, 'home')).toEqual({ asHome: true, asGuardian: false });
     expect(C.approveRoles(config, 'guardian')).toEqual({ asHome: false, asGuardian: true });
