@@ -435,3 +435,11 @@
   .door-loader{display:none}
   .door-stage canvas,.door-fallback{-webkit-mask-image:radial-gradient(closest-side,#000 62%,transparent 100%);mask-image:radial-gradient(closest-side,#000 62%,transparent 100%)}
 }
+
+/* ---- Nov 20 polish ---- */
+/* Room above the headline on laptops; the headline scales with the screen height too. */
+@media (min-width:768px){
+  .dz-hero{padding-top:calc(84px + 7rem)}
+  .dz-hero h1{font-size:clamp(3rem,min(7.6vw,10.5vh),7rem)}
+}
+.code-rain,.faq-bars,.faq-glow{display:none}

@@ -230,3 +230,24 @@ html.revealed .w>span{transform:none !important}
 .foot-legal p{margin:0}
 .foot-legal ul{display:flex;gap:1.25rem}
 @media (prefers-reduced-motion:reduce){.foot-dots__line,.chain-blocks rect,.chain-held rect{animation:none}}
+
+/* ---- Nov 20 polish: quieter surfaces, one showpiece (the door) ---- */
+/* Cards: a flat surface with a hairline, no blur, no light ring, no glow. Colour only where it means something. */
+.glass{background:#0f1513;-webkit-backdrop-filter:none;backdrop-filter:none;box-shadow:none;border:1px solid var(--line-soft);border-radius:12px}
+.glass::before,.glass::after{content:none}
+.glass--held{border-top:2px solid var(--held-lit)}
+.glass--taken{border-top:2px solid var(--taken-lit)}
+.glass-flat{-webkit-backdrop-filter:none;backdrop-filter:none;border-radius:12px}
+/* Main button: solid green, no halo. */
+.btn-primary,.btn-primary:hover{background:var(--green);box-shadow:none}
+.btn-primary:hover{background:var(--green-2)}
+.btn-ghost{-webkit-backdrop-filter:none;backdrop-filter:none}
+/* Phones: the judge banner on two slim lines. Deck, code and the address stay visible; the address shortens and copies in full. */
+@media (max-width:979px){
+  .judge-row{gap:.15rem .75rem;padding-block:.25rem}
+  .judge-vote{flex-wrap:nowrap}
+  .judge-vote code{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;word-break:normal}
+  .judge-vote .copy{flex:none;height:36px;min-height:36px;padding:0 .7rem}
+  .judge-more{height:36px;min-height:36px}
+  .judge-bar a{min-height:36px}
+}
