@@ -461,8 +461,15 @@
 .t-safe{background:#0a7a5a;box-shadow:none}
 .t-held{background:#b9791a}
 .t-ink{background:#141c18}
+/* Phones: the door gets its own space above the headline, at full brightness */
 @media (max-width:768px){
-  .door-stage.ready canvas{transform:translate(24%,0) scale(.72)}
-  .door-fallback{top:15%;right:-8%;width:62vmin}
+  .door-stage.ready canvas{opacity:1;transform:none}
+  .door-fallback,.door-stage.failed .door-fallback,.door-stage.static .door-fallback{opacity:.95;right:50%;transform:translateX(50%);top:calc(23% - 11svh);width:22svh}
+  .door-stage.ready .door-fallback{opacity:0}
+  .door-glow{opacity:.6;right:50%;transform:translate(50%,-50%);top:25%;width:40svh;height:40svh}
+  .door-loader{display:none}
+  .dz-hero{padding-top:calc(40svh - 2rem)}
+  .dz-hero .dz-copy::before{content:none}
+  .dz-story{padding-top:50svh}
 }
 @media (max-width:600px){.hero-code pre{font-size:.72rem}}

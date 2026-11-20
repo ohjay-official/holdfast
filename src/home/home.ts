@@ -9,10 +9,10 @@ const K: DoorState[] = [
   { x: -.24, y: 0,   s: .72, ry: .18,  rx: 0,    wheel: 0,   bolts: 1, held: 0 },
 ];
 const KM: DoorState[] = [
-  { x: 0, y: -.22, s: .46, ry: -.40, rx: .12,  wheel: 0,   bolts: 1, held: 0 },
-  { x: 0, y: -.24, s: .42, ry: .45,  rx: -.05, wheel: 2.6, bolts: 1, held: 0 },
-  { x: 0, y: -.24, s: .42, ry: -.30, rx: .12,  wheel: 2.6, bolts: 1, held: 1 },
-  { x: 0, y: -.24, s: .44, ry: .15,  rx: 0,    wheel: 0,   bolts: 1, held: 0 },
+  { x: 0, y: -.27, s: .24, ry: -.40, rx: .12,  wheel: 0,   bolts: 1, held: 0 },
+  { x: 0, y: -.26, s: .32, ry: .45,  rx: -.05, wheel: 2.6, bolts: 1, held: 0 },
+  { x: 0, y: -.26, s: .32, ry: -.30, rx: .12,  wheel: 2.6, bolts: 1, held: 1 },
+  { x: 0, y: -.26, s: .32, ry: .15,  rx: 0,    wheel: 0,   bolts: 1, held: 0 },
 ];
 const smooth = (t: number) => t * t * (3 - 2 * t);
 const lerp = (a: DoorState, b: DoorState, t: number) => {
