@@ -443,3 +443,26 @@
   .dz-hero h1{font-size:clamp(3rem,min(7.6vw,10.5vh),7rem)}
 }
 .code-rain,.faq-bars,.faq-glow{display:none}
+/* ---- Nov 20 polish, round 2 ---- */
+.worst{border:1px solid var(--line-soft);border-radius:12px;background:#0f1513;padding:1.4rem 1.5rem;max-width:30rem;justify-self:end;width:100%}
+.worst-h{margin:0 0 .9rem;font-family:var(--sans);font-weight:650;font-size:1rem;color:var(--text)}
+.worst dl{margin:0}
+.worst dl div{display:flex;justify-content:space-between;gap:1rem;padding:.7rem 0;border-top:1px solid var(--line-soft);font-size:.95rem}
+.worst dt{color:var(--text-2)}
+.worst dd{margin:0;font-weight:650;white-space:nowrap}
+.w-some{color:var(--held-lit)}
+.w-none{color:var(--green-glow)}
+@media (max-width:979px){.worst{justify-self:stretch;max-width:none}}
+.hero-code{margin:0;border:1px solid var(--line-soft);border-radius:12px;background:#0b100e;overflow:hidden;justify-self:end;width:100%;max-width:34rem}
+.hero-code figcaption{padding:.7rem 1rem;border-bottom:1px solid var(--line-soft);font-size:.8rem;color:var(--text-3)}
+.hero-code pre{margin:0;padding:1rem 1.1rem;overflow-x:auto;font-family:var(--mono);font-size:.82rem;line-height:1.7;color:var(--text-2)}
+@media (max-width:979px){.hero-code{justify-self:stretch;max-width:none}}
+.mosaic{height:min(44rem,calc(100svh - 12rem));min-height:30rem}
+.t-safe{background:#0a7a5a;box-shadow:none}
+.t-held{background:#b9791a}
+.t-ink{background:#141c18}
+@media (max-width:768px){
+  .door-stage.ready canvas{transform:translate(24%,0) scale(.72)}
+  .door-fallback{top:15%;right:-8%;width:62vmin}
+}
+@media (max-width:600px){.hero-code pre{font-size:.72rem}}

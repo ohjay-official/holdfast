@@ -251,3 +251,12 @@ html.revealed .w>span{transform:none !important}
   .judge-more{height:36px;min-height:36px}
   .judge-bar a{min-height:36px}
 }
+/* Desktop judge banner: one row; the before/after links sit behind the toggle like on phones */
+@media (min-width:980px){
+  .judge-quick{display:inline-flex;gap:.8rem;margin-left:.6rem}
+  .judge-more{display:inline-flex;align-items:center;height:30px;margin-left:.6rem}
+  .judge-grid{display:none;width:100%;order:9}
+  .judge-bar.open .judge-grid{display:flex}
+  .judge-row{flex-wrap:wrap}
+  .judge-vote{flex-wrap:nowrap}
+}
