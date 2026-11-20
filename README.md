@@ -243,7 +243,7 @@ git log --reverse --format='%h %ad %s' --date=format:'%Y-%m-%d %H:%M %z'
 
 </details>
 
-Code, tests and docs were written with AI tools (Claude, Grok Bot and Cursor Agent), directed by Oh-Jay. Oh-Jay made the product decisions and did every wallet step and every real-money test.
+Code, tests and docs were written with AI tools (Claude, Grok Bot and Cursor Agent), directed by Faithful Adejoh (Oh-Jay). He made the product decisions and did every wallet step and every real-money test.
 
 Libraries from `package-lock.json` on this commit:
 

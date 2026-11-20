@@ -550,7 +550,7 @@ function depositNotice(v: C.VaultView): string {
 function legacyBox(): string {
   return `<div class="notice notice-frozen" role="alert"><p><b>Move this vault</b></p>
     <p>It uses the first Holdfast contract. A security review on Nov 19 found holes in it that let someone with your phone take more than the allowance. New vaults use the fixed contract.</p>
-    <p class="small">To move it: tap <b>Home code</b>, type your words, tap <b>Allow moving everything out</b>, then <b>Move everything</b> to your Paytaca address. Then start a new vault in <b>Settings</b>.</p></div>`;
+    <p class="small">To move it: tap <b>Home code</b>, type your words, tap <b>Allow moving everything out</b>, then paste your Paytaca address and tap <b>Move everything</b>. Then start a new vault in <b>Settings</b>.</p></div>`;
 }
 
 function screenSend(): string {

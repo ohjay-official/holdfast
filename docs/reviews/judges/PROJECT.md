@@ -3,7 +3,7 @@
 - **Name:** Holdfast
 - **One line: what it does and for whom:** A Bitcoin Cash vault a robber can't empty, for people whose phone can be taken by force. The phone can only spend a small daily allowance; anything bigger waits days in the open and can be cancelled with a 12-word home code kept off the phone, a duress PIN quietly freezes the vault, and an optional guardian can stop things but never send.
 - **Public repo:** https://github.com/ohjay-official/holdfast
-- **Commit under review:** 50d2e2d (branch main)
+- **Commit under review:** 2622512 (branch main)
 - **Live app or demo:**
   - Site: https://hodlfast.vercel.app (also https://holdfast-bch.vercel.app, same deployment)
   - No-wallet demo: https://hodlfast.vercel.app/app/#/quick (demo PINs 1234 normal, 9999 duress)
