@@ -134,11 +134,16 @@ export class Wallet {
     await whenVisible();
     this.onStatus('Sending to Paytaca... stay on this page.');
     this.awaiting = true;
+    // If Paytaca never shows the request, say so instead of waiting silently.
+    const hint = setTimeout(() => {
+      if (this.awaiting) this.onStatus('Nothing in Paytaca yet? Open Paytaca and look for the request. If there is none, reconnect: reload this page, tap Connect Paytaca and start again. Nothing has been sent.');
+    }, 25_000);
     let res;
     try {
       res = await this.mgr.signTransaction({ transaction, inputPaths: paths } as never);
     } finally {
       this.awaiting = false;
+      clearTimeout(hint);
     }
     if (res.error) throw new Error(/reject|cancel|denied/i.test(String(res.error)) ? 'You declined it in Paytaca. Nothing was sent.' : `Paytaca returned an error: ${res.error}`);
     if (!res.signedTransaction) throw new Error('Paytaca returned no signed transaction.');
