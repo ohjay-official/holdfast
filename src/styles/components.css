@@ -187,7 +187,8 @@ html.revealed .w>span{transform:none !important}
   .site-nav a:not(.nav-app):hover{color:#fff;background:rgba(238,241,236,.06)}
   .site-nav a:not(.nav-app)[aria-current="page"]{color:#fff;background:rgba(238,241,236,.08);box-shadow:inset 0 0 0 1px rgba(143,220,187,.35)}
   .nav-app{margin-left:.25rem}
-  .menu-btn{margin-left:.4rem}
+  /* The links are all in the header here, so the menu would only repeat them. */
+  .menu-btn{display:none}
 }
 @media (prefers-reduced-motion:reduce){
   .menu-card,.menu-row,.menu-chip,.menu-cta,.menu-btn span,.menu-label{transition:none}
