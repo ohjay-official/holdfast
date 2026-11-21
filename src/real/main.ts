@@ -1350,7 +1350,16 @@ async function adoptPending() {
 }
 
 log('page loaded');
+const resumeSetup = location.hash.replace(/^#/, '').startsWith('/setup');
 if (saved && Wallet.hasSavedSession()) startWallet('/vault');
-else adoptPending();
+else
+  adoptPending().then(() => {
+    // A reload in the middle of setup: reconnect Paytaca and go back to setup
+    // (new home words, nothing was sent), instead of dropping to the start screen.
+    if (!saved && resumeSetup && Wallet.hasSavedSession()) {
+      log('reload during setup: reconnecting');
+      startWallet('/setup');
+    }
+  });
 render();
 checkNetwork();
