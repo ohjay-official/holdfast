@@ -108,7 +108,15 @@ function addActivity(text: string, tx?: string) {
   }
 }
 
-const freshDraft = () => ({ step: 1, allowance: '0.001', waitDays: 3, words: C.newHomeWords(), check: 4, guardianPk: '', pin: '', duress: '', amount: '' });
+// Setup choices survive a reload (this tab only). The home words and PINs never do.
+const DRAFT_KEY = 'holdfast-setup-choices';
+function keptChoices(): { allowance?: string; waitDays?: number; guardianPk?: string; amount?: string } {
+  try { return JSON.parse(sessionStorage.getItem(DRAFT_KEY) || '{}'); } catch { return {}; }
+}
+function keepChoices(d: { allowance: string; waitDays: number; guardianPk: string; amount: string }) {
+  try { sessionStorage.setItem(DRAFT_KEY, JSON.stringify({ allowance: d.allowance, waitDays: d.waitDays, guardianPk: d.guardianPk, amount: d.amount })); } catch { /* private mode */ }
+}
+const freshDraft = () => ({ step: 1, allowance: '0.001', waitDays: 3, words: C.newHomeWords(), check: 4, guardianPk: '', pin: '', duress: '', amount: '', ...keptChoices() });
 const draft = freshDraft();
 
 const app = document.getElementById('app')!;
@@ -1210,9 +1218,11 @@ async function setupStep(f: HTMLFormElement, val: (n: string) => string) {
   } else {
     const amount = sats(val('amount'));
     d.amount = val('amount');
+    keepChoices(d);
     if (amount < 10_000n) return err('Put in at least 0.0001 BCH.');
     return createVault(amount);
   }
+  keepChoices(d);
   d.step += 1;
   if (d.step === 5) refreshWallet(true).then(render);
   render();
@@ -1290,6 +1300,7 @@ async function createVault(amount: bigint) {
     saved = record;
     save();
     localStorage.removeItem(pendingKey());
+    try { sessionStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ }
     unlocked = true;
     d.words = C.newHomeWords();
     d.pin = d.duress = '';
