@@ -109,8 +109,26 @@
       </table>
     </div>
 
-    <h3 class="ledger-h" data-reveal><span class="pill pill-safe">Mainnet</span> After kickoff: live on mainnet</h3>
-    <p class="muted" data-reveal>The real vault, run on Bitcoin Cash mainnet on Nov 16 and 17 with Paytaca on one phone. These ran on contract version 1. A security review on Nov 19 found holes in it, so new vaults use the fixed version 2; this phone run is being repeated on it.</p>
+    <h3 class="ledger-h" data-reveal><span class="pill pill-safe">Mainnet</span> Contract version 2, Nov 21</h3>
+    <p class="muted" data-reveal>A second real vault on the current contract. The page ran on one phone and Paytaca on another: on a single iPhone, signing requests stalled while Paytaca was in the background. The duress PIN then showed only the 0.00026 BCH allowance. This vault's 1-day wait ends after the deadline, so the release step is shown on version 1 below.</p>
+    <div class="table ledger" data-reveal>
+      <table>
+        <thead><tr><th>Step</th><th>Transaction</th></tr></thead>
+        <tbody>
+          <tr><td>Vault created from Paytaca over WizardConnect (0.003 BCH in)</td><td data-label="Transaction"><a class="hash" href="https://blockchair.com/bitcoin-cash/transaction/ae9de6a95eb84c9789cefea0ab763e7504344cdc4c2e54db2c54d1e74f4c18ca" rel="noopener">ae9de6a9</a></td></tr>
+          <tr><td>Phone spends within the allowance (0.0001); the fee also counts against the allowance</td><td data-label="Transaction"><a class="hash" href="https://blockchair.com/bitcoin-cash/transaction/b6a713b4304483b1ca044e7ad3f68fe227b9b6a6a616cbd956de00d4c1100b50" rel="noopener">b6a713b4</a></td></tr>
+          <tr><td>Phone starts a bigger withdrawal (0.001): it must wait 1 day</td><td data-label="Transaction"><a class="hash" href="https://blockchair.com/bitcoin-cash/transaction/5d0294b417f1d570757130217c2c3a2853faa512fb015e2c2a59db0094ca6b9a" rel="noopener">5d0294b4</a></td></tr>
+          <tr><td>Phone starts a second withdrawal (0.0005)</td><td data-label="Transaction"><a class="hash" href="https://blockchair.com/bitcoin-cash/transaction/14cdfb0147874b151878261603f4b60ed7e6a9d58d005446aaedd02155c494ee" rel="noopener">14cdfb01</a></td></tr>
+          <tr><td>Home code cancels the 0.0005 withdrawal, with no wallet involved</td><td data-label="Transaction"><a class="hash" href="https://blockchair.com/bitcoin-cash/transaction/0417c013a48180d9ba834045a29f2ef6618eb5f48755ea99d4ece57186f32971" rel="noopener">0417c013</a></td></tr>
+          <tr><td>Home code freezes the vault</td><td data-label="Transaction"><a class="hash" href="https://blockchair.com/bitcoin-cash/transaction/d45548cc9068f102de6d917fecafa9a87d622aaa4bbfb474ae3b46c71cdc1bba" rel="noopener">d45548cc</a></td></tr>
+          <tr><td>Home code cancels the 0.001 withdrawal while frozen</td><td data-label="Transaction"><a class="hash" href="https://blockchair.com/bitcoin-cash/transaction/7ba6f3929c3e7ca3f21c9599e73418195d867f8f79f23f9eb07b0ba5a959b1bd" rel="noopener">7ba6f392</a></td></tr>
+          <tr><td>Home code unfreezes the vault; both fees came out of the allowance</td><td data-label="Transaction"><a class="hash" href="https://blockchair.com/bitcoin-cash/transaction/314e5fad770b5cc043c64585df4b8bd4644e5e2d145d3218810459ef5d8ba1a4" rel="noopener">314e5fad</a></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 class="ledger-h" data-reveal><span class="pill pill-safe">Mainnet</span> Contract version 1, Nov 16 and 17</h3>
+    <p class="muted" data-reveal>The real vault, run on Bitcoin Cash mainnet on Nov 16 and 17 with Paytaca on one phone. These ran on contract version 1. A security review on Nov 19 found holes in it, which version 2 closes.</p>
     <div class="table ledger" data-reveal>
       <table>
         <thead><tr><th>Step</th><th>Transaction</th></tr></thead>

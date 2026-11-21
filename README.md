@@ -39,9 +39,22 @@ The words in bold are the words on the screen. The sample address is a demo addr
 - [`test/attacks.test.ts`](test/attacks.test.ts) replays every contract exploit from the 19 Nov reviews as a test that must fail. The raw reviews are in [`docs/reviews/judges/`](docs/reviews/judges/).
 - `npm test` passes 118 tests (counted 19 Nov 2026).
 - The site is live: [hodlfast.vercel.app](https://hodlfast.vercel.app). The same proof list is on [Security](https://hodlfast.vercel.app/security/#proof).
-- A real vault was created from Paytaca on mainnet on 16 Nov 2026, and the later steps below were broadcast on 16 and 17 Nov 2026. These ran on **contract version 1** ([`contracts/HoldfastV1.cash`](contracts/HoldfastV1.cash)). The 19 Nov review found holes in it, so new vaults use **version 2** ([`contracts/Holdfast.cash`](contracts/Holdfast.cash)); the app still opens version 1 vaults. There has been no outside audit.
+- **Contract version 2 on mainnet, 21 Nov 2026.** A second real vault ran on the current contract ([`contracts/Holdfast.cash`](contracts/Holdfast.cash)). The page ran on one phone and Paytaca on another (see [Known limitations](#known-limitations)). The duress PIN then opened a view showing only the 0.00026 BCH allowance. The release step is shown on version 1 below: this vault's 1-day wait would end after the submission deadline. There has been no outside audit.
 
-| Step | Transaction |
+| Step (version 2) | Transaction |
+| --- | --- |
+| Vault created from Paytaca over WizardConnect (0.003 BCH in) | [ae9de6a9](https://blockchair.com/bitcoin-cash/transaction/ae9de6a95eb84c9789cefea0ab763e7504344cdc4c2e54db2c54d1e74f4c18ca) |
+| Phone spends within the allowance (0.0001); the 0.00002 fee also counts against the allowance | [b6a713b4](https://blockchair.com/bitcoin-cash/transaction/b6a713b4304483b1ca044e7ad3f68fe227b9b6a6a616cbd956de00d4c1100b50) |
+| Phone starts a bigger withdrawal (0.001): it must wait 1 day | [5d0294b4](https://blockchair.com/bitcoin-cash/transaction/5d0294b417f1d570757130217c2c3a2853faa512fb015e2c2a59db0094ca6b9a) |
+| Phone starts a second withdrawal (0.0005) | [14cdfb01](https://blockchair.com/bitcoin-cash/transaction/14cdfb0147874b151878261603f4b60ed7e6a9d58d005446aaedd02155c494ee) |
+| Home code cancels the 0.0005 withdrawal, with no wallet involved | [0417c013](https://blockchair.com/bitcoin-cash/transaction/0417c013a48180d9ba834045a29f2ef6618eb5f48755ea99d4ece57186f32971) |
+| Home code freezes the vault | [d45548cc](https://blockchair.com/bitcoin-cash/transaction/d45548cc9068f102de6d917fecafa9a87d622aaa4bbfb474ae3b46c71cdc1bba) |
+| Home code cancels the 0.001 withdrawal while frozen, with no wallet involved | [7ba6f392](https://blockchair.com/bitcoin-cash/transaction/7ba6f3929c3e7ca3f21c9599e73418195d867f8f79f23f9eb07b0ba5a959b1bd) |
+| Home code unfreezes the vault; the freeze and unfreeze fees came out of the allowance | [314e5fad](https://blockchair.com/bitcoin-cash/transaction/314e5fad770b5cc043c64585df4b8bd4644e5e2d145d3218810459ef5d8ba1a4) |
+
+- **Contract version 1 on mainnet, 16 and 17 Nov 2026.** The first real vault ([`contracts/HoldfastV1.cash`](contracts/HoldfastV1.cash)). The 19 Nov review found holes in version 1, which version 2 closes; the app still opens version 1 vaults.
+
+| Step (version 1) | Transaction |
 | --- | --- |
 | Vault created from Paytaca over WizardConnect (0.003 BCH in, 0.0001 fee) | [5d4e7cac](https://blockchair.com/bitcoin-cash/transaction/5d4e7cac3a9beca6235ef74a7bae37f239b78980a4b0d6b4f77f207cf329d519) |
 | Phone spends within the allowance (0.0001), signed in Paytaca | [1243b504](https://blockchair.com/bitcoin-cash/transaction/1243b5043acc0dd0e8fb191c1af48e3fd3bdba25e840b8dc32d9f6c603686105) |
@@ -189,6 +202,12 @@ There is no `docs/SECURITY` file in this repo. The write-up is the live page: [S
 
 The short version is the list in [What It Does](#what-it-does). Read that page before you put in more than a small amount.
 
+### Known limitations
+
+- **One iPhone running both the page and Paytaca can stall on signing.** iOS pauses whichever app is in the background, so the request can sit on the WizardConnect relay without reaching Paytaca. On 20 and 21 Nov this happened several times in Chrome and Safari on one iPhone, and nothing was sent or lost. The same request went straight through with the page on a second phone and Paytaca on the first. The app now says so when Paytaca has shown nothing for 25 seconds. The planned fix is a built-in signer, so a vault doesn't need a second app.
+- **The vault lives in the browser that made it.** To open it on another device you need the vault code and the home code.
+- **Starting and cancelling withdrawals in a loop can burn a few times the allowance a day in fees,** though it can't move money out ([Under the hood](https://hodlfast.vercel.app/under-the-hood/)). The PIN only guards this app's screen; the contract never sees it. Version 1 vaults keep the holes the 19 Nov review found, so the app asks their owners to move to a new vault.
+
 ## Privacy
 
 The live [Privacy](https://hodlfast.vercel.app/privacy/) page is the current note (last updated 19 Nov 2026 on that page).
@@ -240,6 +259,8 @@ git log --reverse --format='%h %ad %s' --date=format:'%Y-%m-%d %H:%M %z'
 - **17 Nov:** More tests, docs aligned with the contract, home code on a new phone with the vault code, and the PIN redraw fix.
 - **18 Nov:** Repeated-digit PIN fix, the Nov 17 mainnet transactions written into the docs, and the Night Vault site.
 - **19 Nov:** Three independent reviews (cold judge, security, claims). Contract version 2 closes every contract hole they found, with an attack test for each; app fixes for the duress view, server checks, PIN storage and security headers; public wording matched to the code.
+- **20 Nov:** Site polish, the vault door on phones, and setup that survives a reload.
+- **21 Nov:** Contract version 2 run on mainnet (table above), and a hint when Paytaca hasn't shown a request.
 
 </details>
 
