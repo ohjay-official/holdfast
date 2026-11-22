@@ -8,12 +8,13 @@
 
 Whoever has your phone can make you send what the phone can spend, and a Bitcoin Cash payment cannot be reversed. Holdfast is a vault contract: the phone can spend only a small daily allowance, and anything more waits in public so a home code or a guardian can cancel it.
 
-**For judges:** open the [demo](https://hodlfast.vercel.app/app/), tap **Start the demo**, then **Send**, **Use a sample address**, **Send all: 1.00 BCH**, **Review**, and **Send 1.00 BCH**. Then tap **Home code** and **Cancel withdrawal**. You should see **0.05 BCH** leave now and **0.95 BCH** come back.
+**For judges:** watch the [1:40 video](https://youtu.be/Djiolje6bZU), or open the [demo](https://hodlfast.vercel.app/app/), tap **Start the demo**, then **Send**, **Use a sample address**, **Send all: 1.00 BCH**, **Review**, and **Send 1.00 BCH**. Then tap **Home code** and **Cancel withdrawal**. You should see **0.05 BCH** leave now and **0.95 BCH** come back.
 
 ## Quick Links
 
 | What | What it needs |
 | --- | --- |
+| [Demo video](https://youtu.be/Djiolje6bZU) | 1:40, no setup |
 | [Demo](#try-it-in-5-steps) | 5 steps, pretend money, no wallet |
 | [Live site](#proof-its-real) | A browser |
 | [Real vault](#what-works-today) | Paytaca, and a little BCH or chipnet |
